@@ -11,18 +11,21 @@
   "license": "ISC",
   "dependencies": {
     "@fastify/helmet": "^10.0.2",
-    "@fastify/jwt": "^6.3.3",
-    "@types/dotenv": "^8.2.0",
+    "@fastify/type-provider-typebox": "^2.3.0",
+    "@types/jsonwebtoken": "^8.5.9",
     "bcrypt": "^5.1.0",
     "dotenv": "^16.0.3",
-    "fastify": "^4.9.2",
+    "fastify": "^4.10.0",
     "fs": "^0.0.1-security",
+    "jsonwebtoken": "^8.5.1",
     "mysql2": "^2.3.3",
     "path": "^0.12.7",
     "sequelize": "^6.25.5",
     "sequelize-typescript": "^2.1.5"
   },
   "devDependencies": {
+    "@types/bcrypt": "^5.0.0",
+    "@types/dotenv": "^8.2.0",
     "@types/node": "^18.11.9"
   }
 }

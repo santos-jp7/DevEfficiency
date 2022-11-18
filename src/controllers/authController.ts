@@ -1,12 +1,14 @@
-import { FastifyJwtSignOptions } from "@fastify/jwt";
-import fastify, { FastifyRequest, FastifyReply} from "fastify";
+import jsonwebtoken from "jsonwebtoken";
+import { FastifyRequest, FastifyReply} from "fastify";
+import bcrypt from "bcrypt";
+
 import User from "../models/User";
 
 type authRequest = FastifyRequest<{
     Body: {
-        username?: string,
-        password?: string,
-        refresh_token?: string
+        username: string,
+        password: string,
+        refresh_token: string
     }
 }>
 
@@ -15,11 +17,21 @@ class authController{
         const {username, password} = req.body;
 
         const user = await User.findOne({where: {username}});
+
         if(!user) return res.status(401).send({error: true, message: "Usuário ou senha invalidos."});
+        if(!bcrypt.compareSync(password, user.password)) return res.status(401).send({error: true, message: "Usuário ou senha invalidos."});
 
-        const token = res.jwtSign({ user });
+        const date = new Date();
 
-        return res.send(token);
+        const token = await jsonwebtoken.sign({ user }, String(process.env.SECRET) ,{expiresIn: '1h'});
+
+        date.setHours(date.getHours() + 1);
+
+        return res.send({
+            type: "bearer",
+            token,
+            expires_in: date.valueOf()
+        });
     }
 }
 

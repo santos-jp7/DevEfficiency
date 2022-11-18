@@ -5,11 +5,7 @@ import clientController from "./controllers/clientController";
 import credentialsController from "./controllers/credentialsController";
 import authController from "./controllers/authController";
 
-function TestMid(req : FastifyRequest, res: FastifyReply, next: HookHandlerDoneFunction) : void{
-    console.log("TESTTTT");
-
-    next();
-}
+import isAuthed from "./middlewares/isAuthed";
 
 const routes : FastifyPluginCallback = (instance, opts, next) => {
     instance.get("/", helloController.handler);
@@ -17,9 +13,9 @@ const routes : FastifyPluginCallback = (instance, opts, next) => {
     instance.post("/auth", authController.auth);
     instance.post("/auth/refresh", authController.auth);
     
-    instance.get("/clients", {preHandler: TestMid}, clientController.index);
+    instance.get("/clients", {preHandler: [isAuthed]}, clientController.index);
     instance.get("/clients/:id", clientController.show);
-    instance.post("/clients", clientController.store);
+    instance.post("/clients", {preHandler: [isAuthed]}, clientController.store);
     instance.put("/clients", clientController.update);
     instance.delete("/clients", clientController.destroy);
 

@@ -2,7 +2,7 @@ import { FastifyRequest, FastifyReply } from "fastify";
 import Client from "../models/Client";
 
 type clientRequest = FastifyRequest<{
-    Body: Client, Params: Client
+    Body: Client, Params: Client, Headers: any
 }>
 
 class clientController{
