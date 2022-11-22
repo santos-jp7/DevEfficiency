@@ -1,9 +1,14 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import Client from "../models/Client";
+import User from "../models/User";
 
 type clientRequest = FastifyRequest<{
-    Body: Client, Params: Client, Headers: any
+    Body: Client, Params: Client, Headers: any, user: any
 }>
+
+interface clientRequestUserAddon extends clientRequest{
+    user: User
+}
 
 class clientController{
     static async index(req : FastifyRequest, res: FastifyReply) : Promise<FastifyReply> {
