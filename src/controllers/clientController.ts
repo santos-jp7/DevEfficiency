@@ -3,15 +3,12 @@ import Client from "../models/Client";
 import User from "../models/User";
 
 type clientRequest = FastifyRequest<{
-    Body: Client, Params: Client, Headers: any, user: any
+    Body: Client, Params: Client, Headers: any
 }>
-
-interface clientRequestUserAddon extends clientRequest{
-    user: User
-}
-
 class clientController{
     static async index(req : FastifyRequest, res: FastifyReply) : Promise<FastifyReply> {
+        console.log("headerssssssssssss", req.__user);
+
         return res.send(await Client.findAll({include: "credentials"}));
     }
 

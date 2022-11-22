@@ -1,22 +1,20 @@
 import jsonwebtoken from "jsonwebtoken";
 
-import { FastifyReply, FastifyRequest, HookHandlerDoneFunction } from "fastify";
+import { FastifyReply, FastifyRequest, HookHandlerDoneFunction, RequestBodyDefault, RequestParamsDefault, RequestHeadersDefault } from "fastify";
 import User from "../models/User";
 
-interface isAuthedRequest extends FastifyRequest{
-    user: User
-}
+type isAuthedRequest = FastifyRequest<{
+    Body: RequestBodyDefault, Headers: RequestHeadersDefault, 
+}>
 
-interface jwtUserDecode {
-    id: number
-}
-
-export default function isAuthed(req : isAuthedRequest, res : FastifyReply, next: HookHandlerDoneFunction) : void {
+export default function isAuthed(req : isAuthedRequest, res : FastifyReply, next: HookHandlerDoneFunction) : void{
     const {authorization} = req.headers;
 
     console.log(req.headers);
 
-    const decoded : any = jsonwebtoken.verify(String(authorization), String(process.env.SECRET));
+    const decoded = jsonwebtoken.verify(authorization as string, process.env.SECRET as string) as User;
+
+    req.__user = decoded;
 
     next();
 }
