@@ -10,9 +10,7 @@ type isAuthedRequest = FastifyRequest<{
 export default function isAuthed(req : isAuthedRequest, res : FastifyReply, next: HookHandlerDoneFunction) : void{
     const {authorization} = req.headers;
 
-    console.log(req.headers);
-
-    const decoded = jsonwebtoken.verify(authorization as string, process.env.SECRET as string) as User;
+    const decoded = jsonwebtoken.verify(authorization?.replace("Bearer ", "") as string, process.env.SECRET as string) as User;
 
     req.__user = decoded;
 
