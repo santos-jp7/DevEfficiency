@@ -7,8 +7,6 @@ type clientRequest = FastifyRequest<{
 }>
 class clientController{
     static async index(req : FastifyRequest, res: FastifyReply) : Promise<FastifyReply> {
-        console.log("headerssssssssssss", req.__user);
-
         return res.send(await Client.findAll({include: "credentials"}));
     }
 
