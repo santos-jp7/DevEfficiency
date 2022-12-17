@@ -4,6 +4,7 @@ import helloController from "./controllers/helloController";
 import clientController from "./controllers/clientController";
 import credentialsController from "./controllers/credentialsController";
 import authController from "./controllers/authController";
+import projectsController from "./controllers/projectsController";
 
 import isAuthed from "./middlewares/isAuthed";
 
@@ -24,6 +25,12 @@ const routes : FastifyPluginCallback = (instance, opts, next) => {
     instance.post("/credentials", credentialsController.store);
     instance.put("/credentials", credentialsController.update);
     instance.delete("/credentials", credentialsController.destroy);
+
+    instance.get("/projects", projectsController.index);
+    instance.get("/projects/:id", projectsController.show);
+    instance.post("/projects", projectsController.store);
+    instance.put("/projects", projectsController.update);
+    instance.delete("/projects", projectsController.destroy);
 
     next();
 };

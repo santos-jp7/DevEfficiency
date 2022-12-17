@@ -13,6 +13,7 @@ import {
 import db from "../db";
 
 import Credential from "./Credential";
+import Project from "./Project";
 
 class Client extends Model<
     InferAttributes<Client>,
@@ -26,11 +27,16 @@ class Client extends Model<
 
     declare getCredential: HasManyGetAssociationsMixin<Credential>;
     declare createCredential: HasManyCreateAssociationMixin<Credential, 'clientId'>;
+
+    declare getProject: HasManyGetAssociationsMixin<Project>;
+    declare createProject: HasManyCreateAssociationMixin<Project, 'clientId'>;
     
     declare credentials : NonAttribute<Credential[]>;
+    declare projects : NonAttribute<Project[]>;
 
     declare static associations: { 
         credentials: Association<Client, Credential>;
+        projects: Association<Client, Project>;
     };
 }
 
@@ -52,9 +58,15 @@ Client.init({
 })
 
 Client.hasMany(Credential, {
-        sourceKey: "id",
-        foreignKey: "clientId",
-        as: "credentials"
-    });
+    sourceKey: "id",
+    foreignKey: "clientId",
+    as: "credentials"
+});
+
+Client.hasMany(Project, {
+    sourceKey: "id",
+    foreignKey: "clientId",
+    as: "projects"
+});
 
 export default Client;
