@@ -35,14 +35,17 @@ Subproject.init({
     },
     name: {
         type: DataTypes.STRING(128),
+        allowNull: false
     },
     url: {
         type: DataTypes.STRING,
+        allowNull: false
 
     },
     type: {
         type: DataTypes.ENUM,
-        values: ["Front-End", "Back-End", "Bot" , "Outros"]
+        values: ["Front-End", "Back-End", "Bot" , "Outros"],
+        allowNull: false
     },
     createdAt: DataTypes.DATE,
     updatedAt: DataTypes.DATE

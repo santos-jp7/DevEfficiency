@@ -23,8 +23,8 @@ class Project extends Model<
 >{
     declare id: CreationOptional<number>;
     declare name: string; 
-    declare url: string;
-    declare type: "API" | "Bot" | "WebSite" | "Automação" | "Crawler"
+    declare url: CreationOptional<string>;
+    declare type: CreationOptional<"API" | "Bot" | "WebSite" | "Automação" | "Crawler" | "Outros">
 
     declare clientId: ForeignKey<Client["id"]>;
 
@@ -54,6 +54,7 @@ Project.init({
     },
     name: {
         type: DataTypes.STRING(128),
+        allowNull: false
     },
     url: {
         type: DataTypes.STRING,
@@ -61,7 +62,8 @@ Project.init({
     },
     type: {
         type: DataTypes.ENUM,
-        values: ["API", "Bot", "WebSite", "Automação", "Crawler"]
+        values: ["API", "Bot", "WebSite", "Automação", "Crawler", "Outros"],
+        defaultValue: "Outros"
     },
     createdAt: DataTypes.DATE,
     updatedAt: DataTypes.DATE

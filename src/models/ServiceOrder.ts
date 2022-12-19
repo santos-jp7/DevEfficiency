@@ -17,8 +17,8 @@ class ServiceOrder extends Model<
 >{
     declare id: CreationOptional<number>;
     declare subject: string; 
-    declare description: string;
-    declare status: "Em avaliação" | "Em correções" | "Pendente" | "Finalizado"
+    declare description: CreationOptional<string>;
+    declare status: CreationOptional<"Em avaliação" | "Em andamento" | "Pendente" | "Finalizado">
 
     declare projectId: ForeignKey<Project["id"]>;
 
@@ -34,14 +34,15 @@ ServiceOrder.init({
     },
     subject: {
         type: DataTypes.STRING(128),
+        allowNull: false
     },
     description: {
         type: DataTypes.STRING,
-
     },
     status: {
         type: DataTypes.ENUM,
-        values: ["Em avaliação", "Em correções", "Pendente", "Finalizado"]
+        values: ["Em avaliação", "Em correções", "Pendente", "Finalizado"],
+        defaultValue: "Em avaliação"
     },
     createdAt: DataTypes.DATE,
     updatedAt: DataTypes.DATE

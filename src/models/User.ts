@@ -28,9 +28,11 @@ User.init({
     },
     username: {
         type: DataTypes.STRING(128),
+        allowNull: false
     },
     password: {
         type: DataTypes.STRING(128),
+        allowNull: false
     },
     createdAt: DataTypes.DATE,
     updatedAt: DataTypes.DATE
