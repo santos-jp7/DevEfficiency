@@ -1,19 +1,19 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 
 import Client from "../models/Client";
-import Subproject from "../models/Project";
+import Project from "../models/Project";
 
 type projectsRequest = FastifyRequest<{
-    Body: Subproject, Params: Subproject
+    Body: Project, Params: Project
 }>
 
 class projectsController{
     static async index(req : FastifyRequest, res: FastifyReply) : Promise<FastifyReply> {
-        return res.send(await Subproject.findAll());
+        return res.send(await Project.findAll());
     }
 
     static async show(req : projectsRequest, res: FastifyReply) : Promise<FastifyReply> {
-        return res.send(await Subproject.findByPk(req.params.id));
+        return res.send(await Project.findByPk(req.params.id));
     }
 
     static async store(req : projectsRequest, res: FastifyReply) : Promise<FastifyReply> {
