@@ -1,31 +1,31 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 
-import Client from "../models/Client";
-import Subproject from "../models/Project";
+import Project from "../models/Project";
+import Subproject from "../models/Subproject";
 
-type projectsRequest = FastifyRequest<{
+type subprojectsRequest = FastifyRequest<{
     Body: Subproject, Params: Subproject
 }>
 
-class projectsController{
+class subprojectsController{
     static async index(req : FastifyRequest, res: FastifyReply) : Promise<FastifyReply> {
         return res.send(await Subproject.findAll());
     }
 
-    static async show(req : projectsRequest, res: FastifyReply) : Promise<FastifyReply> {
+    static async show(req : subprojectsRequest, res: FastifyReply) : Promise<FastifyReply> {
         return res.send(await Subproject.findByPk(req.params.id));
     }
 
-    static async store(req : projectsRequest, res: FastifyReply) : Promise<FastifyReply> {
+    static async store(req : subprojectsRequest, res: FastifyReply) : Promise<FastifyReply> {
         const {
-            name, url, clientId, type
+            name, url, projectId, type
         } = req.body;
 
 
-        const client = await Client.findByPk(clientId);
-        const project = await client?.createProject({name, url, type});
+        const project = await Project.findByPk(projectId);
+        const subproject = await project?.createSubproject({name, url, type});
 
-        return res.send(project);
+        return res.send(subproject);
     }
 
     static async update(req : FastifyRequest, res: FastifyReply) : Promise<FastifyReply> {
@@ -37,4 +37,4 @@ class projectsController{
     }
 }
 
-export default projectsController;
+export default subprojectsController;
