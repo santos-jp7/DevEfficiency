@@ -1,6 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
 import Client from '../models/Client'
-import User from '../models/User'
 
 type clientRequest = FastifyRequest<{
     Body: Client
