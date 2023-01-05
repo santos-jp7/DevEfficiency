@@ -1,5 +1,6 @@
-import fastify, { FastifyInstance, FastifyRequest, RequestBodyDefault } from 'fastify'
+import fastify, { FastifyInstance } from 'fastify'
 import helmet from '@fastify/helmet'
+import path from 'path'
 
 import routes from './routes'
 
@@ -17,7 +18,13 @@ app.addHook('preHandler', (req, reply, done) => {
     done()
 })
 
-app.register(helmet)
+app.register(helmet, {
+    contentSecurityPolicy: false,
+})
 app.register(routes, { prefix: 'api' })
+
+app.register(require('@fastify/static'), {
+    root: path.join(__dirname, 'public'),
+})
 
 export default app

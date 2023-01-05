@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Banners :: PDL</title>
+
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+            integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65"
+            crossorigin="anonymous"
+        />
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css"
+            integrity="sha512-MV7K8+y+gLIBoVD59lQIYicR65iaqukzvf/nwasF0nqhPay5w/9lJmVM2hMDcnK1OnMGCdVK+iQrJ7lzPJQd1w=="
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"
+        />
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css"
+            integrity="sha512-MV7K8+y+gLIBoVD59lQIYicR65iaqukzvf/nwasF0nqhPay5w/9lJmVM2hMDcnK1OnMGCdVK+iQrJ7lzPJQd1w=="
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"
+        />
+
+        <script
+            src="https://code.jquery.com/jquery-3.6.1.min.js"
+            integrity="sha256-o88AwQnZB+VDvE9tvIXrMQaPlFFSUTR+nldQm1LuPXQ="
+            crossorigin="anonymous"
+        ></script>
+        <script
+            src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js"
+            integrity="sha384-cuYeSxntonz0PPNlHhBs68uyIAVpIIOZZ5JqeqvYYIcEL727kskC66kF92t6Xl2V"
+            crossorigin="anonymous"
+        ></script>
+    </head>
+
+    <body>
+        <nav class="navbar bg-light">
+            <div class="container">
+                <a class="navbar-brand" href="">
+                    <img
+                        src="./assets/img/logo_cabecalho.png"
+                        alt="Banners :: PDL"
+                        width="60"
+                        height="48"
+                    />
+                </a>
+            </div>
+        </nav>
+
+        <br />
+
+        <div class="container" id="dashboard">
+            <button class="btn btn-primary" v-on:click="handlerAdd">
+                <i class="fa-solid fa-plus"></i> <span>Adicionar banner</span>
+            </button>
+
+            <hr />
+
+            <h4>Ativos</h4>
+            <div
+                class="row mt-2 d-flex justify-content-center"
+                style="gap: 20px"
+            >
+                <div
+                    class="col-lg-3 border rounded p-2 d-flex"
+                    v-for="banner of active_banners"
+                >
+                    <img
+                        :src="banner.ARQUIVO"
+                        alt=""
+                        class="img-fluid mx-auto"
+                        width="500"
+                        height="145"
+                    />
+                </div>
+            </div>
+
+            <hr />
+
+            <h4>Todos</h4>
+
+            <div
+                class="row mt-2 d-flex justify-content-center"
+                style="gap: 10px"
+            >
+                <div
+                    class="col-lg-3 border rounded p-2"
+                    v-for="banner of banners"
+                    :key="banner.COD_BANNER"
+                >
+                    <div class="">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <small class="text-secondary">
+                                    #{{banner.COD_BANNER}} &bull;
+                                    {{banner.SEQ_BANNER}}º
+                                    <span
+                                        v-if="banner.TPO_BANNER == 0"
+                                        title="Destaque"
+                                    >
+                                        &bull; <i class="fa-solid fa-star"></i
+                                    ></span>
+                                    <span
+                                        v-if="banner.STS_BANNER == 1"
+                                        title="Ativo"
+                                    >
+                                        &bull; <i class="fa-solid fa-eye"></i
+                                    ></span>
+                                    <span
+                                        v-if="banner.STS_BANNER == 0"
+                                        title="Inativo"
+                                    >
+                                        &bull;
+                                        <i class="fa-solid fa-eye-slash"></i
+                                    ></span>
+                                </small>
+                            </div>
+                            <div>
+                                <button
+                                    class="btn btn-sm btn-primary"
+                                    v-on:click="handlerOrderUp(banner)"
+                                    title="Lembre-se: Data final tem prioridade em relação a ordem."
+                                >
+                                    <i class="fa-solid fa-arrow-left"></i>
+                                </button>
+                                <button
+                                    class="btn btn-sm btn-primary"
+                                    v-on:click="handlerOrderDown(banner)"
+                                    title="Lembre-se: Data final tem prioridade em relação a ordem."
+                                >
+                                    <i class="fa-solid fa-arrow-right"></i>
+                                </button>
+                                <button
+                                    class="btn btn-sm btn-primary"
+                                    v-on:click="handlerEdit(banner)"
+                                >
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
+                                <button
+                                    class="btn btn-sm btn-danger"
+                                    v-on:click="handlerDelete(banner.COD_BANNER)"
+                                >
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <hr />
+
+                        <div class="d-flex">
+                            <img
+                                :src="banner.ARQUIVO"
+                                alt=""
+                                class="img-fluid mx-auto"
+                                width="333"
+                                height="96"
+                            />
+                        </div>
+
+                        <div class="row p-2" style="gap: 5px">
+                            <div class="col-sm border" v-if="banner.COD_LEILAO">
+                                <small>Leilão: {{banner.COD_LEILAO}}</small>
+                            </div>
+                            <div class="col-sm border" v-if="banner.COD_GRUPO">
+                                <small>Grupo: {{banner.COD_GRUPO}}</small>
+                            </div>
+                            <div class="col-sm border" v-if="banner.COD_LOTE">
+                                <small>Lote: {{banner.COD_LOTE}}</small>
+                            </div>
+                            <div
+                                class="col-sm border"
+                                v-if="banner?.USUARIO?.DSC_LOGIN_USUARIO"
+                            >
+                                <small
+                                    >Usuário:
+                                    {{banner.USUARIO.DSC_LOGIN_USUARIO}}</small
+                                >
+                            </div>
+                        </div>
+
+                        <ul>
+                            <li>Inicio: {{banner.DAT_INICIO.split('T')[0]}}</li>
+                            <li>
+                                Fim: {{banner.DAT_FIM.startsWith('3999') ?
+                                'Indeterminado' : banner.DAT_FIM.split('T')[0]}}
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <br />
+        <br />
+        <br />
+        <br />
+
+        <!-- Modal -->
+        <div
+            class="modal fade"
+            id="bannerModal"
+            tabindex="-1"
+            aria-labelledby="bannerModalLabel"
+            aria-hidden="true"
+        >
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h1 class="modal-title fs-5" id="bannerModalLabel">
+                            Banner
+                        </h1>
+                        <button
+                            type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Fechar"
+                        ></button>
+                    </div>
+                    <div class="modal-body">
+                        <form class="px-2" @submit="handlerSubmit">
+                            <div
+                                class="row border p-1 mb-3"
+                                v-if="banner.ARQUIVO"
+                            >
+                                <img :src="banner.ARQUIVO" alt="" />
+                            </div>
+
+                            <div class="row border pb-2 mb-3">
+                                <label for="file">Arquivo</label>
+                                <br />
+                                <input
+                                    type="file"
+                                    id="file"
+                                    @change="previewFile"
+                                    :required="!banner.ARQUIVO ? true : false"
+                                />
+                            </div>
+
+                            <div class="row mb-3" style="gap: 8px">
+                                <div class="col border p-2">
+                                    <label for="dat_inicio">Inicio</label>
+                                    <br />
+                                    <input
+                                        type="date"
+                                        class="w-100"
+                                        id="dat_inicio"
+                                        v-model="banner.DAT_INICIO"
+                                        required
+                                    />
+                                </div>
+                                <div class="col border p-2">
+                                    <label for="dat_fim">Fim</label>
+                                    <br />
+                                    <input
+                                        type="date"
+                                        class="w-100"
+                                        id="dat_fim"
+                                        v-model="banner.DAT_FIM"
+                                    />
+                                </div>
+                                <small
+                                    >&bull; Deixe em branco para tempo
+                                    indeterminado.</small
+                                >
+                            </div>
+
+                            <div class="row mb-3" style="gap: 8px">
+                                <div class="col border pb-2">
+                                    <label for="cod_leilao">Leilão:</label>
+                                    <br />
+                                    <input
+                                        type="number"
+                                        id="cod_leilao"
+                                        list="d_leilao"
+                                        class="w-100"
+                                        v-model="banner.COD_LEILAO"
+                                    />
+                                    <datalist id="d_leilao">
+                                        <option
+                                            v-for="leilao of leiloes"
+                                            :value="leilao.COD_LEILAO"
+                                        >
+                                            {{leilao.DAT_INICIO_LEILAO.split('T')[0].split('-').reverse().join('/')}}
+                                            - {{leilao.DSC_LEILAO}}
+                                        </option>
+                                    </datalist>
+                                </div>
+                                <div class="col border pb-2">
+                                    <label for="cod_grupo">Grupo:</label>
+                                    <br />
+                                    <input
+                                        type="number"
+                                        id="cod_grupo"
+                                        class="w-100"
+                                        v-model="banner.COD_GRUPO"
+                                    />
+                                </div>
+                                <div class="col border pb-2">
+                                    <label for="cod_lote">Lote:</label>
+                                    <br />
+                                    <input
+                                        type="number"
+                                        id="cod_lote"
+                                        class="w-100"
+                                        v-model="banner.COD_LOTE"
+                                    />
+                                </div>
+                            </div>
+
+                            <div class="row mb-3" style="gap: 8px">
+                                <div class="col border pb-2">
+                                    <label for="tpo_banner">Tipo:</label>
+                                    <br />
+                                    <select
+                                        id="tpo_banner"
+                                        class="w-100"
+                                        v-model="banner.TPO_BANNER"
+                                        required
+                                    >
+                                        <option value="0">Destaque</option>
+                                        <option value="1" selected>
+                                            Leilão
+                                        </option>
+                                        <option value="2">Outros</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3" style="gap: 8px">
+                                <div class="col border pb-2">
+                                    <label for="sts_banner">Status:</label>
+                                    <br />
+                                    <select
+                                        id="sts_banner"
+                                        class="w-100"
+                                        v-model="banner.STS_BANNER"
+                                        required
+                                    >
+                                        <option value="1" selected>
+                                            Ativo
+                                        </option>
+                                        <option value="0">Inativo</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3" style="gap: 8px">
+                                <input
+                                    type="submit"
+                                    class="btn btn-primary btn-block btn-lg"
+                                    value="Enviar"
+                                />
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script src="./assets/js/axios.min.js"></script>
+        <script src="./assets/js/vue.min.js"></script>
+        <script src="./assets/js/dashboard.js"></script>
+    </body>
+</html>
