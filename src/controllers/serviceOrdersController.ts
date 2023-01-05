@@ -1,6 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
 
 import Project from '../models/Project'
+import Protocol from '../models/Protocol'
 import Service_order from '../models/Service_order'
 
 type serviceOrdersRequest = FastifyRequest<{
@@ -15,7 +16,7 @@ class serviceOrdersController {
     }
 
     static async show(req: serviceOrdersRequest, res: FastifyReply): Promise<FastifyReply> {
-        return res.send(await Service_order.findByPk(req.params.id))
+        return res.send(await Service_order.findByPk(req.params.id, { include: [Protocol] }))
     }
 
     static async store(req: serviceOrdersRequest, res: FastifyReply): Promise<FastifyReply> {
@@ -23,6 +24,8 @@ class serviceOrdersController {
 
         const project = await Project.findByPk(projectId)
         const os = await project?.createService_order({ subject, description, status })
+
+        await os?.createProtocol()
 
         return res.send(os)
     }

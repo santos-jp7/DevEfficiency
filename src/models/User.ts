@@ -1,44 +1,39 @@
-import {
-    Model,
-    InferAttributes,
-    InferCreationAttributes,
-    CreationOptional,
-    DataTypes
-} from "sequelize";
+import { Model, InferAttributes, InferCreationAttributes, CreationOptional, DataTypes } from 'sequelize'
 
-import db from "../db";
+import db from '../db'
 
-class User extends Model<
-    InferAttributes<User>,
-    InferCreationAttributes<User>
->{
-    declare id: CreationOptional<number>;
-    declare username: string; 
-    declare password: string;
+class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {
+    declare id: CreationOptional<number>
+    declare username: string
+    declare password: string
 
-    declare createdAt: CreationOptional<Date>;
-    declare updatedAt: CreationOptional<Date>;
+    declare createdAt: CreationOptional<Date>
+    declare updatedAt: CreationOptional<Date>
 }
 
-User.init({
-    id: {
-        type: DataTypes.INTEGER.UNSIGNED,
-        autoIncrement: true,
-        primaryKey: true
+User.init(
+    {
+        id: {
+            type: DataTypes.INTEGER.UNSIGNED,
+            autoIncrement: true,
+            primaryKey: true,
+        },
+        username: {
+            type: DataTypes.STRING(128),
+            allowNull: false,
+            unique: true,
+        },
+        password: {
+            type: DataTypes.STRING(128),
+            allowNull: false,
+        },
+        createdAt: DataTypes.DATE,
+        updatedAt: DataTypes.DATE,
     },
-    username: {
-        type: DataTypes.STRING(128),
-        allowNull: false
+    {
+        tableName: 'users',
+        sequelize: db,
     },
-    password: {
-        type: DataTypes.STRING(128),
-        allowNull: false
-    },
-    createdAt: DataTypes.DATE,
-    updatedAt: DataTypes.DATE
-}, {
-    tableName: "users",
-    sequelize: db
-})
+)
 
-export default User;
+export default User

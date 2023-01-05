@@ -59,12 +59,10 @@ Client.init(
 
 Client.hasMany(Credential, {
     onDelete: 'RESTRICT',
-    as: 'credentials',
 })
 
 Client.hasMany(Project, {
     onDelete: 'RESTRICT',
-    as: 'projects',
 })
 
 export default Client

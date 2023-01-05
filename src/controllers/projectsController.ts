@@ -19,16 +19,7 @@ class projectsController {
     static async show(req: projectsRequest, res: FastifyReply): Promise<FastifyReply> {
         return res.send(
             await Project.findByPk(req.params.id, {
-                include: [
-                    {
-                        model: Subproject,
-                        as: 'subprojects',
-                    },
-                    {
-                        model: Service_order,
-                        as: 'service_orders',
-                    },
-                ],
+                include: [Subproject, Service_order],
             }),
         )
     }

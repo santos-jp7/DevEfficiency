@@ -17,10 +17,7 @@ class clientController {
     static async show(req: clientRequest, res: FastifyReply): Promise<FastifyReply> {
         return res.send(
             await Client.findByPk(req.params.id, {
-                include: [
-                    { model: Credential, as: 'credentials' },
-                    { model: Project, as: 'projects' },
-                ],
+                include: [Credential, Project],
             }),
         )
     }

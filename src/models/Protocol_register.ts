@@ -35,7 +35,7 @@ Protocol_register.init(
         },
         type: {
             type: DataTypes.ENUM,
-            values: ['Entrada', 'Saída'],
+            values: ['Serviço', 'Despesa'],
             allowNull: false,
         },
         createdAt: DataTypes.DATE,
@@ -46,9 +46,5 @@ Protocol_register.init(
         sequelize: db,
     },
 )
-
-Protocol_register.hasOne(Protocol, {
-    onDelete: 'RESTRICT',
-})
 
 export default Protocol_register

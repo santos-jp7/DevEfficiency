@@ -4,7 +4,7 @@ import db from '../db'
 
 import Protocol from './Protocol'
 
-class Received extends Model<InferAttributes<Received>, InferCreationAttributes<Received>> {
+class Receipts extends Model<InferAttributes<Receipts>, InferCreationAttributes<Receipts>> {
     declare id: CreationOptional<number>
     declare method: 'Pix' | 'Boleto' | 'Cartão' | 'Transferência' | 'Espécie'
     declare value: number
@@ -16,7 +16,7 @@ class Received extends Model<InferAttributes<Received>, InferCreationAttributes<
     declare updatedAt: CreationOptional<Date>
 }
 
-Received.init(
+Receipts.init(
     {
         id: {
             type: DataTypes.INTEGER.UNSIGNED,
@@ -39,13 +39,9 @@ Received.init(
         updatedAt: DataTypes.DATE,
     },
     {
-        tableName: 'payments',
+        tableName: 'receipts',
         sequelize: db,
     },
 )
 
-Received.hasOne(Protocol, {
-    onDelete: 'RESTRICT',
-})
-
-export default Received
+export default Receipts

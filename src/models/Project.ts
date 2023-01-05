@@ -73,12 +73,10 @@ Project.init(
 
 Project.hasMany(Subproject, {
     onDelete: 'RESTRICT',
-    as: 'subprojects',
 })
 
 Project.hasMany(Service_order, {
     onDelete: 'RESTRICT',
-    as: 'service_orders',
 })
 
 export default Project
