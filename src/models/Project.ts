@@ -72,17 +72,13 @@ Project.init(
 )
 
 Project.hasMany(Subproject, {
-    sourceKey: 'id',
-    foreignKey: 'projectId',
-    as: 'subprojects',
     onDelete: 'RESTRICT',
+    as: 'subprojects',
 })
 
 Project.hasMany(ServiceOrder, {
-    sourceKey: 'id',
-    foreignKey: 'projectId',
-    as: 'serviceOrders',
     onDelete: 'RESTRICT',
+    as: 'service_orders',
 })
 
 export default Project

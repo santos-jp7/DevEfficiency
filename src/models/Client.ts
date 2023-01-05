@@ -58,17 +58,13 @@ Client.init(
 )
 
 Client.hasMany(Credential, {
-    sourceKey: 'id',
-    foreignKey: 'clientId',
-    as: 'credentials',
     onDelete: 'RESTRICT',
+    as: 'credentials',
 })
 
 Client.hasMany(Project, {
-    sourceKey: 'id',
-    foreignKey: 'clientId',
-    as: 'projects',
     onDelete: 'RESTRICT',
+    as: 'projects',
 })
 
 export default Client

@@ -2,38 +2,26 @@ import { Model, InferAttributes, InferCreationAttributes, CreationOptional, Fore
 
 import db from '../db'
 
-import ServiceOrder from './ServiceOrder'
+import Protocol from './Protocol'
 
-class Payment extends Model<InferAttributes<Payment>, InferCreationAttributes<Payment>> {
+class Received extends Model<InferAttributes<Received>, InferCreationAttributes<Received>> {
     declare id: CreationOptional<number>
-    declare type: 'Entrada' | 'Saída'
     declare method: 'Pix' | 'Boleto' | 'Cartão' | 'Transferência' | 'Espécie'
     declare value: number
+    declare note: string
 
-    declare status: CreationOptional<'Em aberto' | 'Pago' | 'Cancelado' | 'Estornado'>
-
-    declare serviceOrderId: ForeignKey<ServiceOrder['id']>
+    declare protocolId: ForeignKey<Protocol['id']>
 
     declare createdAt: CreationOptional<Date>
     declare updatedAt: CreationOptional<Date>
 }
 
-Payment.init(
+Received.init(
     {
         id: {
             type: DataTypes.INTEGER.UNSIGNED,
             autoIncrement: true,
             primaryKey: true,
-        },
-        type: {
-            type: DataTypes.ENUM,
-            values: ['Entrada', 'Saída'],
-            allowNull: false,
-        },
-        status: {
-            type: DataTypes.ENUM,
-            values: ['Em aberto', 'Pago', 'Cancelado', 'Estornado'],
-            defaultValue: 'Em aberto',
         },
         method: {
             type: DataTypes.ENUM,
@@ -44,6 +32,9 @@ Payment.init(
             type: DataTypes.FLOAT,
             allowNull: false,
         },
+        note: {
+            type: DataTypes.STRING,
+        },
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
     },
@@ -53,11 +44,8 @@ Payment.init(
     },
 )
 
-Payment.hasOne(ServiceOrder, {
-    sourceKey: 'id',
-    foreignKey: 'serviceOrderId',
-    as: 'serviceOrder',
+Received.hasOne(Protocol, {
     onDelete: 'RESTRICT',
 })
 
-export default Payment
+export default Received
