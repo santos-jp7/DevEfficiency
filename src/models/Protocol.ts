@@ -2,7 +2,7 @@ import { Model, InferAttributes, InferCreationAttributes, CreationOptional, Fore
 
 import db from '../db'
 
-import ServiceOrder from './ServiceOrder'
+import ServiceOrder from './Service_order'
 
 class Protocol extends Model<InferAttributes<Protocol>, InferCreationAttributes<Protocol>> {
     declare id: CreationOptional<number>

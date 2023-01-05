@@ -14,7 +14,7 @@ import {
 import db from '../db'
 
 import Client from './Client'
-import ServiceOrder from './ServiceOrder'
+import Service_order from './Service_order'
 import Subproject from './Subproject'
 
 class Project extends Model<InferAttributes<Project>, InferCreationAttributes<Project>> {
@@ -28,15 +28,15 @@ class Project extends Model<InferAttributes<Project>, InferCreationAttributes<Pr
     declare getSubproject: HasManyGetAssociationsMixin<Subproject>
     declare createSubproject: HasManyCreateAssociationMixin<Subproject, 'projectId'>
 
-    declare getServiceOrder: HasManyGetAssociationsMixin<ServiceOrder>
-    declare createServiceOrder: HasManyCreateAssociationMixin<ServiceOrder, 'projectId'>
+    declare getService_order: HasManyGetAssociationsMixin<Service_order>
+    declare createService_order: HasManyCreateAssociationMixin<Service_order, 'projectId'>
 
     declare subprojects: NonAttribute<Subproject[]>
-    declare serviceOrders: NonAttribute<ServiceOrder[]>
+    declare service_orders: NonAttribute<Service_order[]>
 
     declare static associations: {
         subprojects: Association<Project, Subproject>
-        serviceOrders: Association<Project, ServiceOrder>
+        service_orders: Association<Project, Service_order>
     }
 
     declare createdAt: CreationOptional<Date>
@@ -76,7 +76,7 @@ Project.hasMany(Subproject, {
     as: 'subprojects',
 })
 
-Project.hasMany(ServiceOrder, {
+Project.hasMany(Service_order, {
     onDelete: 'RESTRICT',
     as: 'service_orders',
 })

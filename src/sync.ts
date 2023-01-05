@@ -6,9 +6,9 @@ import Client from './models/Client'
 import Credential from './models/Credential'
 import Project from './models/Project'
 import Subproject from './models/Subproject'
-import ServiceOrder from './models/ServiceOrder'
+import ServiceOrder from './models/Service_order'
 import Protocol from './models/Protocol'
-import ProtocolRegister from './models/ProtocolRegister'
+import Protocol_register from './models/Protocol_register'
 import Received from './models/Received'
 
 async function syncModels(): Promise<void> {
@@ -23,7 +23,7 @@ async function syncModels(): Promise<void> {
     await Project.sync({ alter: true })
     await Subproject.sync({ alter: true })
     await Credential.sync({ alter: true })
-    await ProtocolRegister.sync({ alter: true })
+    await Protocol_register.sync({ alter: true })
     await Received.sync({ alter: true })
     await Protocol.sync({ alter: true })
     await ServiceOrder.sync({ alter: true })

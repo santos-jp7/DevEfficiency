@@ -4,7 +4,7 @@ import db from '../db'
 
 import Protocol from './Protocol'
 
-class ProtocolRegister extends Model<InferAttributes<ProtocolRegister>, InferCreationAttributes<ProtocolRegister>> {
+class Protocol_register extends Model<InferAttributes<Protocol_register>, InferCreationAttributes<Protocol_register>> {
     declare id: CreationOptional<number>
 
     declare description: string
@@ -18,7 +18,7 @@ class ProtocolRegister extends Model<InferAttributes<ProtocolRegister>, InferCre
     declare updatedAt: CreationOptional<Date>
 }
 
-ProtocolRegister.init(
+Protocol_register.init(
     {
         id: {
             type: DataTypes.INTEGER.UNSIGNED,
@@ -47,8 +47,8 @@ ProtocolRegister.init(
     },
 )
 
-ProtocolRegister.hasOne(Protocol, {
+Protocol_register.hasOne(Protocol, {
     onDelete: 'RESTRICT',
 })
 
-export default ProtocolRegister
+export default Protocol_register

@@ -2,7 +2,7 @@ import { FastifyRequest, FastifyReply } from 'fastify'
 
 import Client from '../models/Client'
 import Project from '../models/Project'
-import ServiceOrder from '../models/ServiceOrder'
+import Service_order from '../models/Service_order'
 import Subproject from '../models/Subproject'
 
 type projectsRequest = FastifyRequest<{
@@ -25,7 +25,7 @@ class projectsController {
                         as: 'subprojects',
                     },
                     {
-                        model: ServiceOrder,
+                        model: Service_order,
                         as: 'service_orders',
                     },
                 ],
