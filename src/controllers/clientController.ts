@@ -1,5 +1,8 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
+
 import Client from '../models/Client'
+import Credential from '../models/Credential'
+import Project from '../models/Project'
 
 type clientRequest = FastifyRequest<{
     Body: Client
@@ -8,11 +11,18 @@ type clientRequest = FastifyRequest<{
 }>
 class clientController {
     static async index(req: FastifyRequest, res: FastifyReply): Promise<FastifyReply> {
-        return res.send(await Client.findAll({ include: 'credentials' }))
+        return res.send(await Client.findAll())
     }
 
     static async show(req: clientRequest, res: FastifyReply): Promise<FastifyReply> {
-        return res.send(await Client.findByPk(req.params.id))
+        return res.send(
+            await Client.findByPk(req.params.id, {
+                include: [
+                    { model: Credential, as: 'credentials' },
+                    { model: Project, as: 'projects' },
+                ],
+            }),
+        )
     }
 
     static async store(req: clientRequest, res: FastifyReply): Promise<FastifyReply> {

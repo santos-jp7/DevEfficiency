@@ -2,6 +2,8 @@ import { FastifyRequest, FastifyReply } from 'fastify'
 
 import Client from '../models/Client'
 import Project from '../models/Project'
+import ServiceOrder from '../models/ServiceOrder'
+import Subproject from '../models/Subproject'
 
 type projectsRequest = FastifyRequest<{
     Body: Project
@@ -15,7 +17,20 @@ class projectsController {
     }
 
     static async show(req: projectsRequest, res: FastifyReply): Promise<FastifyReply> {
-        return res.send(await Project.findByPk(req.params.id))
+        return res.send(
+            await Project.findByPk(req.params.id, {
+                include: [
+                    {
+                        model: Subproject,
+                        as: 'subprojects',
+                    },
+                    {
+                        model: ServiceOrder,
+                        as: 'service_orders',
+                    },
+                ],
+            }),
+        )
     }
 
     static async store(req: projectsRequest, res: FastifyReply): Promise<FastifyReply> {
