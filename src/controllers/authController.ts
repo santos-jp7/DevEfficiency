@@ -1,38 +1,44 @@
-import jsonwebtoken from "jsonwebtoken";
-import { FastifyRequest, FastifyReply} from "fastify";
-import bcrypt from "bcrypt";
+import jsonwebtoken from 'jsonwebtoken'
+import { FastifyRequest, FastifyReply } from 'fastify'
+import bcrypt from 'bcrypt'
 
-import User from "../models/User";
+import User from '../models/User'
 
 type authRequest = FastifyRequest<{
     Body: {
-        username: string,
-        password: string,
+        username: string
+        password: string
         refresh_token: string
     }
+    Headers: any
 }>
 
-class authController{
-    static async auth(req : authRequest, res: FastifyReply) : Promise<FastifyReply> {
-        const {username, password} = req.body;
+class authController {
+    static async auth(req: authRequest, res: FastifyReply): Promise<FastifyReply> {
+        const { username, password } = req.body
 
-        const user = await User.findOne({where: {username}});
+        const user = await User.findOne({ where: { username } })
 
-        if(!user) return res.status(401).send({error: true, message: "Usuário ou senha invalidos."});
-        if(!bcrypt.compareSync(password, user.password)) return res.status(401).send({error: true, message: "Usuário ou senha invalidos."});
+        if (!user) return res.status(401).send({ error: true, message: 'Usuário ou senha invalidos.' })
+        if (!bcrypt.compareSync(password, user.password))
+            return res.status(401).send({ error: true, message: 'Usuário ou senha invalidos.' })
 
-        const date = new Date();
+        const date = new Date()
 
-        const token = await jsonwebtoken.sign({ user }, String(process.env.SECRET) ,{expiresIn: '1h'});
+        const token = await jsonwebtoken.sign({ user }, String(process.env.SECRET), { expiresIn: '1h' })
 
-        date.setHours(date.getHours() + 1);
+        date.setHours(date.getHours() + 1)
 
         return res.send({
-            type: "bearer",
+            type: 'bearer',
             token,
-            expires_in: date.valueOf()
-        });
+            expires_in: date.valueOf(),
+        })
+    }
+
+    static verify(req: authRequest, res: FastifyReply): FastifyReply {
+        return res.send({ success: true })
     }
 }
 
-export default authController;
+export default authController
