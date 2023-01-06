@@ -1,5 +1,7 @@
 import fastify, { FastifyInstance } from 'fastify'
 import helmet from '@fastify/helmet'
+import rateLimit from '@fastify/rate-limit'
+import fileStatic from '@fastify/static'
 import path from 'path'
 
 import routes from './routes'
@@ -21,10 +23,16 @@ app.addHook('preHandler', (req, reply, done) => {
 app.register(helmet, {
     contentSecurityPolicy: false,
 })
-app.register(routes, { prefix: 'api' })
 
-app.register(require('@fastify/static'), {
+app.register(fileStatic, {
     root: path.join(__dirname, 'public'),
+    extensions: ['html'],
 })
+
+app.register(rateLimit, {
+    max: 100,
+    timeWindow: '1 minute',
+})
+app.register(routes, { prefix: 'api' })
 
 export default app
