@@ -5,8 +5,7 @@ const project = new Vue({
     data: {
         id: 0,
         name: null,
-        Credentials: [],
-        Projects: [],
+        url: null,
     },
     methods: {},
     mounted: function () {
