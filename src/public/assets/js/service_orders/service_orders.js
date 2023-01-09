@@ -1,16 +1,17 @@
 let __api__ = null
 
-const project = new Vue({
-    el: '#project',
+const service_orders = new Vue({
+    el: '#service_orders',
     data: {
-        id: 0,
-        name: null,
-        url: null,
-        type: null,
-        Subprojects: [],
-        Service_orders: [],
+        service_ordersOrigin: [],
+        service_orders: [],
+        q: null,
     },
-    methods: {},
+    methods: {
+        handlerSearch() {
+            this.service_orders = this.service_ordersOrigin.filter((v) => v.subject.includes(this.q))
+        },
+    },
     mounted: function () {
         const token = localStorage.getItem('token')
         const expires_in = localStorage.getItem('expires_in')
@@ -18,10 +19,6 @@ const project = new Vue({
 
         if (!token || !expires_in || !type) return (location.href = './')
         if (expires_in <= new Date().valueOf()) return (location.href = './')
-
-        const params = new Proxy(new URLSearchParams(window.location.search), {
-            get: (searchParams, prop) => searchParams.get(prop),
-        })
 
         __api__ = axios.create({
             headers: {
@@ -38,9 +35,10 @@ const project = new Vue({
         })
 
         __api__
-            .get('/api/projects/' + params.id)
+            .get('/api/os')
             .then(({ data }) => {
-                Object.keys(data).forEach((key) => (this.$data[key] = data[key]))
+                this.$data.service_ordersOrigin = data
+                this.$data.service_orders = data
             })
             .catch((error) => {
                 console.log(error)

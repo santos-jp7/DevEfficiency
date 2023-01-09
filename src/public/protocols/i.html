@@ -43,7 +43,7 @@
             </div>
         </nav>
 
-        <div class="container p-4" id="service_orders">
+        <div class="container p-4" id="service_order">
             <div class="col">
                 <a href="../clients" class="btn btn-dark btn-sm my-2">Clientes</a>
                 <a href="../projects" class="btn btn-dark btn-sm my-2">Projetos</a>
@@ -52,45 +52,52 @@
 
             <hr />
 
-            <div class="d-flex flex-wrap justify-content-between">
-                <div class="w-80">
-                    <h5>Ordens de serviço</h5>
-                </div>
-                <div class="w-15">
-                    <input
-                        type="search"
-                        class="form-control"
-                        placeholder="Pesquisar"
-                        v-model="q"
-                        v-on:keyup="handlerSearch"
-                    />
-                </div>
-            </div>
+            <h5>Os - #{{id}}</h5>
+            <h6 v-if="Protocol">
+                Protocolo -
+                <a :href="'../protocols/i?id='+Protocol.id">#{{Protocol.id}}</a>
+                ({{Protocol.status}})
+            </h6>
 
-            <div class="table-responsive m-2">
-                <table class="table table-striped border">
-                    <thead>
-                        <tr>
-                            <th scope="col">#</th>
-                            <th scope="col">Assunto</th>
-                            <th scope="col">Status</th>
-                            <th scope="col"></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="service_order of service_orders">
-                            <th scope="row">{{service_order.id}}</th>
-                            <td>{{service_order.subject}}</td>
-                            <td>{{service_order.status}}</td>
-                            <td><a :href="'../service_orders/i?id='+service_order.id">Acessar</a></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+            <br />
+
+            <form>
+                <div class="row">
+                    <div class="mb-3 col-lg">
+                        <label for="subject" class="form-label">Assunto</label>
+                        <input type="text" class="form-control" v-model="subject" id="subject" />
+                    </div>
+
+                    <div class="mb-3 col-lg">
+                        <label for="status" class="form-label">Status</label>
+                        <select class="form-select" v-model="status" id="status">
+                            <option disabled value="">Selecione uma opção</option>
+                            <option value="Em avaliação">Em avaliação</option>
+                            <option value="Em correções">Em correções</option>
+                            <option value="Pendente">Pendente</option>
+                            <option value="Finalizado">Finalizado</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="mb-3 col-lg">
+                        <label for="description" class="form-label">Descrição</label>
+                        <textarea
+                            type="text"
+                            class="form-control"
+                            v-model="description"
+                            id="description"
+                            rows="4"
+                        ></textarea>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-dark">Enviar</button>
+            </form>
         </div>
 
         <script src="../assets/js/axios.min.js"></script>
         <script src="../assets/js/vue.min.js"></script>
-        <script src="../assets/js/service_orders/service_orders.js"></script>
+        <script src="../assets/js/service_orders/i.js"></script>
     </body>
 </html>

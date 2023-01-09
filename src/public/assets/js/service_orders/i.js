@@ -1,14 +1,16 @@
 let __api__ = null
 
-const project = new Vue({
-    el: '#project',
+const service_order = new Vue({
+    el: '#service_order',
     data: {
         id: 0,
-        name: null,
-        url: null,
-        type: null,
-        Subprojects: [],
-        Service_orders: [],
+        subject: null,
+        description: null,
+        status: null,
+        Protocol: {
+            id: null,
+            status: null,
+        },
     },
     methods: {},
     mounted: function () {
@@ -38,7 +40,7 @@ const project = new Vue({
         })
 
         __api__
-            .get('/api/projects/' + params.id)
+            .get('/api/os/' + params.id)
             .then(({ data }) => {
                 Object.keys(data).forEach((key) => (this.$data[key] = data[key]))
             })

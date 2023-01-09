@@ -57,13 +57,26 @@
             <form>
                 <div class="row">
                     <div class="mb-3 col-lg">
-                        <label for="exampleInputEmail1" class="form-label">Nome</label>
-                        <input type="text" class="form-control" v-model="name" />
+                        <label for="name" class="form-label">Nome</label>
+                        <input type="text" class="form-control" v-model="name" id="name" />
                     </div>
 
                     <div class="mb-3 col-lg">
-                        <label for="exampleInputEmail1" class="form-label">URL</label>
-                        <input type="text" class="form-control" v-model="url" />
+                        <label for="url" class="form-label">URL</label>
+                        <input type="text" class="form-control" v-model="url" id="url" />
+                    </div>
+
+                    <div class="mb-3 col-lg">
+                        <label for="type" class="form-label">Tipo</label>
+                        <select class="form-select" v-model="type" id="type">
+                            <option disabled value="">Selecione uma opção</option>
+                            <option value="API">API</option>
+                            <option value="Bot">Bot</option>
+                            <option value="WebSite">WebSite</option>
+                            <option value="Automação">Automação</option>
+                            <option value="Crawler">Crawler</option>
+                            <option value="Outros">Outros</option>
+                        </select>
                     </div>
                 </div>
 
@@ -74,7 +87,30 @@
 
             <div class="row" style="gap: 10px">
                 <div class="col border rounded p-2">
-                    <h5>Projetos</h5>
+                    <h5>Os</h5>
+                    <div class="table-responsive">
+                        <table class="table table-striped border">
+                            <thead>
+                                <tr>
+                                    <th scope="col">#</th>
+                                    <th scope="col">Assunto</th>
+                                    <th scope="col">Status</th>
+                                    <th scope="col"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="service_order of Service_orders">
+                                    <th scope="row">{{service_order.id}}</th>
+                                    <td>{{service_order.subject}}</td>
+                                    <td>{{service_order.status}}</td>
+                                    <td><a :href="'/service_orders/i?id='+service_order.id">Acessar</a></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="col border rounded p-2">
+                    <h5>Subprojetos</h5>
                     <div class="table-responsive">
                         <table class="table table-striped border">
                             <thead>
@@ -82,42 +118,13 @@
                                     <th scope="col">#</th>
                                     <th scope="col">Nome</th>
                                     <th scope="col">Tipo</th>
-                                    <th scope="col"></th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="project of []">
-                                    <th scope="row">{{project.id}}</th>
-                                    <td>{{project.name}}</td>
-                                    <td>{{project.type}}</td>
-                                    <td><a href="/ok">Acessar</a></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="col border rounded p-2">
-                    <h5>Credenciais</h5>
-                    <div class="table-responsive">
-                        <table class="table table-striped border">
-                            <thead>
-                                <tr>
-                                    <th scope="col">#</th>
-                                    <th scope="col">Descrição</th>
-                                    <th scope="col">Host</th>
-                                    <th scope="col">User</th>
-                                    <th scope="col">Senha</th>
-                                    <th scope="col"></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="credential of []">
-                                    <th scope="row">{{credential.id}}</th>
-                                    <td>{{credential.description}}</td>
-                                    <td>{{credential.host}}</td>
-                                    <td>{{credential.username}}</td>
-                                    <td>{{credential.password}}</td>
-                                    <td><a href="/ok">Acessar</a></td>
+                                <tr v-for="subproject of Subprojects">
+                                    <th scope="row">{{subproject.id}}</th>
+                                    <td>{{subproject.name}}</td>
+                                    <td>{{subproject.type}}</td>
                                 </tr>
                             </tbody>
                         </table>
