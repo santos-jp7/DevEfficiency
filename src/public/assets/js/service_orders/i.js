@@ -7,9 +7,12 @@ const service_order = new Vue({
         subject: null,
         description: null,
         status: null,
+        createdAt: null,
         Protocol: {
             id: null,
             status: null,
+            Protocol_registers: [],
+            Receipts: [],
         },
     },
     methods: {},
@@ -42,7 +45,21 @@ const service_order = new Vue({
         __api__
             .get('/api/os/' + params.id)
             .then(({ data }) => {
+                data.Protocol.Protocol_registers = []
+                data.Protocol.Receipts = []
+
                 Object.keys(data).forEach((key) => (this.$data[key] = data[key]))
+
+                __api__
+                    .get('/api/protocols/' + data.Protocol.id)
+                    .then(({ data }) => {
+                        this.$data.Protocol = data
+                    })
+                    .catch((error) => {
+                        console.log(error)
+
+                        alert(error.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.')
+                    })
             })
             .catch((error) => {
                 console.log(error)
