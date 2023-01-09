@@ -1,4 +1,14 @@
-import { Model, InferAttributes, InferCreationAttributes, CreationOptional, ForeignKey, DataTypes } from 'sequelize'
+import {
+    Model,
+    InferAttributes,
+    InferCreationAttributes,
+    CreationOptional,
+    ForeignKey,
+    DataTypes,
+    HasManyGetAssociationsMixin,
+    HasManyCreateAssociationMixin,
+    Association,
+} from 'sequelize'
 
 import db from '../db'
 
@@ -12,6 +22,17 @@ class Protocol extends Model<InferAttributes<Protocol>, InferCreationAttributes<
     declare status: CreationOptional<'Em aberto' | 'Fechado'>
 
     declare serviceOrderId: ForeignKey<Service_order['id']>
+
+    declare getProtocol_registers: HasManyGetAssociationsMixin<Protocol_register>
+    declare createProtocol_register: HasManyCreateAssociationMixin<Protocol_register, 'protocolId'>
+
+    declare getReceipts: HasManyGetAssociationsMixin<Receipts>
+    declare createReceipt: HasManyCreateAssociationMixin<Receipts, 'protocolId'>
+
+    declare static associations: {
+        protocol_register: Association<Protocol, Protocol_register>
+        receipts: Association<Protocol, Receipts>
+    }
 
     declare createdAt: CreationOptional<Date>
     declare updatedAt: CreationOptional<Date>
