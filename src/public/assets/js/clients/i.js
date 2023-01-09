@@ -8,7 +8,23 @@ const client = new Vue({
         Credentials: [],
         Projects: [],
     },
-    methods: {},
+    methods: {
+        handlerSubmit(e) {
+            e.preventDefault()
+
+            let method = this.$data.id ? __api__.put : __api__.post
+            let url = this.$data.id ? '/api/clients/' + this.$data.id : '/api/clients'
+
+            method(url, { name: this.$data.name })
+                .then(({ data }) => {
+                    console.log(data)
+                    window.location.href = '/clients/i?id=' + data.id
+                })
+                .catch((e) =>
+                    console.log(error.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.'),
+                )
+        },
+    },
     mounted: function () {
         const token = localStorage.getItem('token')
         const expires_in = localStorage.getItem('expires_in')
