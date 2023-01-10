@@ -27,12 +27,29 @@ class subprojectsController {
         return res.send(subproject)
     }
 
-    static async update(req: FastifyRequest, res: FastifyReply): Promise<FastifyReply> {
-        return res.send('Hello World')
+    static async update(req: subprojectsRequest, res: FastifyReply): Promise<FastifyReply> {
+        const { id } = req.params
+        const { name, url, type } = req.body
+
+        const subproject = await Subproject.findByPk(id)
+
+        await subproject?.update({
+            name,
+            url,
+            type,
+        })
+        await subproject?.save()
+
+        return res.send(subproject)
     }
 
-    static async destroy(req: FastifyRequest, res: FastifyReply): Promise<FastifyReply> {
-        return res.send('Hello World')
+    static async destroy(req: subprojectsRequest, res: FastifyReply): Promise<FastifyReply> {
+        const { id } = req.params
+
+        const subproject = await Subproject.findByPk(id)
+        await subproject?.destroy()
+
+        return res.status(204).send()
     }
 }
 
