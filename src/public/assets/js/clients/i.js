@@ -33,9 +33,7 @@ const client = new Vue({
                 .then(({ data }) => {
                     window.location.href = '/clients/i?id=' + data.id
                 })
-                .catch((e) =>
-                    console.log(error.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.'),
-                )
+                .catch((e) => console.log(e.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.'))
         },
         handlerNewProject() {
             $('#newProjectModal').modal('toggle')

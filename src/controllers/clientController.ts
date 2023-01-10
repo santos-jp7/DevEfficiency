@@ -28,12 +28,16 @@ class clientController {
         return res.send(await Client.create({ name }))
     }
 
-    static async update(req: FastifyRequest, res: FastifyReply): Promise<FastifyReply> {
-        return res.send('Hello World')
-    }
+    static async update(req: clientRequest, res: FastifyReply): Promise<FastifyReply> {
+        const { id } = req.params
+        const { name } = req.body
 
-    static async destroy(req: FastifyRequest, res: FastifyReply): Promise<FastifyReply> {
-        return res.send('Hello World')
+        const client = await Client.findByPk(id)
+
+        await client?.update({ name })
+        await client?.save()
+
+        return res.send(client)
     }
 }
 
