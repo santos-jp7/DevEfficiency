@@ -7,10 +7,37 @@ const project = new Vue({
         name: null,
         url: null,
         type: null,
+        ClientId: 0,
         Subprojects: [],
         Service_orders: [],
+        payloads: {
+            service_order: {
+                subject: null,
+                description: null,
+            },
+        },
     },
-    methods: {},
+    methods: {
+        handlerNewOs() {
+            $('#newOsModal').modal('toggle')
+        },
+        handlerNewOsSubmit(e) {
+            e.preventDefault()
+
+            __api__
+                .post('/api/os', {
+                    subject: this.$data.payloads.service_order.subject,
+                    description: this.$data.payloads.service_order.description,
+                    projectId: this.$data.id,
+                })
+                .then(({ data }) => {
+                    window.location.href = '/service_orders/i?id=' + data.id
+                })
+                .catch((e) =>
+                    console.log(error.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.'),
+                )
+        },
+    },
     mounted: function () {
         const token = localStorage.getItem('token')
         const expires_in = localStorage.getItem('expires_in')
