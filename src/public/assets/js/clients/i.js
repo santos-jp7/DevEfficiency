@@ -7,6 +7,20 @@ const client = new Vue({
         name: null,
         Credentials: [],
         Projects: [],
+        payloads: {
+            project: {
+                id: null,
+                name: null,
+                url: null,
+                type: null,
+            },
+            credential: {
+                id: null,
+                host: null,
+                username: null,
+                password: null,
+            },
+        },
     },
     methods: {
         handlerSubmit(e) {
@@ -24,9 +38,16 @@ const client = new Vue({
                 )
         },
         handlerNewProject() {
+            $('#newProjectModal').modal('toggle')
+        },
+        handlerNewProjectSubmit(e) {
+            e.preventDefault()
+
             __api__
                 .post('/api/projects', {
-                    name: 'Novo projeto',
+                    name: this.$data.payloads.project.name,
+                    url: this.$data.payloads.project.url,
+                    type: this.$data.payloads.project.type,
                     clientId: this.$data.id,
                 })
                 .then(({ data }) => {
@@ -35,6 +56,47 @@ const client = new Vue({
                 .catch((e) =>
                     console.log(error.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.'),
                 )
+        },
+        handlerNewCredential() {
+            this.$data.payloads.credential = {
+                id: null,
+                host: null,
+                username: null,
+                password: null,
+            }
+
+            $('#credentialModal').modal('toggle')
+        },
+        handlerEditCredential(credentialId) {
+            this.$data.payloads.credential = this.Credentials.find((v) => v.id == credentialId)
+
+            $('#credentialModal').modal('toggle')
+        },
+        handlerDeleteCredential(credentialId) {
+            if (!confirm('Confirma exclusão?')) return
+
+            __api__.delete('/api/credentials/' + credentialId)
+            window.location.reload()
+        },
+        handlerCredentialSubmit(e) {
+            e.preventDefault()
+
+            let method = this.$data.payloads.credential.id ? __api__.put : __api__.post
+            let url = this.$data.payloads.credential.id
+                ? '/api/credentials/' + this.$data.payloads.credential.id
+                : '/api/credentials'
+
+            method(url, {
+                description: this.$data.payloads.credential.description,
+                host: this.$data.payloads.credential.host,
+                username: this.$data.payloads.credential.username,
+                password: this.$data.payloads.credential.password,
+                clientId: this.$data.id,
+            })
+                .then(() => {
+                    window.location.reload()
+                })
+                .catch((e) => console.log(e.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.'))
         },
     },
     mounted: function () {
