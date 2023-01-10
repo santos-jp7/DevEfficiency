@@ -59,7 +59,7 @@
                 <h6>Cliente <a :href="'../clients/i?id='+ClientId">#{{ClientId}}</a></h6>
             </div>
 
-            <form>
+            <form v-on:submit="handlerSubmit">
                 <div class="row">
                     <div class="mb-3 col-lg">
                         <label for="name" class="form-label">Nome</label>
@@ -137,8 +137,8 @@
                                 <tr>
                                     <th scope="col">#</th>
                                     <th scope="col">Nome</th>
-                                    <th scope="col">URL</th>
                                     <th scope="col">Tipo</th>
+                                    <th scope="col">URL</th>
                                     <th scope="col">Editar</th>
                                     <th scope="col">Excluir</th>
                                 </tr>
@@ -147,10 +147,10 @@
                                 <tr v-for="subproject of Subprojects">
                                     <th scope="row">{{subproject.id}}</th>
                                     <td>{{subproject.name}}</td>
+                                    <td>{{subproject.type}}</td>
                                     <td>
                                         <a :href="subproject.url" target="_blank"><i class="fa-solid fa-link"></i></a>
                                     </td>
-                                    <td>{{subproject.type}}</td>
                                     <td>
                                         <i
                                             class="fa-solid fa-pen-to-square btn btn-sm text-primary"

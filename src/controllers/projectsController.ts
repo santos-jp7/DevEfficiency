@@ -33,8 +33,16 @@ class projectsController {
         return res.send(project)
     }
 
-    static async update(req: FastifyRequest, res: FastifyReply): Promise<FastifyReply> {
-        return res.send('Hello World')
+    static async update(req: projectsRequest, res: FastifyReply): Promise<FastifyReply> {
+        const { id } = req.params
+        const { name, url, type } = req.body
+
+        const project = await Project.findByPk(id)
+
+        await project?.update({ name, url, type })
+        await project?.save()
+
+        return res.send(project)
     }
 }
 

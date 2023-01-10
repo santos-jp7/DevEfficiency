@@ -24,6 +24,20 @@ const project = new Vue({
         },
     },
     methods: {
+        handlerSubmit(e) {
+            e.preventDefault()
+
+            __api__
+                .put('/api/projects/' + this.$data.id, {
+                    name: this.$data.name,
+                    url: this.$data.url,
+                    type: this.$data.type,
+                })
+                .then(() => {
+                    window.location.reload()
+                })
+                .catch((e) => console.log(e.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.'))
+        },
         handlerNewOs() {
             $('#newOsModal').modal('toggle')
         },
