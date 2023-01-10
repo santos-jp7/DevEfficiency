@@ -17,8 +17,20 @@ const client = new Vue({
 
             method(url, { name: this.$data.name })
                 .then(({ data }) => {
-                    console.log(data)
                     window.location.href = '/clients/i?id=' + data.id
+                })
+                .catch((e) =>
+                    console.log(error.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.'),
+                )
+        },
+        handlerNewProject() {
+            __api__
+                .post('/api/projects', {
+                    name: 'Novo projeto',
+                    clientId: this.$data.id,
+                })
+                .then(({ data }) => {
+                    window.location.href = '/projects/i?id=' + data.id
                 })
                 .catch((e) =>
                     console.log(error.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.'),

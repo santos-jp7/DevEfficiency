@@ -60,7 +60,6 @@ Project.init(
         type: {
             type: DataTypes.ENUM,
             values: ['API', 'Bot', 'WebSite', 'Automação', 'Crawler', 'Outros'],
-            defaultValue: 'Outros',
         },
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
