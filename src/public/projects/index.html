@@ -74,7 +74,7 @@
                             <th scope="col">#</th>
                             <th scope="col">Nome</th>
                             <th scope="col">Tipo</th>
-                            <th scope="col"></th>
+                            <th scope="col">Abrir</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -82,7 +82,9 @@
                             <th scope="row">{{project.id}}</th>
                             <td>{{project.name}}</td>
                             <td>{{project.type}}</td>
-                            <td><a :href="'../projects/i?id='+project.id">Acessar</a></td>
+                            <td>
+                                <a :href="'../projects/i?id='+project.id"><i class="fa-solid fa-arrow-right"></i></a>
+                            </td>
                         </tr>
                     </tbody>
                 </table>
