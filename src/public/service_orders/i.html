@@ -52,7 +52,13 @@
 
             <hr />
 
-            <h5>Os - #{{id}} | {{moment(createdAt).format('DD/MM/YYYY HH:mm')}}</h5>
+            <div class="d-flex justify-content-between">
+                <h5>Os #{{id}}</h5>
+                <div class="text-end">
+                    <h6>Projeto <a :href="'../projects/i?id='+ProjectId">#{{ProjectId}}</a></h6>
+                    <small>Criado em: {{moment(createdAt).format('DD/MM/YYYY HH:mm')}}</small>
+                </div>
+            </div>
 
             <form>
                 <div class="row">

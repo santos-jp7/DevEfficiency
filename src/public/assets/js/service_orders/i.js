@@ -8,6 +8,7 @@ const service_order = new Vue({
         description: null,
         status: null,
         createdAt: null,
+        ProjectId: null,
         Protocol: {
             id: null,
             status: null,
