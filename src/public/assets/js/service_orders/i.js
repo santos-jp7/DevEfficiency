@@ -45,6 +45,8 @@ const service_order = new Vue({
         __api__
             .get('/api/os/' + params.id)
             .then(({ data }) => {
+                if (!data.Protocol) data.Protocol = {}
+
                 data.Protocol.Protocol_registers = []
                 data.Protocol.Receipts = []
 
