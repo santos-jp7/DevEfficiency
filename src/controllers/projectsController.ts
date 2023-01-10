@@ -36,10 +36,6 @@ class projectsController {
     static async update(req: FastifyRequest, res: FastifyReply): Promise<FastifyReply> {
         return res.send('Hello World')
     }
-
-    static async destroy(req: FastifyRequest, res: FastifyReply): Promise<FastifyReply> {
-        return res.send('Hello World')
-    }
 }
 
 export default projectsController

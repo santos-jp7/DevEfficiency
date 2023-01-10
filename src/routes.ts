@@ -35,7 +35,6 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.get('/projects/:id', { preHandler: [isAuthed] }, projectsController.show)
     instance.post('/projects', { preHandler: [isAuthed] }, projectsController.store)
     instance.put('/projects/:id', { preHandler: [isAuthed] }, projectsController.update)
-    instance.delete('/projects/:id', { preHandler: [isAuthed] }, projectsController.destroy)
 
     instance.get('/subprojects', { preHandler: [isAuthed] }, subprojectsController.index)
     instance.get('/subprojects/:id', { preHandler: [isAuthed] }, subprojectsController.show)
