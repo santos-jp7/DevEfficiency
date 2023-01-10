@@ -127,7 +127,7 @@
                 <div class="col border rounded p-2">
                     <div class="d-flex justify-content-between mb-2">
                         <h5>Subprojetos</h5>
-                        <button class="btn" v-on:click="() => {}">
+                        <button class="btn" v-on:click="handlerNewSubproject">
                             <i class="fa-solid fa-plus"></i> Adicionar subprojeto
                         </button>
                     </div>
@@ -137,14 +137,32 @@
                                 <tr>
                                     <th scope="col">#</th>
                                     <th scope="col">Nome</th>
+                                    <th scope="col">URL</th>
                                     <th scope="col">Tipo</th>
+                                    <th scope="col">Editar</th>
+                                    <th scope="col">Excluir</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr v-for="subproject of Subprojects">
                                     <th scope="row">{{subproject.id}}</th>
                                     <td>{{subproject.name}}</td>
+                                    <td>
+                                        <a :href="subproject.url" target="_blank"><i class="fa-solid fa-link"></i></a>
+                                    </td>
                                     <td>{{subproject.type}}</td>
+                                    <td>
+                                        <i
+                                            class="fa-solid fa-pen-to-square btn btn-sm text-primary"
+                                            v-on:click="handlerEditSubproject(subproject.id)"
+                                        ></i>
+                                    </td>
+                                    <td>
+                                        <i
+                                            class="fa-solid fa-trash btn btn-sm text-primary"
+                                            v-on:click="handlerDeleteSubproject(subproject.id)"
+                                        ></i>
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
@@ -188,6 +206,69 @@
                                         rows="4"
                                         required
                                     ></textarea>
+                                </div>
+
+                                <div class="row mb-3">
+                                    <input type="submit" class="form-control btn btn-dark btn-block" value="Enviar" />
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Subproject -->
+            <div
+                class="modal fade"
+                id="subprojectModal"
+                tabindex="-1"
+                aria-labelledby="subprojectModalLabel"
+                aria-hidden="true"
+            >
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h1 class="modal-title fs-5" id="subprojectModalLabel">Subprojeto</h1>
+                            <button
+                                type="button"
+                                class="btn-close"
+                                data-bs-dismiss="modal"
+                                aria-label="Fechar"
+                            ></button>
+                        </div>
+                        <div class="modal-body">
+                            <form @submit="handlerSubprojectSubmit">
+                                <div class="row mb-3">
+                                    <label class="form-label" for="name">Nome</label>
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="name"
+                                        v-model="payloads.subproject.name"
+                                        required
+                                    />
+                                </div>
+
+                                <div class="row mb-3">
+                                    <label class="form-label" for="url">URL</label>
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="url"
+                                        v-model="payloads.subproject.url"
+                                        required
+                                    />
+                                </div>
+
+                                <div class="row mb-3">
+                                    <label class="form-label" for="type">Tipo:</label>
+                                    <select class="form-control" id="type" v-model="payloads.subproject.type" required>
+                                        <option disabled value="">Selecione uma opção</option>
+                                        <option value="Front-End">Front-End</option>
+                                        <option value="Back-End">Back-End</option>
+                                        <option value="Bot">Bot</option>
+                                        <option value="Outros">Outros</option>
+                                    </select>
                                 </div>
 
                                 <div class="row mb-3">

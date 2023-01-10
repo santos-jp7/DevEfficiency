@@ -15,6 +15,12 @@ const project = new Vue({
                 subject: null,
                 description: null,
             },
+            subproject: {
+                id: null,
+                name: null,
+                url: null,
+                type: null,
+            },
         },
     },
     methods: {
@@ -36,6 +42,46 @@ const project = new Vue({
                 .catch((e) =>
                     console.log(error.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.'),
                 )
+        },
+        handlerNewSubproject() {
+            this.$data.payloads.subproject = {
+                id: null,
+                name: null,
+                url: null,
+                type: null,
+            }
+
+            $('#subprojectModal').modal('toggle')
+        },
+        handlerEditSubproject(subprojectId) {
+            this.$data.payloads.subproject = this.Subprojects.find((v) => v.id == subprojectId)
+
+            $('#subprojectModal').modal('toggle')
+        },
+        handlerDeleteSubproject(subprojectId) {
+            if (!confirm('Confirma exclusão?')) return
+
+            __api__.delete('/api/subprojects/' + subprojectId)
+            window.location.reload()
+        },
+        handlerSubprojectSubmit(e) {
+            e.preventDefault()
+
+            let method = this.$data.payloads.subproject.id ? __api__.put : __api__.post
+            let url = this.$data.payloads.subproject.id
+                ? '/api/subprojects/' + this.$data.payloads.subproject.id
+                : '/api/subprojects'
+
+            method(url, {
+                name: this.$data.payloads.subproject.name,
+                url: this.$data.payloads.subproject.url,
+                type: this.$data.payloads.subproject.type,
+                projectId: this.$data.id,
+            })
+                .then(() => {
+                    window.location.reload()
+                })
+                .catch((e) => console.log(e.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.'))
         },
     },
     mounted: function () {
