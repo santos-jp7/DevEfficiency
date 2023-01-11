@@ -12,8 +12,8 @@ const dashboard = new Vue({
         const expires_in = localStorage.getItem('expires_in')
         const type = localStorage.getItem('type')
 
-        if (!token || !expires_in || !type) return (location.href = './')
-        if (expires_in <= new Date().valueOf()) return (location.href = './')
+        if (!token || !expires_in || !type) return (location.href = '/')
+        if (expires_in <= new Date().valueOf()) return (location.href = '/')
 
         __api__ = axios.create({
             headers: {
@@ -26,7 +26,7 @@ const dashboard = new Vue({
 
             localStorage.clear()
 
-            location.href = './'
+            location.href = '/'
         })
 
         __api__
