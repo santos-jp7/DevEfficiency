@@ -59,7 +59,11 @@ Protocol.init(
     },
 )
 
-Protocol.hasMany(Protocol_register)
-Protocol.hasMany(Receipts)
+Protocol.hasMany(Protocol_register, {
+    onDelete: 'RESTRICT',
+})
+Protocol.hasMany(Receipts, {
+    onDelete: 'RESTRICT',
+})
 
 export default Protocol

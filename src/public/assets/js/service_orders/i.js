@@ -15,6 +15,13 @@ const service_order = new Vue({
             Protocol_registers: [],
             Receipts: [],
         },
+        payloads: {
+            protocolRegister: {
+                description: null,
+                value: null,
+                type: null,
+            },
+        },
     },
     methods: {
         handlerSubmit(e) {
@@ -41,6 +48,49 @@ const service_order = new Vue({
                 .put('/api/protocols/' + this.$data.Protocol.id, {
                     status: this.$data.Protocol.status,
                 })
+                .then(() => {
+                    window.location.reload()
+                })
+                .catch((e) => {
+                    alert(e.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.')
+                    window.location.reload()
+                })
+        },
+        handlerNewProtocolRegister() {
+            this.$data.payloads.protocolRegister = {
+                description: null,
+                value: null,
+                type: null,
+            }
+
+            $('#protocolRegisterModal').modal('toggle')
+        },
+        handlerEditSubproject(protocolRegisterId) {
+            this.$data.payloads.protocolRegister = this.Protocol.Protocol_registers.find(
+                (v) => v.id == protocolRegisterId,
+            )
+
+            $('#protocolRegisterModal').modal('toggle')
+        },
+        handlerDeleteSubproject(protocolRegisterId) {
+            if (!confirm('Confirma exclusão?')) return
+
+            __api__.delete('/api/protocols/registers/' + protocolRegisterId)
+            window.location.reload()
+        },
+        handlerProtocolRegistertSubmit(e) {
+            e.preventDefault()
+
+            let method = this.$data.payloads.protocolRegister.id ? __api__.put : __api__.post
+            let url = this.$data.payloads.protocolRegister.id
+                ? '/api/protocols/registers/' + this.$data.payloads.protocolRegister.id
+                : '/api/protocols/registers'
+
+            method(url, {
+                description: this.$data.payloads.protocolRegister.description,
+                value: this.$data.payloads.protocolRegister.value,
+                type: this.$data.payloads.protocolRegister.type,
+            })
                 .then(() => {
                     window.location.reload()
                 })

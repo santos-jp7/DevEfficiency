@@ -93,7 +93,6 @@ const project = new Vue({
                 name: this.$data.payloads.subproject.name,
                 url: this.$data.payloads.subproject.url,
                 type: this.$data.payloads.subproject.type,
-                projectId: this.$data.id,
             })
                 .then(() => {
                     window.location.reload()
