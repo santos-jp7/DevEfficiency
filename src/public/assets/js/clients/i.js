@@ -33,7 +33,10 @@ const client = new Vue({
                 .then(({ data }) => {
                     window.location.href = '/clients/i?id=' + data.id
                 })
-                .catch((e) => console.log(e.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.'))
+                .catch((e) => {
+                    alert(e.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.')
+                    window.location.reload()
+                })
         },
         handlerNewProject() {
             $('#newProjectModal').modal('toggle')
@@ -94,7 +97,10 @@ const client = new Vue({
                 .then(() => {
                     window.location.reload()
                 })
-                .catch((e) => console.log(e.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.'))
+                .catch((e) => {
+                    alert(e.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.')
+                    window.location.reload()
+                })
         },
     },
     mounted: function () {

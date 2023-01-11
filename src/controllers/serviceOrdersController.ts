@@ -2,6 +2,8 @@ import { FastifyRequest, FastifyReply } from 'fastify'
 
 import Project from '../models/Project'
 import Protocol from '../models/Protocol'
+import Protocol_register from '../models/Protocol_register'
+import Receipts from '../models/Receipts'
 import Service_order from '../models/Service_order'
 
 type serviceOrdersRequest = FastifyRequest<{
@@ -35,6 +37,24 @@ class serviceOrdersController {
         const { description, subject, status } = req.body
 
         const os = await Service_order.findByPk(id)
+        const protocol = await os?.getProtocol()
+
+        if (status == 'Em correções') {
+            const current_os = await Service_order.findOne({ where: { status: 'Em correções' } })
+
+            if (current_os) throw new Error(`Já possuimos uma Os em correções (Os #${current_os.id}).`)
+        }
+
+        if (status == 'Finalizado') {
+            const total_cost = (await protocol?.getProtocol_registers())?.reduce((sum, v) => sum + v.value, 0) || 0
+            const total_receipt = (await protocol?.getReceipts())?.reduce((sum, v) => sum + v.value, 0) || 0
+
+            if (total_receipt < total_cost)
+                throw new Error('Não é possivel finalizar, protocolo com recebimentos pendentes.')
+
+            await protocol?.update({ status: 'Fechado' })
+            await protocol?.save()
+        }
 
         await os?.update({ description, subject, status })
         await os?.save()

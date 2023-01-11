@@ -101,13 +101,14 @@
                     <div class="col-lg">
                         <h5>Protocolo</h5>
 
-                        <form>
+                        <form v-on:submit="handlerProtocolSubmit">
                             <div class="row">
                                 <div class="mb-3 col-lg">
                                     <label for="protocolStatus" class="form-label">Status</label>
                                     <select class="form-select" v-model="Protocol.status" id="protocolStatus">
                                         <option disabled value="">Selecione uma opção</option>
                                         <option value="Em aberto">Em aberto</option>
+                                        <option value="Liberado para pagamento">Liberado para pagamento</option>
                                         <option value="Fechado">Fechado</option>
                                     </select>
                                 </div>

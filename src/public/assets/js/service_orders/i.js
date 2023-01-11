@@ -29,7 +29,25 @@ const service_order = new Vue({
                 .then(() => {
                     window.location.reload()
                 })
-                .catch((e) => console.log(e.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.'))
+                .catch((e) => {
+                    alert(e.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.')
+                    window.location.reload()
+                })
+        },
+        handlerProtocolSubmit(e) {
+            e.preventDefault()
+
+            __api__
+                .put('/api/protocols/' + this.$data.Protocol.id, {
+                    status: this.$data.Protocol.status,
+                })
+                .then(() => {
+                    window.location.reload()
+                })
+                .catch((e) => {
+                    alert(e.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.')
+                    window.location.reload()
+                })
         },
     },
     mounted: function () {

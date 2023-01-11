@@ -20,17 +20,17 @@ class Service_order extends Model<InferAttributes<Service_order>, InferCreationA
     declare id: CreationOptional<number>
     declare subject: string
     declare description: CreationOptional<string>
-    declare status: CreationOptional<'Em avaliação' | 'Em andamento' | 'Pendente' | 'Finalizado' | 'Cancelado'>
+    declare status: CreationOptional<'Em avaliação' | 'Em correções' | 'Pendente' | 'Finalizado' | 'Cancelado'>
 
     declare projectId: ForeignKey<Project['id']>
 
     declare getProtocol: HasOneGetAssociationMixin<Protocol>
     declare createProtocol: HasOneCreateAssociationMixin<Protocol>
 
-    declare protocol: NonAttribute<Protocol>
+    declare Protocol: NonAttribute<Protocol>
 
     declare static associations: {
-        protocol: Association<Service_order, Protocol>
+        Protocol: Association<Service_order, Protocol>
     }
 
     declare createdAt: CreationOptional<Date>

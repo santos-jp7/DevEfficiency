@@ -36,7 +36,10 @@ const project = new Vue({
                 .then(() => {
                     window.location.reload()
                 })
-                .catch((e) => console.log(e.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.'))
+                .catch((e) => {
+                    alert(e.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.')
+                    window.location.reload()
+                })
         },
         handlerNewOs() {
             $('#newOsModal').modal('toggle')
@@ -95,7 +98,10 @@ const project = new Vue({
                 .then(() => {
                     window.location.reload()
                 })
-                .catch((e) => console.log(e.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.'))
+                .catch((e) => {
+                    alert(e.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.')
+                    window.location.reload()
+                })
         },
     },
     mounted: function () {
