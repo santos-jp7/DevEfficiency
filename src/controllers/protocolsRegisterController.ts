@@ -28,12 +28,25 @@ class protocolsRegisterController {
         return res.send(protocol_register)
     }
 
-    static async update(req: FastifyRequest, res: FastifyReply): Promise<FastifyReply> {
-        return res.send('Hello World')
+    static async update(req: protocolsRegisterRequest, res: FastifyReply): Promise<FastifyReply> {
+        const { id } = req.params
+        const { description, value, type } = req.body
+
+        const protocol_register = await Protocol_register.findByPk(id)
+
+        await protocol_register?.update({ description, value, type })
+        await protocol_register?.save()
+
+        return res.send(protocol_register)
     }
 
-    static async destroy(req: FastifyRequest, res: FastifyReply): Promise<FastifyReply> {
-        return res.send('Hello World')
+    static async destroy(req: protocolsRegisterRequest, res: FastifyReply): Promise<FastifyReply> {
+        const { id } = req.params
+
+        const protocol_register = await Protocol_register.findByPk(id)
+        await protocol_register?.destroy()
+
+        return res.status(204).send()
     }
 }
 

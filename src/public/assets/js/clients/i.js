@@ -92,6 +92,7 @@ const client = new Vue({
                 host: this.$data.payloads.credential.host,
                 username: this.$data.payloads.credential.username,
                 password: this.$data.payloads.credential.password,
+                clientId: this.$data.id,
             })
                 .then(() => {
                     window.location.reload()

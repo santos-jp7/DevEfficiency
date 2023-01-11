@@ -21,6 +21,11 @@ const service_order = new Vue({
                 value: null,
                 type: null,
             },
+            receipt: {
+                value: null,
+                method: null,
+                note: null,
+            },
         },
     },
     methods: {
@@ -65,20 +70,20 @@ const service_order = new Vue({
 
             $('#protocolRegisterModal').modal('toggle')
         },
-        handlerEditSubproject(protocolRegisterId) {
+        handlerEditProtocolRegister(protocolRegisterId) {
             this.$data.payloads.protocolRegister = this.Protocol.Protocol_registers.find(
                 (v) => v.id == protocolRegisterId,
             )
 
             $('#protocolRegisterModal').modal('toggle')
         },
-        handlerDeleteSubproject(protocolRegisterId) {
+        handlerDeleteProtocolRegister(protocolRegisterId) {
             if (!confirm('Confirma exclusão?')) return
 
             __api__.delete('/api/protocols/registers/' + protocolRegisterId)
             window.location.reload()
         },
-        handlerProtocolRegistertSubmit(e) {
+        handlerProtocolRegisterSubmit(e) {
             e.preventDefault()
 
             let method = this.$data.payloads.protocolRegister.id ? __api__.put : __api__.post
@@ -90,6 +95,49 @@ const service_order = new Vue({
                 description: this.$data.payloads.protocolRegister.description,
                 value: this.$data.payloads.protocolRegister.value,
                 type: this.$data.payloads.protocolRegister.type,
+                protocolId: this.$data.Protocol.id,
+            })
+                .then(() => {
+                    window.location.reload()
+                })
+                .catch((e) => {
+                    alert(e.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.')
+                    window.location.reload()
+                })
+        },
+        handlerNewReceipt() {
+            this.$data.payloads.receipt = {
+                value: null,
+                method: null,
+                note: null,
+            }
+
+            $('#receiptModal').modal('toggle')
+        },
+        handlerEditReceipt(receiptId) {
+            this.$data.payloads.receipt = this.Protocol.Receipts.find((v) => v.id == receiptId)
+
+            $('#receiptModal').modal('toggle')
+        },
+        handlerDeleteReceipt(receiptId) {
+            if (!confirm('Confirma exclusão?')) return
+
+            __api__.delete('/api/protocols/receipts/' + receiptId)
+            window.location.reload()
+        },
+        handlerReceiptSubmit(e) {
+            e.preventDefault()
+
+            let method = this.$data.payloads.receipt.id ? __api__.put : __api__.post
+            let url = this.$data.payloads.receipt.id
+                ? '/api/protocols/receipts/' + this.$data.payloads.receipt.id
+                : '/api/protocols/receipts'
+
+            method(url, {
+                value: this.$data.payloads.receipt.value,
+                method: this.$data.payloads.receipt.method,
+                note: this.$data.payloads.receipt.note,
+                protocolId: this.$data.Protocol.id,
             })
                 .then(() => {
                     window.location.reload()

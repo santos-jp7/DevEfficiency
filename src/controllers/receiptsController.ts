@@ -27,12 +27,25 @@ class receiptsController {
         return res.send(protocol_register)
     }
 
-    static async update(req: FastifyRequest, res: FastifyReply): Promise<FastifyReply> {
-        return res.send('Hello World')
+    static async update(req: receiptsRequest, res: FastifyReply): Promise<FastifyReply> {
+        const { id } = req.params
+        const { value, method, note } = req.body
+
+        const receipt = await Receipts.findByPk(id)
+
+        await receipt?.update({ value, method, note })
+        await receipt?.save()
+
+        return res.send(receipt)
     }
 
-    static async destroy(req: FastifyRequest, res: FastifyReply): Promise<FastifyReply> {
-        return res.send('Hello World')
+    static async destroy(req: receiptsRequest, res: FastifyReply): Promise<FastifyReply> {
+        const { id } = req.params
+
+        const receipt = await Receipts.findByPk(id)
+        await receipt?.destroy()
+
+        return res.status(204).send()
     }
 }
 

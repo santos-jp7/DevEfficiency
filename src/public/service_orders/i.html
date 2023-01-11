@@ -165,7 +165,7 @@
                 <div class="row" style="gap: 10px">
                     <div class="col border rounded p-2">
                         <div class="d-flex justify-content-between mb-2">
-                            <h5>Registros</h5>
+                            <h5>Registro</h5>
                             <button class="btn" v-on:click="handlerNewProtocolRegister">
                                 <i class="fa-solid fa-plus"></i> Adicionar registro
                             </button>
@@ -178,6 +178,8 @@
                                         <th scope="col">Descrição</th>
                                         <th scope="col">Valor</th>
                                         <th scope="col">Tipo</th>
+                                        <th scope="col">Editar</th>
+                                        <th scope="col">Excluir</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -189,6 +191,18 @@
                                             currency: 'BRL'})}}
                                         </td>
                                         <td>{{protocol_register.type}}</td>
+                                        <td>
+                                            <i
+                                                class="fa-solid fa-pen-to-square btn btn-sm text-primary"
+                                                v-on:click="handlerEditProtocolRegister(protocol_register.id)"
+                                            ></i>
+                                        </td>
+                                        <td>
+                                            <i
+                                                class="fa-solid fa-trash btn btn-sm text-primary"
+                                                v-on:click="handlerDeleteProtocolRegister(protocol_register.id)"
+                                            ></i>
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -197,7 +211,7 @@
                     <div class="col border rounded p-2">
                         <div class="d-flex justify-content-between mb-2">
                             <h5>Recibos</h5>
-                            <button class="btn" v-on:click="() => {}">
+                            <button class="btn" v-on:click="handlerNewReceipt">
                                 <i class="fa-solid fa-plus"></i> Adicionar recibo
                             </button>
                         </div>
@@ -210,6 +224,8 @@
                                         <th scope="col">Método</th>
                                         <th scope="col">Observação</th>
                                         <th scope="col">Data</th>
+                                        <th scope="col">Editar</th>
+                                        <th scope="col">Excluir</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -222,6 +238,18 @@
                                         <td>{{receipt.method}}</td>
                                         <td>{{receipt.note}}</td>
                                         <td>{{moment(receipt.createdAt).format('DD/MM/YYYY HH:mm')}}</td>
+                                        <td>
+                                            <i
+                                                class="fa-solid fa-pen-to-square btn btn-sm text-primary"
+                                                v-on:click="handlerEditReceipt(receipt.id)"
+                                            ></i>
+                                        </td>
+                                        <td>
+                                            <i
+                                                class="fa-solid fa-trash btn btn-sm text-primary"
+                                                v-on:click="handlerDeleteReceipt(receipt.id)"
+                                            ></i>
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -243,7 +271,7 @@
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h1 class="modal-title fs-5" id="protocolRegisterModalLabel">Subprojeto</h1>
+                            <h1 class="modal-title fs-5" id="protocolRegisterModalLabel">Registro</h1>
                             <button
                                 type="button"
                                 class="btn-close"
@@ -252,31 +280,31 @@
                             ></button>
                         </div>
                         <div class="modal-body">
-                            <form @submit="handlerProtocolRegistertSubmit">
+                            <form @submit="handlerProtocolRegisterSubmit">
                                 <div class="row mb-3">
-                                    <label class="form-label" for="name">Descrição</label>
+                                    <label class="form-label" for="description">Descrição</label>
                                     <input
                                         type="text"
                                         class="form-control"
-                                        id="name"
+                                        id="description"
                                         v-model="payloads.protocolRegister.description"
                                         required
                                     />
                                 </div>
 
                                 <div class="row mb-3">
-                                    <label class="form-label" for="url">Valor</label>
+                                    <label class="form-label" for="value">Valor</label>
                                     <input
                                         type="number"
                                         class="form-control"
-                                        id="url"
+                                        id="value"
                                         v-model="payloads.protocolRegister.value"
                                         required
                                     />
                                 </div>
 
                                 <div class="row mb-3">
-                                    <label class="form-label" for="type">Tipo:</label>
+                                    <label class="form-label" for="type">Tipo</label>
                                     <select
                                         class="form-control"
                                         id="type"
@@ -287,6 +315,70 @@
                                         <option value="Serviço">Serviço</option>
                                         <option value="Despesa">Despesa</option>
                                     </select>
+                                </div>
+
+                                <div class="row mb-3">
+                                    <input type="submit" class="form-control btn btn-dark btn-block" value="Enviar" />
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Receipt -->
+            <div
+                class="modal fade"
+                id="receiptModal"
+                tabindex="-1"
+                aria-labelledby="receiptModalLabel"
+                aria-hidden="true"
+            >
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h1 class="modal-title fs-5" id="receiptModalLabel">Recibo</h1>
+                            <button
+                                type="button"
+                                class="btn-close"
+                                data-bs-dismiss="modal"
+                                aria-label="Fechar"
+                            ></button>
+                        </div>
+                        <div class="modal-body">
+                            <form @submit="handlerReceiptSubmit">
+                                <div class="row mb-3">
+                                    <label class="form-label" for="value">Valor</label>
+                                    <input
+                                        type="number"
+                                        class="form-control"
+                                        id="value"
+                                        v-model="payloads.receipt.value"
+                                        required
+                                    />
+                                </div>
+
+                                <div class="row mb-3">
+                                    <label class="form-label" for="method">Método</label>
+                                    <select class="form-control" id="method" v-model="payloads.receipt.method" required>
+                                        <option disabled value="">Selecione uma opção</option>
+                                        <option value="Pix">Pix</option>
+                                        <option value="Boleto">Boleto</option>
+                                        <option value="Cartão">Cartão</option>
+                                        <option value="Transferência">Transferência</option>
+                                        <option value="Espécie">Espécie</option>
+                                    </select>
+                                </div>
+
+                                <div class="row mb-3">
+                                    <label class="form-label" for="note">Observação</label>
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="note"
+                                        v-model="payloads.receipt.note"
+                                        required
+                                    />
                                 </div>
 
                                 <div class="row mb-3">
