@@ -5,6 +5,7 @@ const project = new Vue({
     data: {
         id: 0,
         name: null,
+        fixed: false,
         url: null,
         type: null,
         ClientId: 0,
@@ -32,6 +33,19 @@ const project = new Vue({
                     name: this.$data.name,
                     url: this.$data.url,
                     type: this.$data.type,
+                })
+                .then(() => {
+                    window.location.reload()
+                })
+                .catch((e) => {
+                    alert(e.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.')
+                    window.location.reload()
+                })
+        },
+        handlerPinProject() {
+            __api__
+                .put('/api/projects/' + this.$data.id, {
+                    fixed: !this.$data.fixed,
                 })
                 .then(() => {
                     window.location.reload()

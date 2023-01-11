@@ -53,34 +53,73 @@
             <hr />
 
             <div class="row" style="gap: 10px">
-                <div class="col border rounded p-2">
-                    <h5>Os - Em aberto</h5>
-                    <div class="table-responsive">
-                        <table class="table table-striped border">
-                            <thead>
-                                <tr>
-                                    <th scope="col">#</th>
-                                    <th scope="col">Assunto</th>
-                                    <th scope="col">Status</th>
-                                    <th scope="col">Abrir</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="service_order of service_orders">
-                                    <th scope="row">{{service_order.id}}</th>
-                                    <td>{{service_order.subject}}</td>
-                                    <td>{{service_order.status}}</td>
-                                    <td>
-                                        <a :href="'/service_orders/i?id='+service_order.id"
-                                            ><i class="fa-solid fa-arrow-right"></i
-                                        ></a>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                <div class="col border rounded p-2" v-if="currentOs || recentsOs.length > 0">
+                    <div class="row" v-if="currentOs">
+                        <h5>Os - Em correções</h5>
+                        <div class="table-responsive">
+                            <table class="table table-striped border">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">#</th>
+                                        <th scope="col">Assunto</th>
+                                        <th scope="col">Projeto</th>
+                                        <th scope="col">Cliente</th>
+                                        <th scope="col">Abrir</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <th scope="row">{{currentOs.id}}</th>
+                                        <td>{{currentOs.subject}}</td>
+                                        <td>
+                                            <a :href="'/projects/i?id='+currentOs.Project.id"
+                                                >{{currentOs.Project.name}}</a
+                                            >
+                                        </td>
+                                        <td>
+                                            <a :href="'/clients/i?id='+currentOs.Project.Client.id"
+                                                >{{currentOs.Project.Client.name}}</a
+                                            >
+                                        </td>
+                                        <td>
+                                            <a :href="'/service_orders/i?id='+currentOs.id"
+                                                ><i class="fa-solid fa-arrow-right"></i
+                                            ></a>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="row" v-if="currentOs">
+                        <h5>Os - Criados recentemente</h5>
+                        <div class="table-responsive">
+                            <table class="table table-striped border">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">#</th>
+                                        <th scope="col">Assunto</th>
+                                        <th scope="col">Status</th>
+                                        <th scope="col">Abrir</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="os of recentsOs">
+                                        <th scope="row">{{os.id}}</th>
+                                        <td>{{os.subject}}</td>
+                                        <td>{{os.status}}</td>
+                                        <td>
+                                            <a :href="'/service_orders/i?id='+os.id"
+                                                ><i class="fa-solid fa-arrow-right"></i
+                                            ></a>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
-                <div class="col border rounded p-2">
+                <div class="col border rounded p-2" v-if="fixedProjects.length > 0">
                     <h5>Projetos - Fixados</h5>
                     <div class="table-responsive">
                         <table class="table table-striped border">
@@ -93,7 +132,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="project of projects">
+                                <tr v-for="project of fixedProjects">
                                     <th scope="row">{{project.id}}</th>
                                     <td>{{project.name}}</td>
                                     <td>{{project.type}}</td>

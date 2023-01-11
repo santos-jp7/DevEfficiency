@@ -87,6 +87,16 @@
                 </div>
 
                 <button type="submit" class="btn btn-dark">Enviar</button>
+                &bull;
+                <button
+                    type="button"
+                    class="btn"
+                    :class="{'btn-success': !fixed, 'btn-danger': fixed}"
+                    v-on:click="handlerPinProject"
+                    title="Fixar na tela inicial"
+                >
+                    <i class="fa-solid fa-map-pin"></i>
+                </button>
             </form>
 
             <hr />

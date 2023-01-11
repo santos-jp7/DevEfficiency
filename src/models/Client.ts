@@ -65,4 +65,6 @@ Client.hasMany(Project, {
     onDelete: 'RESTRICT',
 })
 
+Project.belongsTo(Client)
+
 export default Client

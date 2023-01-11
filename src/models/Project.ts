@@ -21,6 +21,7 @@ class Project extends Model<InferAttributes<Project>, InferCreationAttributes<Pr
     declare id: CreationOptional<number>
     declare name: string
     declare url: CreationOptional<string>
+    declare fixed: CreationOptional<boolean>
     declare type: CreationOptional<'API' | 'Bot' | 'WebSite' | 'Automação' | 'Crawler' | 'Outros'>
 
     declare clientId: ForeignKey<Client['id']>
@@ -57,6 +58,10 @@ Project.init(
         url: {
             type: DataTypes.STRING,
         },
+        fixed: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false,
+        },
         type: {
             type: DataTypes.ENUM,
             values: ['API', 'Bot', 'WebSite', 'Automação', 'Crawler', 'Outros'],
@@ -77,5 +82,7 @@ Project.hasMany(Subproject, {
 Project.hasMany(Service_order, {
     onDelete: 'RESTRICT',
 })
+
+Service_order.belongsTo(Project)
 
 export default Project

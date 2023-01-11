@@ -15,6 +15,7 @@ import db from '../db'
 
 import Project from './Project'
 import Protocol from './Protocol'
+import Client from './Client'
 
 class Service_order extends Model<InferAttributes<Service_order>, InferCreationAttributes<Service_order>> {
     declare id: CreationOptional<number>
@@ -28,9 +29,13 @@ class Service_order extends Model<InferAttributes<Service_order>, InferCreationA
     declare createProtocol: HasOneCreateAssociationMixin<Protocol>
 
     declare Protocol: NonAttribute<Protocol>
+    declare Project: NonAttribute<Project>
+    declare Client: NonAttribute<Client>
 
     declare static associations: {
         Protocol: Association<Service_order, Protocol>
+        Project: Association<Service_order, Project>
+        Client: Association<Project, Client>
     }
 
     declare createdAt: CreationOptional<Date>

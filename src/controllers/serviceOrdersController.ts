@@ -9,12 +9,23 @@ import Service_order from '../models/Service_order'
 type serviceOrdersRequest = FastifyRequest<{
     Body: Service_order
     Params: Service_order
+    Querystring: {
+        filter: 'last_three' | 'pending'
+    }
     Headers: any
 }>
 
 class serviceOrdersController {
-    static async index(req: FastifyRequest, res: FastifyReply): Promise<FastifyReply> {
-        return res.send(await Service_order.findAll())
+    static async index(req: serviceOrdersRequest, res: FastifyReply): Promise<FastifyReply> {
+        const { filter } = req.query
+
+        let limit
+
+        if (filter == 'last_three') {
+            limit = 3
+        }
+
+        return res.send(await Service_order.findAll({ order: [['createdAt', 'DESC']], limit }))
     }
 
     static async show(req: serviceOrdersRequest, res: FastifyReply): Promise<FastifyReply> {
@@ -22,10 +33,10 @@ class serviceOrdersController {
     }
 
     static async store(req: serviceOrdersRequest, res: FastifyReply): Promise<FastifyReply> {
-        const { subject, description, status, projectId } = req.body
+        const { subject, description, projectId } = req.body
 
         const project = await Project.findByPk(projectId)
-        const os = await project?.createService_order({ subject, description, status })
+        const os = await project?.createService_order({ subject, description })
 
         await os?.createProtocol()
 

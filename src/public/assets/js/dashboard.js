@@ -3,8 +3,20 @@ let __api__ = null
 const dashboard = new Vue({
     el: '#dashboard',
     data: {
-        service_orders: [],
-        projects: [],
+        currentOs: {
+            id: null,
+            subject: null,
+            Project: {
+                id: null,
+                name: null,
+                Client: {
+                    id: null,
+                    name: null,
+                },
+            },
+        },
+        recentsOs: [],
+        fixedProjects: [],
     },
     methods: {},
     mounted: function () {
@@ -30,9 +42,9 @@ const dashboard = new Vue({
         })
 
         __api__
-            .get('/api/os')
+            .get('/api/utils/currentOs')
             .then(({ data }) => {
-                this.$data.service_orders = data
+                this.$data.currentOs = data
             })
             .catch((error) => {
                 console.log(error)
@@ -41,9 +53,20 @@ const dashboard = new Vue({
             })
 
         __api__
-            .get('/api/projects')
+            .get('/api/os?filter=last_three')
             .then(({ data }) => {
-                this.$data.projects = data
+                this.$data.recentsOs = data
+            })
+            .catch((error) => {
+                console.log(error)
+
+                alert(error.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.')
+            })
+
+        __api__
+            .get('/api/projects?filter=fixed')
+            .then(({ data }) => {
+                this.$data.fixedProjects = data
             })
             .catch((error) => {
                 console.log(error)
