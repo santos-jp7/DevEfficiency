@@ -60,7 +60,7 @@
                 </div>
             </div>
 
-            <form>
+            <form v-on:submit="handlerSubmit">
                 <div class="row">
                     <div class="mb-3 col-lg">
                         <label for="subject" class="form-label">Assunto</label>
@@ -97,10 +97,10 @@
             </form>
 
             <section id="protocol" v-if="Protocol">
-                <h5>Protocolo</h5>
-
                 <div class="row">
                     <div class="col-lg">
+                        <h5>Protocolo</h5>
+
                         <form>
                             <div class="row">
                                 <div class="mb-3 col-lg">
@@ -117,6 +117,8 @@
                         </form>
                     </div>
                     <div class="col-lg mt-2 border rounded p-2">
+                        <h5>Valores</h5>
+
                         <ul>
                             <li>
                                 <span

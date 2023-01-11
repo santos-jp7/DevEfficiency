@@ -30,12 +30,16 @@ class serviceOrdersController {
         return res.send(os)
     }
 
-    static async update(req: FastifyRequest, res: FastifyReply): Promise<FastifyReply> {
-        return res.send('Hello World')
-    }
+    static async update(req: serviceOrdersRequest, res: FastifyReply): Promise<FastifyReply> {
+        const { id } = req.params
+        const { description, subject, status } = req.body
 
-    static async destroy(req: FastifyRequest, res: FastifyReply): Promise<FastifyReply> {
-        return res.send('Hello World')
+        const os = await Service_order.findByPk(id)
+
+        await os?.update({ description, subject, status })
+        await os?.save()
+
+        return res.send(os)
     }
 }
 

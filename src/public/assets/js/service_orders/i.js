@@ -16,7 +16,22 @@ const service_order = new Vue({
             Receipts: [],
         },
     },
-    methods: {},
+    methods: {
+        handlerSubmit(e) {
+            e.preventDefault()
+
+            __api__
+                .put('/api/os/' + this.$data.id, {
+                    subject: this.$data.subject,
+                    description: this.$data.description,
+                    status: this.$data.status,
+                })
+                .then(() => {
+                    window.location.reload()
+                })
+                .catch((e) => console.log(e.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.'))
+        },
+    },
     mounted: function () {
         const token = localStorage.getItem('token')
         const expires_in = localStorage.getItem('expires_in')
