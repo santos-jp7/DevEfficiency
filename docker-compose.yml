@@ -27,4 +27,4 @@ services:
         tty: true
 
 volumes:
-    - db:/opt/clientes-dev-db
+    db:
