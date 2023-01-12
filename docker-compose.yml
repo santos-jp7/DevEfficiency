@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+    mysqldb:
+        image: mysql:5.7
+        restart: unless-stopped
+        env_file: ./.env
+        environment:
+            - MYSQL_ROOT_PASSWORD=$DB_PASS
+            - MYSQL_DATABASE=$DB_NAME
+        volumes:
+            - db:/var/lib/mysql
+    app:
+        depends_on:
+            - mysqldb
+        build: ./
+        restart: unless-stopped
+        env_file: ./.env
+        ports:
+            - $PORT:$PORT
+        environment:
+            - DB_HOST=mysqldb
+            - DB_USER=root
+            - DB_PASS=$DB_PASS
+            - DB_NAME=$DB_NAME
+        stdin_open: true
+        tty: true
+
+volumes:
+    db:
