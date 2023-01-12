@@ -18,21 +18,21 @@ async function syncModels(): Promise<void> {
     //     require(`./models/${modelName}`).default.sync({alter: true});
     // });
 
-    await User.sync({ alter: true })
+    await User.sync()
 
-    await Client.sync({ alter: true })
+    await Client.sync()
 
-    await Credential.sync({ alter: true })
+    await Credential.sync()
 
-    await Project.sync({ alter: true })
-    await Subproject.sync({ alter: true })
+    await Project.sync()
+    await Subproject.sync()
 
-    await Service_order.sync({ alter: true })
+    await Service_order.sync()
 
-    await Protocol.sync({ alter: true })
-    await Protocol_register.sync({ alter: true })
+    await Protocol.sync()
+    await Protocol_register.sync()
 
-    await Receipts.sync({ alter: true })
+    await Receipts.sync()
 }
 
 export default syncModels
