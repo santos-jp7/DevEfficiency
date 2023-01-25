@@ -26,7 +26,7 @@ class projectsController {
             }
         }
 
-        return res.send(await Project.findAll({ where }))
+        return res.send(await Project.findAll({ where, include: [Client] }))
     }
 
     static async show(req: projectsRequest, res: FastifyReply): Promise<FastifyReply> {
