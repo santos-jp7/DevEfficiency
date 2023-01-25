@@ -1,6 +1,8 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
+import Product from '../models/Product'
 
 import Protocol from '../models/Protocol'
+import Protocol_product from '../models/Protocol_product'
 import Protocol_register from '../models/Protocol_register'
 import Receipts from '../models/Receipts'
 
@@ -18,7 +20,7 @@ class protocolsController {
     static async show(req: protocolsRequest, res: FastifyReply): Promise<FastifyReply> {
         return res.send(
             await Protocol.findByPk(req.params.id, {
-                include: [Protocol_register, Receipts],
+                include: [Protocol_register, { model: Protocol_product, include: [Product] }, Receipts],
             }),
         )
     }
@@ -30,7 +32,10 @@ class protocolsController {
         const protocol = await Protocol.findByPk(id)
 
         if (status == 'Fechado') {
-            const total_cost = (await protocol?.getProtocol_registers())?.reduce((sum, v) => sum + v.value, 0) || 0
+            const total_cost =
+                ((await protocol?.getProtocol_registers())?.reduce((sum, v) => sum + v.value, 0) || 0) +
+                ((await protocol?.getProtocol_products())?.reduce((sum, v) => sum + v.value, 0) || 0)
+
             const total_receipt = (await protocol?.getReceipts())?.reduce((sum, v) => sum + v.value, 0) || 0
 
             if (total_receipt < total_cost)

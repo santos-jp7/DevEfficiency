@@ -49,7 +49,7 @@ const client = new Vue({
                     name: this.$data.payloads.project.name,
                     url: this.$data.payloads.project.url,
                     type: this.$data.payloads.project.type,
-                    clientId: this.$data.id,
+                    ClientId: this.$data.id,
                 })
                 .then(({ data }) => {
                     window.location.href = '/projects/i?id=' + data.id
@@ -92,7 +92,7 @@ const client = new Vue({
                 host: this.$data.payloads.credential.host,
                 username: this.$data.payloads.credential.username,
                 password: this.$data.payloads.credential.password,
-                clientId: this.$data.id,
+                ClientId: this.$data.id,
             })
                 .then(() => {
                     window.location.reload()

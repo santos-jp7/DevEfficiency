@@ -10,6 +10,8 @@ import Service_order from './models/Service_order'
 import Protocol from './models/Protocol'
 import Protocol_register from './models/Protocol_register'
 import Receipts from './models/Receipts'
+import Product from './models/Product'
+import Protocol_product from './models/Protocol_product'
 
 async function syncModels(): Promise<void> {
     // const files = fs.readdirSync(path.resolve("src", "models"));
@@ -22,6 +24,8 @@ async function syncModels(): Promise<void> {
 
     await Client.sync()
 
+    await Product.sync()
+
     await Credential.sync()
 
     await Project.sync()
@@ -31,6 +35,7 @@ async function syncModels(): Promise<void> {
 
     await Protocol.sync()
     await Protocol_register.sync()
+    await Protocol_product.sync()
 
     await Receipts.sync()
 }

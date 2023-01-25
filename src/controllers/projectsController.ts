@@ -38,9 +38,9 @@ class projectsController {
     }
 
     static async store(req: projectsRequest, res: FastifyReply): Promise<FastifyReply> {
-        const { name, url, clientId, type } = req.body
+        const { name, url, ClientId, type } = req.body
 
-        const client = await Client.findByPk(clientId)
+        const client = await Client.findByPk(ClientId)
         const project = await client?.createProject({ name, url, type })
 
         return res.send(project)

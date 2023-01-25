@@ -11,6 +11,7 @@ import {
 } from 'sequelize'
 
 import db from '../db'
+import Protocol_product from './Protocol_product'
 
 import Protocol_register from './Protocol_register'
 import Receipts from './Receipts'
@@ -24,13 +25,17 @@ class Protocol extends Model<InferAttributes<Protocol>, InferCreationAttributes<
     declare serviceOrderId: ForeignKey<Service_order['id']>
 
     declare getProtocol_registers: HasManyGetAssociationsMixin<Protocol_register>
-    declare createProtocol_register: HasManyCreateAssociationMixin<Protocol_register, 'protocolId'>
+    declare createProtocol_register: HasManyCreateAssociationMixin<Protocol_register, 'ProtocolId'>
+
+    declare getProtocol_products: HasManyGetAssociationsMixin<Protocol_product>
+    declare createProtocol_product: HasManyCreateAssociationMixin<Protocol_product, 'ProtocolId'>
 
     declare getReceipts: HasManyGetAssociationsMixin<Receipts>
-    declare createReceipt: HasManyCreateAssociationMixin<Receipts, 'protocolId'>
+    declare createReceipt: HasManyCreateAssociationMixin<Receipts, 'ProtocolId'>
 
     declare static associations: {
         protocol_register: Association<Protocol, Protocol_register>
+        protocol_product: Association<Protocol, Protocol_product>
         receipts: Association<Protocol, Receipts>
     }
 
@@ -62,6 +67,11 @@ Protocol.init(
 Protocol.hasMany(Protocol_register, {
     onDelete: 'RESTRICT',
 })
+
+Protocol.hasMany(Protocol_product, {
+    onDelete: 'RESTRICT',
+})
+
 Protocol.hasMany(Receipts, {
     onDelete: 'RESTRICT',
 })

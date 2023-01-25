@@ -2,22 +2,16 @@ import { Model, InferAttributes, InferCreationAttributes, CreationOptional, Fore
 
 import db from '../db'
 
-import Client from './Client'
-
-class Credential extends Model<InferAttributes<Credential>, InferCreationAttributes<Credential>> {
+class Product extends Model<InferAttributes<Product>, InferCreationAttributes<Product>> {
     declare id: CreationOptional<number>
     declare description: string
-    declare host: string
-    declare username: string
-    declare password: string
-
-    declare ClientId: ForeignKey<Client['id']>
+    declare value: number
 
     declare createdAt: CreationOptional<Date>
     declare updatedAt: CreationOptional<Date>
 }
 
-Credential.init(
+Product.init(
     {
         id: {
             type: DataTypes.INTEGER.UNSIGNED,
@@ -25,28 +19,20 @@ Credential.init(
             primaryKey: true,
         },
         description: {
-            type: DataTypes.STRING(128),
+            type: DataTypes.STRING(255),
             allowNull: false,
         },
-        host: {
-            type: DataTypes.STRING(128),
-            allowNull: false,
-        },
-        username: {
-            type: DataTypes.STRING(128),
-            allowNull: false,
-        },
-        password: {
-            type: DataTypes.STRING(128),
+        value: {
+            type: DataTypes.FLOAT,
             allowNull: false,
         },
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
     },
     {
-        tableName: 'credentials',
+        tableName: 'products',
         sequelize: db,
     },
 )
 
-export default Credential
+export default Product

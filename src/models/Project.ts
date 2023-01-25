@@ -24,13 +24,13 @@ class Project extends Model<InferAttributes<Project>, InferCreationAttributes<Pr
     declare fixed: CreationOptional<boolean>
     declare type: CreationOptional<'API' | 'Bot' | 'WebSite' | 'Automação' | 'Crawler' | 'Outros'>
 
-    declare clientId: ForeignKey<Client['id']>
+    declare ClientId: ForeignKey<Client['id']>
 
     declare getSubproject: HasManyGetAssociationsMixin<Subproject>
-    declare createSubproject: HasManyCreateAssociationMixin<Subproject, 'projectId'>
+    declare createSubproject: HasManyCreateAssociationMixin<Subproject, 'ProjectId'>
 
     declare getService_order: HasManyGetAssociationsMixin<Service_order>
-    declare createService_order: HasManyCreateAssociationMixin<Service_order, 'projectId'>
+    declare createService_order: HasManyCreateAssociationMixin<Service_order, 'ProjectId'>
 
     declare subprojects: NonAttribute<Subproject[]>
     declare service_orders: NonAttribute<Service_order[]>

@@ -20,9 +20,9 @@ class protocolsRegisterController {
     }
 
     static async store(req: protocolsRegisterRequest, res: FastifyReply): Promise<FastifyReply> {
-        const { description, value, protocolId, type } = req.body
+        const { description, value, ProtocolId, type } = req.body
 
-        const protocol = await Protocol.findByPk(protocolId)
+        const protocol = await Protocol.findByPk(ProtocolId)
         const protocol_register = await protocol?.createProtocol_register({ description, value, type })
 
         return res.send(protocol_register)

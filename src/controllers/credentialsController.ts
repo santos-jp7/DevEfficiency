@@ -19,9 +19,9 @@ class credentialsController {
     }
 
     static async store(req: credentialsRequest, res: FastifyReply): Promise<FastifyReply> {
-        const { description, host, username, password, clientId } = req.body
+        const { description, host, username, password, ClientId } = req.body
 
-        const client = await Client.findByPk(clientId)
+        const client = await Client.findByPk(ClientId)
         const credentials = await client?.createCredential({ description, host, username, password })
 
         return res.send(credentials)

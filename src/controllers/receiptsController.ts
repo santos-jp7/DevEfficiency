@@ -19,9 +19,9 @@ class receiptsController {
     }
 
     static async store(req: receiptsRequest, res: FastifyReply): Promise<FastifyReply> {
-        const { method, value, protocolId, note } = req.body
+        const { method, value, ProtocolId, note } = req.body
 
-        const protocol = await Protocol.findByPk(protocolId)
+        const protocol = await Protocol.findByPk(ProtocolId)
         const protocol_register = await protocol?.createReceipt({ method, value, note })
 
         return res.send(protocol_register)

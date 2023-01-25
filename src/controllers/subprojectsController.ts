@@ -19,9 +19,9 @@ class subprojectsController {
     }
 
     static async store(req: subprojectsRequest, res: FastifyReply): Promise<FastifyReply> {
-        const { name, url, projectId, type } = req.body
+        const { name, url, ProjectId, type } = req.body
 
-        const project = await Project.findByPk(projectId)
+        const project = await Project.findByPk(ProjectId)
         const subproject = await project?.createSubproject({ name, url, type })
 
         return res.send(subproject)

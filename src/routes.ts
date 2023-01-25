@@ -10,6 +10,8 @@ import serviceOrdersController from './controllers/serviceOrdersController'
 import protocolsController from './controllers/protocolsController'
 import protocolsRegisterController from './controllers/protocolsRegisterController'
 import receiptsController from './controllers/receiptsController'
+import productsController from './controllers/productsController'
+import protocolsProductController from './controllers/protocolsProductController'
 
 import isAuthed from './middlewares/isAuthed'
 import currentOs from './utils/currentOs'
@@ -37,6 +39,11 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.post('/projects', { preHandler: [isAuthed] }, projectsController.store)
     instance.put('/projects/:id', { preHandler: [isAuthed] }, projectsController.update)
 
+    instance.get('/products', { preHandler: [isAuthed] }, productsController.index)
+    instance.get('/products/:id', { preHandler: [isAuthed] }, productsController.show)
+    instance.post('/products', { preHandler: [isAuthed] }, productsController.store)
+    instance.put('/products/:id', { preHandler: [isAuthed] }, productsController.update)
+
     instance.get('/subprojects', { preHandler: [isAuthed] }, subprojectsController.index)
     instance.get('/subprojects/:id', { preHandler: [isAuthed] }, subprojectsController.show)
     instance.post('/subprojects', { preHandler: [isAuthed] }, subprojectsController.store)
@@ -57,6 +64,12 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.post('/protocols/registers', { preHandler: [isAuthed] }, protocolsRegisterController.store)
     instance.put('/protocols/registers/:id', { preHandler: [isAuthed] }, protocolsRegisterController.update)
     instance.delete('/protocols/registers/:id', { preHandler: [isAuthed] }, protocolsRegisterController.destroy)
+
+    instance.get('/protocols/products', { preHandler: [isAuthed] }, protocolsProductController.index)
+    instance.get('/protocols/products/:id', { preHandler: [isAuthed] }, protocolsProductController.show)
+    instance.post('/protocols/products', { preHandler: [isAuthed] }, protocolsProductController.store)
+    instance.put('/protocols/products/:id', { preHandler: [isAuthed] }, protocolsProductController.update)
+    instance.delete('/protocols/products/:id', { preHandler: [isAuthed] }, protocolsProductController.destroy)
 
     instance.get('/protocols/receipts', { preHandler: [isAuthed] }, receiptsController.index)
     instance.get('/protocols/receipts/:id', { preHandler: [isAuthed] }, receiptsController.show)

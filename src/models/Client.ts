@@ -23,10 +23,10 @@ class Client extends Model<InferAttributes<Client>, InferCreationAttributes<Clie
     declare updatedAt: CreationOptional<Date>
 
     declare getCredential: HasManyGetAssociationsMixin<Credential>
-    declare createCredential: HasManyCreateAssociationMixin<Credential, 'clientId'>
+    declare createCredential: HasManyCreateAssociationMixin<Credential, 'ClientId'>
 
     declare getProject: HasManyGetAssociationsMixin<Project>
-    declare createProject: HasManyCreateAssociationMixin<Project, 'clientId'>
+    declare createProject: HasManyCreateAssociationMixin<Project, 'ClientId'>
 
     declare credentials: NonAttribute<Credential[]>
     declare projects: NonAttribute<Project[]>

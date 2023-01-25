@@ -10,7 +10,7 @@ class Receipts extends Model<InferAttributes<Receipts>, InferCreationAttributes<
     declare value: number
     declare note: string
 
-    declare protocolId: ForeignKey<Protocol['id']>
+    declare ProtocolId: ForeignKey<Protocol['id']>
 
     declare createdAt: CreationOptional<Date>
     declare updatedAt: CreationOptional<Date>

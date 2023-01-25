@@ -13,6 +13,7 @@ const service_order = new Vue({
             id: null,
             status: null,
             Protocol_registers: [],
+            Protocol_products: [],
             Receipts: [],
         },
         payloads: {
@@ -21,11 +22,20 @@ const service_order = new Vue({
                 value: null,
                 type: null,
             },
+            protocolProduct: {
+                charge_type: null,
+                value: null,
+                discount: 0,
+                ProductId: null,
+            },
             receipt: {
                 value: null,
                 method: null,
                 note: null,
             },
+        },
+        references: {
+            products: [],
         },
     },
     methods: {
@@ -95,7 +105,7 @@ const service_order = new Vue({
                 description: this.$data.payloads.protocolRegister.description,
                 value: this.$data.payloads.protocolRegister.value,
                 type: this.$data.payloads.protocolRegister.type,
-                protocolId: this.$data.Protocol.id,
+                ProtocolId: this.$data.Protocol.id,
             })
                 .then(() => {
                     window.location.reload()
@@ -104,6 +114,80 @@ const service_order = new Vue({
                     alert(e.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.')
                     window.location.reload()
                 })
+        },
+        async handlerNewProtocolProduct() {
+            this.$data.payloads.protocolProduct = {
+                charge_type: null,
+                value: null,
+                discount: 0,
+                ProductId: null,
+            }
+
+            $('#protocolProductModal').modal('toggle')
+        },
+        handlerEditProtocolProduct(protocolProductId) {
+            this.$data.payloads.protocolProduct = this.Protocol.Protocol_products.find((v) => v.id == protocolProductId)
+
+            $('#protocolProductModal').modal('toggle')
+        },
+        handlerDeleteProtocolProduct(protocolProductId) {
+            if (!confirm('Confirma exclusão?')) return
+
+            __api__.delete('/api/protocols/products/' + protocolProductId)
+            window.location.reload()
+        },
+        handlerProtocolProductsSubmit(e) {
+            e.preventDefault()
+
+            let method = this.$data.payloads.protocolProduct.id ? __api__.put : __api__.post
+            let url = this.$data.payloads.protocolProduct.id
+                ? '/api/protocols/products/' + this.$data.payloads.protocolProduct.id
+                : '/api/protocols/products'
+
+            method(url, {
+                charge_type: this.$data.payloads.protocolProduct.charge_type,
+                value: this.$data.payloads.protocolProduct.value,
+                ProductId: this.$data.payloads.protocolProduct.ProductId,
+                ProtocolId: this.$data.Protocol.id,
+            })
+                .then(() => {
+                    window.location.reload()
+                })
+                .catch((e) => {
+                    alert(e.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.')
+                    window.location.reload()
+                })
+        },
+        handlerProtocolProductsChangeChargeType() {
+            if (!this.$data.payloads.protocolProduct.charge_type) return (this.$data.payloads.protocolProduct.value = 0)
+
+            if (
+                this.$data.payloads.protocolProduct.charge_type == 'Único' ||
+                this.$data.payloads.protocolProduct.charge_type == 'Mensal'
+            )
+                return (this.$data.payloads.protocolProduct.value = this.$data.references.products.find(
+                    (v) => v.id == this.$data.payloads.protocolProduct.ProductId,
+                ).value)
+
+            if (this.$data.payloads.protocolProduct.charge_type == 'Anual')
+                return (this.$data.payloads.protocolProduct.value =
+                    this.$data.references.products.find((v) => v.id == this.$data.payloads.protocolProduct.ProductId)
+                        .value * 12)
+        },
+        handlerProtocolProductsChangeDiscount() {
+            if (!this.$data.payloads.protocolProduct.value) {
+                this.$data.payloads.protocolProduct.discount = 0
+                return alert('Preencher valor nulo.')
+            }
+
+            let value = this.$data.references.products.find(
+                (v) => v.id == this.$data.payloads.protocolProduct.ProductId,
+            ).value
+
+            if (this.$data.payloads.protocolProduct.charge_type == 'Anual') value *= 12
+
+            this.$data.payloads.protocolProduct.value =
+                value - (value / 100) * this.$data.payloads.protocolProduct.discount
         },
         handlerNewReceipt() {
             this.$data.payloads.receipt = {
@@ -137,7 +221,7 @@ const service_order = new Vue({
                 value: this.$data.payloads.receipt.value,
                 method: this.$data.payloads.receipt.method,
                 note: this.$data.payloads.receipt.note,
-                protocolId: this.$data.Protocol.id,
+                ProtocolId: this.$data.Protocol.id,
             })
                 .then(() => {
                     window.location.reload()
@@ -194,6 +278,19 @@ const service_order = new Vue({
 
                         alert(error.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.')
                     })
+            })
+            .catch((error) => {
+                console.log(error)
+
+                alert(error.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.')
+            })
+
+        __api__
+            .get('/api/products')
+            .then(({ data }) => {
+                if (!data) return
+
+                this.$data.references.products = data
             })
             .catch((error) => {
                 console.log(error)

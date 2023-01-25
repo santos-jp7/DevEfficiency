@@ -65,7 +65,7 @@ const project = new Vue({
                 .post('/api/os', {
                     subject: this.$data.payloads.service_order.subject,
                     description: this.$data.payloads.service_order.description,
-                    projectId: this.$data.id,
+                    ProjectId: this.$data.id,
                 })
                 .then(({ data }) => {
                     window.location.href = '/service_orders/i?id=' + data.id
@@ -107,7 +107,7 @@ const project = new Vue({
                 name: this.$data.payloads.subproject.name,
                 url: this.$data.payloads.subproject.url,
                 type: this.$data.payloads.subproject.type,
-                projectId: this.$data.id,
+                ProjectId: this.$data.id,
             })
                 .then(() => {
                     window.location.reload()

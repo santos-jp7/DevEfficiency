@@ -33,9 +33,9 @@ class serviceOrdersController {
     }
 
     static async store(req: serviceOrdersRequest, res: FastifyReply): Promise<FastifyReply> {
-        const { subject, description, projectId } = req.body
+        const { subject, description, ProjectId } = req.body
 
-        const project = await Project.findByPk(projectId)
+        const project = await Project.findByPk(ProjectId)
         const os = await project?.createService_order({ subject, description })
 
         await os?.createProtocol()
@@ -57,7 +57,10 @@ class serviceOrdersController {
         }
 
         if (status == 'Finalizado') {
-            const total_cost = (await protocol?.getProtocol_registers())?.reduce((sum, v) => sum + v.value, 0) || 0
+            const total_cost =
+                ((await protocol?.getProtocol_registers())?.reduce((sum, v) => sum + v.value, 0) || 0) +
+                ((await protocol?.getProtocol_products())?.reduce((sum, v) => sum + v.value, 0) || 0)
+
             const total_receipt = (await protocol?.getReceipts())?.reduce((sum, v) => sum + v.value, 0) || 0
 
             if (total_receipt < total_cost)
