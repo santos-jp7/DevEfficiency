@@ -1,4 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
+import Client from '../models/Client'
 
 import Project from '../models/Project'
 import Protocol from '../models/Protocol'
@@ -25,7 +26,13 @@ class serviceOrdersController {
             limit = 3
         }
 
-        return res.send(await Service_order.findAll({ order: [['createdAt', 'DESC']], limit }))
+        return res.send(
+            await Service_order.findAll({
+                order: [['createdAt', 'DESC']],
+                limit,
+                include: [{ model: Project, include: [Client] }],
+            }),
+        )
     }
 
     static async show(req: serviceOrdersRequest, res: FastifyReply): Promise<FastifyReply> {
