@@ -11,13 +11,12 @@ const project = new Vue({
         handlerSubmit(e) {
             e.preventDefault()
 
-            __api__
-                .put('/api/products/' + this.$data.id, {
-                    description: this.$data.description,
-                    value: this.$data.value,
-                })
-                .then(() => {
-                    window.location.reload()
+            let method = this.$data.id ? __api__.put : __api__.post
+            let url = this.$data.id ? '/api/products/' + this.$data.id : '/api/products'
+
+            method(url, { description: this.$data.description, value: this.$data.value })
+                .then(({ data }) => {
+                    window.location.href = '/products/i?id=' + data.id
                 })
                 .catch((e) => {
                     alert(e.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.')
