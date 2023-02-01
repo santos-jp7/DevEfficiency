@@ -57,6 +57,7 @@
                     <tr>
                         <th scope="col">#</th>
                         <th scope="col">Nome</th>
+                        <th scope="col">Documento</th>
                         <th scope="col">Abrir</th>
                     </tr>
                 </thead>
@@ -64,6 +65,7 @@
                     <tr v-for="client of clients">
                         <th scope="row">{{client.id}}</th>
                         <td>{{client.name}}</td>
+                        <td>{{maskDocument(client.document)}}</td>
                         <td>
                             <a :href="'../clients/i?id='+client.id"><i class="fa-solid fa-arrow-right"></i></a>
                         </td>

@@ -111,8 +111,6 @@ const client = new Vue({
                 })
         },
         maskDocument() {
-            console.log(this.$data.document.length)
-
             this.$data.document = this.$data.document.replace(/[^a-zA-Z0-9 ]/g, '')
 
             if (this.$data.document.length <= 11)

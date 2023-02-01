@@ -22,7 +22,7 @@ async function syncModels(): Promise<void> {
 
     await User.sync()
 
-    await Client.sync({ alter: true })
+    await Client.sync()
 
     await Product.sync()
 

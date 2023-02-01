@@ -9,7 +9,15 @@ const clients = new Vue({
     },
     methods: {
         handlerSearch() {
-            this.clients = this.clientsOrigin.filter((v) => v.name.includes(this.q))
+            this.clients = this.clientsOrigin.filter(
+                (v) => v.name.includes(this.q) || v.document.includes(this.q.replace(/[^a-zA-Z0-9 ]/g, '')),
+            )
+        },
+        maskDocument(document) {
+            document = document.replace(/[^a-zA-Z0-9 ]/g, '')
+
+            if (document.length <= 11) return document.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/g, '$1.$2.$3-$4')
+            else return document.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/g, '$1.$2.$3/$4-$5')
         },
     },
     mounted: function () {
