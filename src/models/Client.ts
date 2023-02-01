@@ -19,6 +19,10 @@ class Client extends Model<InferAttributes<Client>, InferCreationAttributes<Clie
     declare id: CreationOptional<number>
     declare name: string
 
+    declare corporate_name: CreationOptional<string>
+    declare document: CreationOptional<string>
+    declare email: CreationOptional<string>
+
     declare createdAt: CreationOptional<Date>
     declare updatedAt: CreationOptional<Date>
 
@@ -47,6 +51,15 @@ Client.init(
         name: {
             type: DataTypes.STRING(128),
             allowNull: false,
+        },
+        corporate_name: {
+            type: DataTypes.STRING(255),
+        },
+        document: {
+            type: DataTypes.STRING(15),
+        },
+        email: {
+            type: DataTypes.STRING(128),
         },
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,

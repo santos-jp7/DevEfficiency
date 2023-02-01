@@ -5,6 +5,9 @@ const client = new Vue({
     data: {
         id: 0,
         name: null,
+        corporate_name: null,
+        document: null,
+        email: null,
         Credentials: [],
         Projects: [],
         payloads: {
@@ -29,7 +32,12 @@ const client = new Vue({
             let method = this.$data.id ? __api__.put : __api__.post
             let url = this.$data.id ? '/api/clients/' + this.$data.id : '/api/clients'
 
-            method(url, { name: this.$data.name })
+            method(url, {
+                name: this.$data.name,
+                corporate_name: this.$data.corporate_name,
+                document: this.$data.document,
+                email: this.$data.email,
+            })
                 .then(({ data }) => {
                     window.location.href = '/clients/i?id=' + data.id
                 })
@@ -102,6 +110,19 @@ const client = new Vue({
                     window.location.reload()
                 })
         },
+        maskDocument() {
+            console.log(this.$data.document.length)
+
+            this.$data.document = this.$data.document.replace(/[^a-zA-Z0-9 ]/g, '')
+
+            if (this.$data.document.length <= 11)
+                this.$data.document = this.$data.document.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/g, '$1.$2.$3-$4')
+            else
+                this.$data.document = this.$data.document.replace(
+                    /(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/g,
+                    '$1.$2.$3/$4-$5',
+                )
+        },
     },
     mounted: function () {
         const token = localStorage.getItem('token')
@@ -133,6 +154,8 @@ const client = new Vue({
             .get('/api/clients/' + params.id)
             .then(({ data }) => {
                 Object.keys(data).forEach((key) => (this.$data[key] = data[key]))
+
+                this.maskDocument()
             })
             .catch((error) => {
                 console.log(error)
