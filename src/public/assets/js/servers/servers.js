@@ -1,27 +1,15 @@
 let __api__ = null
 
-const clients = new Vue({
-    el: '#clients',
+const servers = new Vue({
+    el: '#servers',
     data: {
-        clientsOrigin: [],
-        clients: [],
+        serversOrigin: [],
+        servers: [],
         q: null,
     },
     methods: {
         handlerSearch() {
-            this.clients = this.clientsOrigin.filter(
-                (v) =>
-                    v.name.toLowerCase().includes(this.q.toLowerCase()) ||
-                    (v.document || '').includes(this.q.replace(/[^a-zA-Z0-9 ]/g, '')),
-            )
-        },
-        maskDocument(document) {
-            if (!document) return
-
-            document = document.replace(/[^a-zA-Z0-9 ]/g, '')
-
-            if (document.length <= 11) return document.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/g, '$1.$2.$3-$4')
-            else return document.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/g, '$1.$2.$3/$4-$5')
+            this.servers = this.serversOrigin.filter((v) => v.description.includes(this.q))
         },
     },
     mounted: function () {
@@ -47,10 +35,10 @@ const clients = new Vue({
         })
 
         __api__
-            .get('/api/clients')
+            .get('/api/servers')
             .then(({ data }) => {
-                this.$data.clientsOrigin = data
-                this.$data.clients = data
+                this.$data.serversOrigin = data
+                this.$data.servers = data
             })
             .catch((error) => {
                 console.log(error)
