@@ -1,243 +1,478 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Codlinx - Cliente</title>
 
-<head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Codlinx - Cliente</title>
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+            integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65"
+            crossorigin="anonymous"
+        />
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css"
+            integrity="sha512-MV7K8+y+gLIBoVD59lQIYicR65iaqukzvf/nwasF0nqhPay5w/9lJmVM2hMDcnK1OnMGCdVK+iQrJ7lzPJQd1w=="
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"
+        />
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css"
+            integrity="sha512-MV7K8+y+gLIBoVD59lQIYicR65iaqukzvf/nwasF0nqhPay5w/9lJmVM2hMDcnK1OnMGCdVK+iQrJ7lzPJQd1w=="
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"
+        />
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css"
-        integrity="sha512-MV7K8+y+gLIBoVD59lQIYicR65iaqukzvf/nwasF0nqhPay5w/9lJmVM2hMDcnK1OnMGCdVK+iQrJ7lzPJQd1w=="
-        crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css"
-        integrity="sha512-MV7K8+y+gLIBoVD59lQIYicR65iaqukzvf/nwasF0nqhPay5w/9lJmVM2hMDcnK1OnMGCdVK+iQrJ7lzPJQd1w=="
-        crossorigin="anonymous" referrerpolicy="no-referrer" />
+        <script src="../assets/js/jquery-3.6.1.min.js"></script>
 
-    <script src="../assets/js/jquery-3.6.1.min.js"></script>
+        <script
+            src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js"
+            integrity="sha384-cuYeSxntonz0PPNlHhBs68uyIAVpIIOZZ5JqeqvYYIcEL727kskC66kF92t6Xl2V"
+            crossorigin="anonymous"
+        ></script>
+    </head>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js"
-        integrity="sha384-cuYeSxntonz0PPNlHhBs68uyIAVpIIOZZ5JqeqvYYIcEL727kskC66kF92t6Xl2V"
-        crossorigin="anonymous"></script>
-</head>
-
-<body>
-    <nav class="navbar bg-light">
-        <div class="container">
-            <a class="navbar-brand" href="/dashboard">
-                <img src="../assets/img/logo_cabecalho.png" alt="Codlinx" width="40" height="40" />
-            </a>
-        </div>
-    </nav>
-
-    <div class="container p-4" id="client">
-        <div class="col">
-            <a href="../clients" class="btn btn-dark btn-sm my-2">Clientes</a>
-            <a href="../projects" class="btn btn-dark btn-sm my-2">Projetos</a>
-            <a href="../service_orders" class="btn btn-dark btn-sm my-2">Os</a>
-            <a href="../products" class="btn btn-dark btn-sm my-2">Produtos</a>
-        </div>
-
-        <hr />
-
-        <h5>Cliente #{{id}}</h5>
-
-        <form v-on:submit="handlerSubmit">
-            <div class="row">
-                <div class="mb-3 col">
-                    <label for="inputName1" class="form-label">Nome</label>
-                    <input type="text" class="form-control" id="inputName1" v-model="name" />
-                </div>
-                <div class="mb-3 col">
-                    <label for="inputName2" class="form-label">Nome Social</label>
-                    <input type="text" class="form-control" id="inputName2" v-model="corporate_name" />
-                </div>
-                <div class="mb-3 col">
-                    <label for="inputDocument" class="form-label">Documento</label>
-                    <input type="text" class="form-control" id="inputDocument" v-model="document"
-                        v-on:keyup="maskDocument" />
-                </div>
+    <body>
+        <nav class="navbar bg-light">
+            <div class="container">
+                <a class="navbar-brand" href="/dashboard">
+                    <img src="../assets/img/logo_cabecalho.png" alt="Codlinx" width="40" height="40" />
+                </a>
             </div>
-            <div class="row">
-                <div class="mb-3 col">
-                    <label for="inputEmail" class="form-label">Email</label>
-                    <input type="email" class="form-control" id="inputEmail" v-model="email" />
-                </div>
+        </nav>
+
+        <div class="container p-4" id="client">
+            <div class="col">
+                <a href="../clients" class="btn btn-dark btn-sm my-2">Clientes</a>
+                <a href="../projects" class="btn btn-dark btn-sm my-2">Projetos</a>
+                <a href="../service_orders" class="btn btn-dark btn-sm my-2">Os</a>
+                <a href="../products" class="btn btn-dark btn-sm my-2">Produtos</a>
             </div>
 
-            <button type="submit" class="btn btn-dark">Enviar</button>
-        </form>
+            <hr />
 
-        <hr />
+            <h5>Cliente #{{id}}</h5>
 
-        <div class="row" style="gap: 10px">
-            <div class="col border rounded p-2">
-                <div class="d-flex justify-content-between mb-2">
-                    <h5>Projetos</h5>
-                    <button class="btn" v-on:click="handlerNewProject">
-                        <i class="fa-solid fa-plus"></i> Adicionar projeto
-                    </button>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-striped border">
-                        <thead>
-                            <tr>
-                                <th scope="col">#</th>
-                                <th scope="col">Nome</th>
-                                <th scope="col">Tipo</th>
-                                <th scope="col">Abrir</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="project of Projects">
-                                <th scope="row">{{project.id}}</th>
-                                <td>{{project.name}}</td>
-                                <td>{{project.type}}</td>
-                                <td>
-                                    <a :href="'/projects/i?id='+project.id"><i class="fa-solid fa-arrow-right"></i></a>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="col border rounded p-2">
-                <div class="d-flex justify-content-between mb-2">
-                    <h5>Credenciais</h5>
-                    <button class="btn" v-on:click="handlerNewCredential">
-                        <i class="fa-solid fa-plus"></i> Adicionar credencial
-                    </button>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-striped border">
-                        <thead>
-                            <tr>
-                                <th scope="col">#</th>
-                                <th scope="col">Descrição</th>
-                                <th scope="col">Host</th>
-                                <th scope="col">User</th>
-                                <th scope="col">Senha</th>
-                                <th scope="col">Editar</th>
-                                <th scope="col">Excluir</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="credential of Credentials">
-                                <th scope="row">{{credential.id}}</th>
-                                <td>{{credential.description}}</td>
-                                <td>{{credential.host}}</td>
-                                <td>{{credential.username}}</td>
-                                <td>{{credential.password}}</td>
-                                <td>
-                                    <i class="fa-solid fa-pen-to-square btn btn-sm text-primary"
-                                        v-on:click="handlerEditCredential(credential.id)"></i>
-                                </td>
-                                <td>
-                                    <i class="fa-solid fa-trash btn btn-sm text-primary"
-                                        v-on:click="handlerDeleteCredential(credential.id)"></i>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Modal Project -->
-        <div class="modal fade" id="newProjectModal" tabindex="-1" aria-labelledby="newProjectModalLabel"
-            aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h1 class="modal-title fs-5" id="newProjectModalLabel">Projeto</h1>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            <form v-on:submit="handlerSubmit">
+                <div class="row">
+                    <div class="mb-3 col">
+                        <label for="inputName1" class="form-label">Nome</label>
+                        <input type="text" class="form-control" id="inputName1" v-model="name" />
                     </div>
-                    <div class="modal-body">
-                        <form @submit="handlerNewProjectSubmit">
-                            <div class="row mb-3">
-                                <label class="form-label" for="name">Nome</label>
-                                <input type="text" class="form-control" id="name" v-model="payloads.project.name"
-                                    required />
-                            </div>
-
-                            <div class="row mb-3">
-                                <label class="form-label" for="url">URL</label>
-                                <input type="text" class="form-control" id="url" v-model="payloads.project.url"
-                                    required />
-                            </div>
-
-                            <div class="row mb-3">
-                                <label class="form-label" for="type">Tipo</label>
-                                <select class="form-control" id="type" v-model="payloads.project.type" required>
-                                    <option disabled value="">Selecione uma opção</option>
-                                    <option value="API">API</option>
-                                    <option value="Bot">Bot</option>
-                                    <option value="WebSite">WebSite</option>
-                                    <option value="Automação">Automação</option>
-                                    <option value="Crawler">Crawler</option>
-                                    <option value="Outros">Outros</option>
-                                </select>
-                            </div>
-
-                            <div class="row mb-3">
-                                <input type="submit" class="form-control btn btn-dark btn-block" value="Enviar" />
-                            </div>
-                        </form>
+                    <div class="mb-3 col">
+                        <label for="inputName2" class="form-label">Nome Social</label>
+                        <input type="text" class="form-control" id="inputName2" v-model="corporate_name" />
+                    </div>
+                    <div class="mb-3 col">
+                        <label for="inputDocument" class="form-label">Documento</label>
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="inputDocument"
+                            v-model="document"
+                            v-on:keyup="maskDocument"
+                        />
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <!-- Modal Credential -->
-        <div class="modal fade" id="credentialModal" tabindex="-1" aria-labelledby="credentialModalLabel"
-            aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h1 class="modal-title fs-5" id="credentialModalLabel">Credencial</h1>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                <div class="row">
+                    <div class="mb-3 col">
+                        <label for="inputEmail" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="inputEmail" v-model="email" />
                     </div>
-                    <div class="modal-body">
-                        <form @submit="handlerCredentialSubmit">
-                            <div class="row mb-3">
-                                <label class="form-label" for="description">Descrição</label>
-                                <input type="text" class="form-control" id="description"
-                                    v-model="payloads.credential.description" required />
-                            </div>
+                </div>
 
-                            <div class="row mb-3">
-                                <label class="form-label" for="host">Host</label>
-                                <input type="text" class="form-control" id="host" v-model="payloads.credential.host"
-                                    required />
-                            </div>
+                <button type="submit" class="btn btn-dark">Enviar</button>
+            </form>
 
-                            <div class="row mb-3">
-                                <label class="form-label" for="username">User</label>
-                                <input type="text" class="form-control" id="username"
-                                    v-model="payloads.credential.username" required />
-                            </div>
+            <hr />
 
-                            <div class="row mb-3">
-                                <label class="form-label" for="password">Senha</label>
-                                <input type="text" class="form-control" id="password"
-                                    v-model="payloads.credential.password" required />
-                            </div>
+            <div class="row" style="gap: 10px">
+                <div class="col border rounded p-2">
+                    <div class="d-flex justify-content-between mb-2">
+                        <h5>Projetos</h5>
+                        <button class="btn" v-on:click="handlerNewProject">
+                            <i class="fa-solid fa-plus"></i> Adicionar projeto
+                        </button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-striped border">
+                            <thead>
+                                <tr>
+                                    <th scope="col">#</th>
+                                    <th scope="col">Nome</th>
+                                    <th scope="col">Tipo</th>
+                                    <th scope="col">Abrir</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="project of Projects">
+                                    <th scope="row">{{project.id}}</th>
+                                    <td>{{project.name}}</td>
+                                    <td>{{project.type}}</td>
+                                    <td>
+                                        <a :href="'/projects/i?id='+project.id"
+                                            ><i class="fa-solid fa-arrow-right"></i
+                                        ></a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
 
-                            <div class="row mb-3">
-                                <input type="submit" class="form-control btn btn-dark btn-block" value="Enviar" />
-                            </div>
-                        </form>
+                <div class="col border rounded p-2">
+                    <div class="d-flex justify-content-between mb-2">
+                        <h5>Credenciais</h5>
+                        <button class="btn" v-on:click="handlerNewCredential">
+                            <i class="fa-solid fa-plus"></i> Adicionar credencial
+                        </button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-striped border">
+                            <thead>
+                                <tr>
+                                    <th scope="col">#</th>
+                                    <th scope="col">Descrição</th>
+                                    <th scope="col">Host</th>
+                                    <th scope="col">User</th>
+                                    <th scope="col">Senha</th>
+                                    <th scope="col">Editar</th>
+                                    <th scope="col">Excluir</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="credential of Credentials">
+                                    <th scope="row">{{credential.id}}</th>
+                                    <td>{{credential.description}}</td>
+                                    <td>{{credential.host}}</td>
+                                    <td>{{credential.username}}</td>
+                                    <td>{{credential.password}}</td>
+                                    <td>
+                                        <i
+                                            class="fa-solid fa-pen-to-square btn btn-sm text-primary"
+                                            v-on:click="handlerEditCredential(credential.id)"
+                                        ></i>
+                                    </td>
+                                    <td>
+                                        <i
+                                            class="fa-solid fa-trash btn btn-sm text-primary"
+                                            v-on:click="handlerDeleteCredential(credential.id)"
+                                        ></i>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="col border rounded p-2">
+                    <div class="d-flex justify-content-between mb-2">
+                        <h5>Servidores</h5>
+                        <button class="btn" v-on:click="handlerNewServer">
+                            <i class="fa-solid fa-plus"></i> Adicionar servidor
+                        </button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-striped border">
+                            <thead>
+                                <tr>
+                                    <th scope="col">#</th>
+                                    <th scope="col">Descrição</th>
+                                    <th scope="col">Provedor</th>
+                                    <th scope="col">Abrir</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="server of Servers">
+                                    <th scope="row">{{server.id}}</th>
+                                    <td>{{server.description}}</td>
+                                    <td>{{server.provider}}</td>
+                                    <td>
+                                        <a :href="'/servers/i?id='+server.id"
+                                            ><i class="fa-solid fa-arrow-right"></i
+                                        ></a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
+
+            <div class="row" style="gap: 10px">
+                <div class="col border rounded p-2">
+                    <div class="d-flex justify-content-between mb-2">
+                        <h5>Servidores</h5>
+                        <button class="btn" v-on:click="handlerNewServer">
+                            <i class="fa-solid fa-plus"></i> Adicionar servidor
+                        </button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-striped border">
+                            <thead>
+                                <tr>
+                                    <th scope="col">#</th>
+                                    <th scope="col">Descrição</th>
+                                    <th scope="col">Provedor</th>
+                                    <th scope="col">Abrir</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="server of Servers">
+                                    <th scope="row">{{server.id}}</th>
+                                    <td>{{server.description}}</td>
+                                    <td>{{server.provider}}</td>
+                                    <td>
+                                        <a :href="'/servers/i?id='+server.id"
+                                            ><i class="fa-solid fa-arrow-right"></i
+                                        ></a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Project -->
+            <div
+                class="modal fade"
+                id="newProjectModal"
+                tabindex="-1"
+                aria-labelledby="newProjectModalLabel"
+                aria-hidden="true"
+            >
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h1 class="modal-title fs-5" id="newProjectModalLabel">Projeto</h1>
+                            <button
+                                type="button"
+                                class="btn-close"
+                                data-bs-dismiss="modal"
+                                aria-label="Fechar"
+                            ></button>
+                        </div>
+                        <div class="modal-body">
+                            <form @submit="handlerNewProjectSubmit">
+                                <div class="row mb-3">
+                                    <label class="form-label" for="name">Nome</label>
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="name"
+                                        v-model="payloads.project.name"
+                                        required
+                                    />
+                                </div>
+
+                                <div class="row mb-3">
+                                    <label class="form-label" for="url">URL</label>
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="url"
+                                        v-model="payloads.project.url"
+                                        required
+                                    />
+                                </div>
+
+                                <div class="row mb-3">
+                                    <label class="form-label" for="type">Tipo</label>
+                                    <select class="form-control" id="type" v-model="payloads.project.type" required>
+                                        <option disabled value="">Selecione uma opção</option>
+                                        <option value="API">API</option>
+                                        <option value="Bot">Bot</option>
+                                        <option value="WebSite">WebSite</option>
+                                        <option value="Automação">Automação</option>
+                                        <option value="Crawler">Crawler</option>
+                                        <option value="Outros">Outros</option>
+                                    </select>
+                                </div>
+
+                                <div class="row mb-3">
+                                    <input type="submit" class="form-control btn btn-dark btn-block" value="Enviar" />
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Credential -->
+            <div
+                class="modal fade"
+                id="credentialModal"
+                tabindex="-1"
+                aria-labelledby="credentialModalLabel"
+                aria-hidden="true"
+            >
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h1 class="modal-title fs-5" id="credentialModalLabel">Credencial</h1>
+                            <button
+                                type="button"
+                                class="btn-close"
+                                data-bs-dismiss="modal"
+                                aria-label="Fechar"
+                            ></button>
+                        </div>
+                        <div class="modal-body">
+                            <form @submit="handlerCredentialSubmit">
+                                <div class="row mb-3">
+                                    <label class="form-label" for="description">Descrição</label>
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="description"
+                                        v-model="payloads.credential.description"
+                                        required
+                                    />
+                                </div>
+
+                                <div class="row mb-3">
+                                    <label class="form-label" for="host">Host</label>
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="host"
+                                        v-model="payloads.credential.host"
+                                        required
+                                    />
+                                </div>
+
+                                <div class="row mb-3">
+                                    <label class="form-label" for="username">User</label>
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="username"
+                                        v-model="payloads.credential.username"
+                                        required
+                                    />
+                                </div>
+
+                                <div class="row mb-3">
+                                    <label class="form-label" for="password">Senha</label>
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="password"
+                                        v-model="payloads.credential.password"
+                                        required
+                                    />
+                                </div>
+
+                                <div class="row mb-3">
+                                    <input type="submit" class="form-control btn btn-dark btn-block" value="Enviar" />
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Server -->
+            <div
+                class="modal fade"
+                id="serverModal"
+                tabindex="-1"
+                aria-labelledby="serverModalLabel"
+                aria-hidden="true"
+            >
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h1 class="modal-title fs-5" id="serverModalLabel">Servidor</h1>
+                            <button
+                                type="button"
+                                class="btn-close"
+                                data-bs-dismiss="modal"
+                                aria-label="Fechar"
+                            ></button>
+                        </div>
+                        <div class="modal-body">
+                            <form @submit="handlerServerSubmit">
+                                <div class="row mb-3">
+                                    <label class="form-label" for="description">Descrição</label>
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="description"
+                                        v-model="payloads.server.description"
+                                        required
+                                    />
+                                </div>
+
+                                <div class="row mb-3">
+                                    <label class="form-label" for="provider">Provedor</label>
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="provider"
+                                        v-model="payloads.server.provider"
+                                        required
+                                    />
+                                </div>
+
+                                <div class="row mb-3">
+                                    <label class="form-label" for="host">Host</label>
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="host"
+                                        v-model="payloads.server.host"
+                                        required
+                                    />
+                                </div>
+
+                                <div class="row mb-3">
+                                    <label class="form-label" for="username">User</label>
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="username"
+                                        v-model="payloads.server.username"
+                                    />
+                                </div>
+
+                                <div class="row mb-3">
+                                    <label class="form-label" for="password">Senha</label>
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="password"
+                                        v-model="payloads.server.password"
+                                    />
+                                </div>
+
+                                <div class="row mb-3">
+                                    <label class="form-label" for="rsa">RSA</label>
+                                    <textarea
+                                        class="form-control"
+                                        id="rsa"
+                                        v-model="payloads.server.rsa"
+                                        rows="15"
+                                    ></textarea>
+                                </div>
+
+                                <div class="row mb-3">
+                                    <input type="submit" class="form-control btn btn-dark btn-block" value="Enviar" />
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
 
-    <script src="../assets/js/axios.min.js"></script>
-    <script src="../assets/js/vue.min.js"></script>
-    <script src="../assets/js/clients/i.js"></script>
-</body>
-
+        <script src="../assets/js/axios.min.js"></script>
+        <script src="../assets/js/vue.min.js"></script>
+        <script src="../assets/js/clients/i.js"></script>
+    </body>
 </html>

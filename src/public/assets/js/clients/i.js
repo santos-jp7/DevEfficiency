@@ -10,6 +10,7 @@ const client = new Vue({
         email: null,
         Credentials: [],
         Projects: [],
+        Servers: [],
         payloads: {
             project: {
                 id: null,
@@ -22,6 +23,15 @@ const client = new Vue({
                 host: null,
                 username: null,
                 password: null,
+            },
+            server: {
+                id: null,
+                description: null,
+                provider: null,
+                host: null,
+                username: null,
+                password: null,
+                rsa: null,
             },
         },
     },
@@ -47,6 +57,13 @@ const client = new Vue({
                 })
         },
         handlerNewProject() {
+            this.$data.payloads.project = {
+                id: null,
+                name: null,
+                url: null,
+                type: null,
+            }
+
             $('#newProjectModal').modal('toggle')
         },
         handlerNewProjectSubmit(e) {
@@ -110,7 +127,42 @@ const client = new Vue({
                     window.location.reload()
                 })
         },
+        handlerNewServer() {
+            this.$data.payloads.server = {
+                id: null,
+                description: null,
+                provider: null,
+                host: null,
+                username: null,
+                password: null,
+                rsa: null,
+            }
+
+            $('#serverModal').modal('toggle')
+        },
+        handlerServerSubmit(e) {
+            e.preventDefault()
+
+            __api__
+                .post('/api/servers', {
+                    description: this.$data.payloads.server.description,
+                    provider: this.$data.payloads.server.provider,
+                    host: this.$data.payloads.server.host,
+                    username: this.$data.payloads.server.username,
+                    password: this.$data.payloads.server.password,
+                    rsa: this.$data.payloads.server.rsa,
+                    ClientId: this.$data.id,
+                })
+                .then(({ data }) => {
+                    window.location.href = '/servers/i?id=' + data.id
+                })
+                .catch((e) =>
+                    console.log(error.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.'),
+                )
+        },
         maskDocument() {
+            if (!this.$data.document) return
+
             this.$data.document = this.$data.document.replace(/[^a-zA-Z0-9 ]/g, '')
 
             if (this.$data.document.length <= 11)
