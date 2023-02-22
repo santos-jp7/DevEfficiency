@@ -3,6 +3,7 @@ import { Model, InferAttributes, InferCreationAttributes, CreationOptional, Fore
 import db from '../db'
 
 import Client from './Client'
+import Project from './Project'
 
 class Server extends Model<InferAttributes<Server>, InferCreationAttributes<Server>> {
     declare id: CreationOptional<number>
@@ -52,5 +53,11 @@ Server.init(
         sequelize: db,
     },
 )
+
+Server.hasMany(Project, {
+    onDelete: 'RESTRICT',
+})
+
+Project.belongsTo(Server)
 
 export default Server

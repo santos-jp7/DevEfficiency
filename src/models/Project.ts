@@ -14,6 +14,7 @@ import {
 import db from '../db'
 
 import Client from './Client'
+import Server from './Server'
 import Service_order from './Service_order'
 import Subproject from './Subproject'
 
@@ -25,6 +26,7 @@ class Project extends Model<InferAttributes<Project>, InferCreationAttributes<Pr
     declare type: CreationOptional<'API' | 'Bot' | 'WebSite' | 'Automação' | 'Crawler' | 'Outros'>
 
     declare ClientId: ForeignKey<Client['id']>
+    declare ServerId: ForeignKey<Server['id']>
 
     declare getSubproject: HasManyGetAssociationsMixin<Subproject>
     declare createSubproject: HasManyCreateAssociationMixin<Subproject, 'ProjectId'>

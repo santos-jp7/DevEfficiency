@@ -9,6 +9,10 @@ const project = new Vue({
         url: null,
         type: null,
         ClientId: 0,
+        ServerId: null,
+        Client: {
+            name: null,
+        },
         Subprojects: [],
         Service_orders: [],
         payloads: {
@@ -23,6 +27,9 @@ const project = new Vue({
                 type: null,
             },
         },
+        references: {
+            servers: [],
+        },
     },
     methods: {
         handlerSubmit(e) {
@@ -33,6 +40,7 @@ const project = new Vue({
                     name: this.$data.name,
                     url: this.$data.url,
                     type: this.$data.type,
+                    ServerId: this.$data.ServerId,
                 })
                 .then(() => {
                     window.location.reload()
@@ -148,6 +156,19 @@ const project = new Vue({
             .get('/api/projects/' + params.id)
             .then(({ data }) => {
                 Object.keys(data).forEach((key) => (this.$data[key] = data[key]))
+            })
+            .catch((error) => {
+                console.log(error)
+
+                alert(error.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.')
+            })
+
+        __api__
+            .get('/api/servers')
+            .then(({ data }) => {
+                if (!data) return
+
+                this.$data.references.servers = data
             })
             .catch((error) => {
                 console.log(error)

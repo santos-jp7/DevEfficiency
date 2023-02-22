@@ -32,27 +32,27 @@ class projectsController {
     static async show(req: projectsRequest, res: FastifyReply): Promise<FastifyReply> {
         return res.send(
             await Project.findByPk(req.params.id, {
-                include: [Subproject, Service_order],
+                include: [Subproject, Service_order, Client],
             }),
         )
     }
 
     static async store(req: projectsRequest, res: FastifyReply): Promise<FastifyReply> {
-        const { name, url, ClientId, type } = req.body
+        const { name, url, ClientId, type, ServerId } = req.body
 
         const client = await Client.findByPk(ClientId)
-        const project = await client?.createProject({ name, url, type })
+        const project = await client?.createProject({ name, url, type, ServerId })
 
         return res.send(project)
     }
 
     static async update(req: projectsRequest, res: FastifyReply): Promise<FastifyReply> {
         const { id } = req.params
-        const { name, url, type, fixed } = req.body
+        const { name, url, type, fixed, ServerId } = req.body
 
         const project = await Project.findByPk(id)
 
-        await project?.update({ name, url, type, fixed })
+        await project?.update({ name, url, type, fixed, ServerId })
         await project?.save()
 
         return res.send(project)
