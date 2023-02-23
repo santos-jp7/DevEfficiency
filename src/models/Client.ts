@@ -15,6 +15,7 @@ import db from '../db'
 import Credential from './Credential'
 import Project from './Project'
 import Server from './Server'
+import Service_order from './Service_order'
 
 class Client extends Model<InferAttributes<Client>, InferCreationAttributes<Client>> {
     declare id: CreationOptional<number>
@@ -33,17 +34,22 @@ class Client extends Model<InferAttributes<Client>, InferCreationAttributes<Clie
     declare getServers: HasManyGetAssociationsMixin<Server>
     declare createServer: HasManyCreateAssociationMixin<Server, 'ClientId'>
 
-    declare getProject: HasManyGetAssociationsMixin<Project>
+    declare getProjects: HasManyGetAssociationsMixin<Project>
     declare createProject: HasManyCreateAssociationMixin<Project, 'ClientId'>
+
+    declare getService_orders: HasManyGetAssociationsMixin<Service_order>
+    declare createService_order: HasManyCreateAssociationMixin<Service_order, 'ProjectId'>
 
     declare credentials: NonAttribute<Credential[]>
     declare servers: NonAttribute<Server[]>
     declare projects: NonAttribute<Project[]>
+    declare service_orders: NonAttribute<Service_order[]>
 
     declare static associations: {
         credentials: Association<Client, Credential>
         servers: Association<Client, Server>
         projects: Association<Client, Project>
+        service_orders: Association<Project, Service_order>
     }
 }
 
@@ -88,7 +94,12 @@ Client.hasMany(Project, {
     onDelete: 'RESTRICT',
 })
 
+Client.hasMany(Service_order, {
+    onDelete: 'RESTRICT',
+})
+
 Project.belongsTo(Client)
 Server.belongsTo(Client)
+Service_order.belongsTo(Client)
 
 export default Client

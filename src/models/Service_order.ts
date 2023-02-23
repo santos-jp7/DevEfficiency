@@ -24,6 +24,7 @@ class Service_order extends Model<InferAttributes<Service_order>, InferCreationA
     declare status: CreationOptional<'Em avaliação' | 'Em correções' | 'Pendente' | 'Finalizado' | 'Cancelado'>
 
     declare ProjectId: ForeignKey<Project['id']>
+    declare ClientId: ForeignKey<Client['id']>
 
     declare getProtocol: HasOneGetAssociationMixin<Protocol>
     declare createProtocol: HasOneCreateAssociationMixin<Protocol>

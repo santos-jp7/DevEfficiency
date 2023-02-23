@@ -34,7 +34,6 @@ async function syncModels(): Promise<void> {
     await Subproject.sync()
 
     await Service_order.sync()
-
     await Protocol.sync()
     await Protocol_register.sync()
     await Protocol_product.sync()
