@@ -30,20 +30,28 @@ class serviceOrdersController {
             await Service_order.findAll({
                 order: [['createdAt', 'DESC']],
                 limit,
-                include: [{ model: Project, include: [Client] }],
+                include: [{ model: Project, include: [Client] }, Client],
             }),
         )
     }
 
     static async show(req: serviceOrdersRequest, res: FastifyReply): Promise<FastifyReply> {
-        return res.send(await Service_order.findByPk(req.params.id, { include: [Protocol] }))
+        return res.send(
+            await Service_order.findByPk(req.params.id, {
+                include: [Protocol, { model: Project, include: [Client] }, Client],
+            }),
+        )
     }
 
     static async store(req: serviceOrdersRequest, res: FastifyReply): Promise<FastifyReply> {
-        const { subject, description, ProjectId } = req.body
+        const { subject, description, ProjectId, ClientId } = req.body
 
-        const project = await Project.findByPk(ProjectId)
-        const os = await project?.createService_order({ subject, description })
+        let aux
+
+        if (ProjectId) aux = await Project.findByPk(ProjectId)
+        if (ClientId) aux = await Client.findByPk(ClientId)
+
+        const os = await aux?.createService_order({ subject, description })
 
         await os?.createProtocol()
 

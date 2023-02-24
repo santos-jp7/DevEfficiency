@@ -204,6 +204,8 @@
                 </div>
             </div>
 
+            <br />
+
             <div class="row" style="gap: 10px">
                 <div class="col border rounded p-2">
                     <div class="d-flex justify-content-between mb-2">
@@ -229,6 +231,39 @@
                                     <td>{{server.provider}}</td>
                                     <td>
                                         <a :href="'/servers/i?id='+server.id"
+                                            ><i class="fa-solid fa-arrow-right"></i
+                                        ></a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="col border rounded p-2">
+                    <div class="d-flex justify-content-between mb-2">
+                        <h5>Os</h5>
+                        <button class="btn" v-on:click="handlerNewOs">
+                            <i class="fa-solid fa-plus"></i> Adicionar Os
+                        </button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-striped border">
+                            <thead>
+                                <tr>
+                                    <th scope="col">#</th>
+                                    <th scope="col">Assunto</th>
+                                    <th scope="col">Status</th>
+                                    <th scope="col">Abrir</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="service_order of Service_orders">
+                                    <th scope="row">{{service_order.id}}</th>
+                                    <td>{{service_order.subject}}</td>
+                                    <td>{{service_order.status}}</td>
+                                    <td>
+                                        <a :href="'/service_orders/i?id='+service_order.id"
                                             ><i class="fa-solid fa-arrow-right"></i
                                         ></a>
                                     </td>
@@ -459,6 +494,53 @@
                                         id="rsa"
                                         v-model="payloads.server.rsa"
                                         rows="15"
+                                    ></textarea>
+                                </div>
+
+                                <div class="row mb-3">
+                                    <input type="submit" class="form-control btn btn-dark btn-block" value="Enviar" />
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Os -->
+            <div class="modal fade" id="newOsModal" tabindex="-1" aria-labelledby="osModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h1 class="modal-title fs-5" id="osModalLabel">Os</h1>
+                            <button
+                                type="button"
+                                class="btn-close"
+                                data-bs-dismiss="modal"
+                                aria-label="Fechar"
+                            ></button>
+                        </div>
+                        <div class="modal-body">
+                            <form @submit="handlerNewOsSubmit">
+                                <div class="row mb-3">
+                                    <label class="form-label" for="subject">Assunto</label>
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="subject"
+                                        v-model="payloads.service_order.subject"
+                                        required
+                                    />
+                                </div>
+
+                                <div class="row mb-3">
+                                    <label class="form-label" for="description">Descrição</label>
+                                    <textarea
+                                        type="text"
+                                        class="form-control"
+                                        id="description"
+                                        v-model="payloads.service_order.description"
+                                        rows="4"
+                                        required
                                     ></textarea>
                                 </div>
 

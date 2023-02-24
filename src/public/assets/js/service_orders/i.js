@@ -9,6 +9,7 @@ const service_order = new Vue({
         status: null,
         createdAt: null,
         ProjectId: null,
+        ClientId: null,
         Protocol: {
             id: null,
             status: null,
@@ -16,6 +17,14 @@ const service_order = new Vue({
             Protocol_products: [],
             Receipts: [],
         },
+        Project: {
+            name: null,
+            Client: {
+                id: null,
+                name: null,
+            },
+        },
+        Client: { name: null },
         payloads: {
             protocolRegister: {
                 description: null,

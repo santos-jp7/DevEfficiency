@@ -11,6 +11,7 @@ const client = new Vue({
         Credentials: [],
         Projects: [],
         Servers: [],
+        Service_orders: [],
         payloads: {
             project: {
                 id: null,
@@ -32,6 +33,10 @@ const client = new Vue({
                 username: null,
                 password: null,
                 rsa: null,
+            },
+            service_order: {
+                subject: null,
+                description: null,
             },
         },
     },
@@ -155,6 +160,25 @@ const client = new Vue({
                 })
                 .then(({ data }) => {
                     window.location.href = '/servers/i?id=' + data.id
+                })
+                .catch((e) =>
+                    console.log(error.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.'),
+                )
+        },
+        handlerNewOs() {
+            $('#newOsModal').modal('toggle')
+        },
+        handlerNewOsSubmit(e) {
+            e.preventDefault()
+
+            __api__
+                .post('/api/os', {
+                    subject: this.$data.payloads.service_order.subject,
+                    description: this.$data.payloads.service_order.description,
+                    ClientId: this.$data.id,
+                })
+                .then(({ data }) => {
+                    window.location.href = '/service_orders/i?id=' + data.id
                 })
                 .catch((e) =>
                     console.log(error.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.'),
