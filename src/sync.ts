@@ -13,6 +13,7 @@ import Receipts from './models/Receipts'
 import Product from './models/Product'
 import Protocol_product from './models/Protocol_product'
 import Server from './models/Server'
+import Contact from './models/Contact'
 
 async function syncModels(): Promise<void> {
     // const files = fs.readdirSync(path.resolve("src", "models"));
@@ -27,6 +28,7 @@ async function syncModels(): Promise<void> {
 
     await Product.sync()
 
+    await Contact.sync()
     await Credential.sync()
     await Server.sync()
 

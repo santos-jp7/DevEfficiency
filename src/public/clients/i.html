@@ -127,9 +127,9 @@
 
                 <div class="col border rounded p-2">
                     <div class="d-flex justify-content-between mb-2">
-                        <h5>Credenciais</h5>
-                        <button class="btn" v-on:click="handlerNewCredential">
-                            <i class="fa-solid fa-plus"></i> Adicionar credencial
+                        <h5>Os</h5>
+                        <button class="btn" v-on:click="handlerNewOs">
+                            <i class="fa-solid fa-plus"></i> Adicionar Os
                         </button>
                     </div>
                     <div class="table-responsive">
@@ -137,32 +137,20 @@
                             <thead>
                                 <tr>
                                     <th scope="col">#</th>
-                                    <th scope="col">Descrição</th>
-                                    <th scope="col">Host</th>
-                                    <th scope="col">User</th>
-                                    <th scope="col">Senha</th>
-                                    <th scope="col">Editar</th>
-                                    <th scope="col">Excluir</th>
+                                    <th scope="col">Assunto</th>
+                                    <th scope="col">Status</th>
+                                    <th scope="col">Abrir</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="credential of Credentials">
-                                    <th scope="row">{{credential.id}}</th>
-                                    <td>{{credential.description}}</td>
-                                    <td>{{credential.host}}</td>
-                                    <td>{{credential.username}}</td>
-                                    <td>{{credential.password}}</td>
+                                <tr v-for="service_order of Service_orders">
+                                    <th scope="row">{{service_order.id}}</th>
+                                    <td>{{service_order.subject}}</td>
+                                    <td>{{service_order.status}}</td>
                                     <td>
-                                        <i
-                                            class="fa-solid fa-pen-to-square btn btn-sm text-primary"
-                                            v-on:click="handlerEditCredential(credential.id)"
-                                        ></i>
-                                    </td>
-                                    <td>
-                                        <i
-                                            class="fa-solid fa-trash btn btn-sm text-primary"
-                                            v-on:click="handlerDeleteCredential(credential.id)"
-                                        ></i>
+                                        <a :href="'/service_orders/i?id='+service_order.id"
+                                            ><i class="fa-solid fa-arrow-right"></i
+                                        ></a>
                                     </td>
                                 </tr>
                             </tbody>
@@ -209,9 +197,9 @@
             <div class="row" style="gap: 10px">
                 <div class="col border rounded p-2">
                     <div class="d-flex justify-content-between mb-2">
-                        <h5>Servidores</h5>
-                        <button class="btn" v-on:click="handlerNewServer">
-                            <i class="fa-solid fa-plus"></i> Adicionar servidor
+                        <h5>Contatos</h5>
+                        <button class="btn" v-on:click="handlerNewContact">
+                            <i class="fa-solid fa-plus"></i> Adicionar contato
                         </button>
                     </div>
                     <div class="table-responsive">
@@ -219,20 +207,32 @@
                             <thead>
                                 <tr>
                                     <th scope="col">#</th>
-                                    <th scope="col">Descrição</th>
-                                    <th scope="col">Provedor</th>
-                                    <th scope="col">Abrir</th>
+                                    <th scope="col">Nome</th>
+                                    <th scope="col">E-mail</th>
+                                    <th scope="col">Telefone</th>
+                                    <th scope="col">WhatsApp</th>
+                                    <th scope="col">Editar</th>
+                                    <th scope="col">Excluir</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="server of Servers">
-                                    <th scope="row">{{server.id}}</th>
-                                    <td>{{server.description}}</td>
-                                    <td>{{server.provider}}</td>
+                                <tr v-for="contact of Contacts">
+                                    <th scope="row">{{contact.id}}</th>
+                                    <td>{{contact.name}}</td>
+                                    <td>{{contact.email}}</td>
+                                    <td>{{contact.number}}</td>
+                                    <td>{{contact.whatsapp}}</td>
                                     <td>
-                                        <a :href="'/servers/i?id='+server.id"
-                                            ><i class="fa-solid fa-arrow-right"></i
-                                        ></a>
+                                        <i
+                                            class="fa-solid fa-pen-to-square btn btn-sm text-primary"
+                                            v-on:click="handlerEditContact(contact.id)"
+                                        ></i>
+                                    </td>
+                                    <td>
+                                        <i
+                                            class="fa-solid fa-trash btn btn-sm text-primary"
+                                            v-on:click="handlerDeleteContact(contact.id)"
+                                        ></i>
                                     </td>
                                 </tr>
                             </tbody>
@@ -242,9 +242,9 @@
 
                 <div class="col border rounded p-2">
                     <div class="d-flex justify-content-between mb-2">
-                        <h5>Os</h5>
-                        <button class="btn" v-on:click="handlerNewOs">
-                            <i class="fa-solid fa-plus"></i> Adicionar Os
+                        <h5>Credenciais</h5>
+                        <button class="btn" v-on:click="handlerNewCredential">
+                            <i class="fa-solid fa-plus"></i> Adicionar credencial
                         </button>
                     </div>
                     <div class="table-responsive">
@@ -252,20 +252,32 @@
                             <thead>
                                 <tr>
                                     <th scope="col">#</th>
-                                    <th scope="col">Assunto</th>
-                                    <th scope="col">Status</th>
-                                    <th scope="col">Abrir</th>
+                                    <th scope="col">Descrição</th>
+                                    <th scope="col">Host</th>
+                                    <th scope="col">User</th>
+                                    <th scope="col">Senha</th>
+                                    <th scope="col">Editar</th>
+                                    <th scope="col">Excluir</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="service_order of Service_orders">
-                                    <th scope="row">{{service_order.id}}</th>
-                                    <td>{{service_order.subject}}</td>
-                                    <td>{{service_order.status}}</td>
+                                <tr v-for="credential of Credentials">
+                                    <th scope="row">{{credential.id}}</th>
+                                    <td>{{credential.description}}</td>
+                                    <td>{{credential.host}}</td>
+                                    <td>{{credential.username}}</td>
+                                    <td>{{credential.password}}</td>
                                     <td>
-                                        <a :href="'/service_orders/i?id='+service_order.id"
-                                            ><i class="fa-solid fa-arrow-right"></i
-                                        ></a>
+                                        <i
+                                            class="fa-solid fa-pen-to-square btn btn-sm text-primary"
+                                            v-on:click="handlerEditCredential(credential.id)"
+                                        ></i>
+                                    </td>
+                                    <td>
+                                        <i
+                                            class="fa-solid fa-trash btn btn-sm text-primary"
+                                            v-on:click="handlerDeleteCredential(credential.id)"
+                                        ></i>
                                     </td>
                                 </tr>
                             </tbody>
@@ -542,6 +554,77 @@
                                         rows="4"
                                         required
                                     ></textarea>
+                                </div>
+
+                                <div class="row mb-3">
+                                    <input type="submit" class="form-control btn btn-dark btn-block" value="Enviar" />
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Contact -->
+            <div
+                class="modal fade"
+                id="contactModal"
+                tabindex="-1"
+                aria-labelledby="contactModalLabel"
+                aria-hidden="true"
+            >
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h1 class="modal-title fs-5" id="contactModalLabel">Contato</h1>
+                            <button
+                                type="button"
+                                class="btn-close"
+                                data-bs-dismiss="modal"
+                                aria-label="Fechar"
+                            ></button>
+                        </div>
+                        <div class="modal-body">
+                            <form @submit="handlerContactSubmit">
+                                <div class="row mb-3">
+                                    <label class="form-label" for="name">Nome</label>
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="name"
+                                        v-model="payloads.contact.name"
+                                        required
+                                    />
+                                </div>
+
+                                <div class="row mb-3">
+                                    <label class="form-label" for="email">E-mail</label>
+                                    <input
+                                        type="email"
+                                        class="form-control"
+                                        id="email"
+                                        v-model="payloads.contact.email"
+                                    />
+                                </div>
+
+                                <div class="row mb-3">
+                                    <label class="form-label" for="number">Telefone</label>
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="number"
+                                        v-model="payloads.contact.number"
+                                    />
+                                </div>
+
+                                <div class="row mb-3">
+                                    <label class="form-label" for="whatsapp">WhatsApp</label>
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="whatsapp"
+                                        v-model="payloads.contact.whatsapp"
+                                    />
                                 </div>
 
                                 <div class="row mb-3">

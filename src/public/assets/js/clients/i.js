@@ -12,6 +12,7 @@ const client = new Vue({
         Projects: [],
         Servers: [],
         Service_orders: [],
+        Contacts: [],
         payloads: {
             project: {
                 id: null,
@@ -37,6 +38,13 @@ const client = new Vue({
             service_order: {
                 subject: null,
                 description: null,
+            },
+            contact: {
+                id: null,
+                name: null,
+                number: null,
+                email: null,
+                whatsapp: null,
             },
         },
     },
@@ -122,6 +130,51 @@ const client = new Vue({
                 host: this.$data.payloads.credential.host,
                 username: this.$data.payloads.credential.username,
                 password: this.$data.payloads.credential.password,
+                ClientId: this.$data.id,
+            })
+                .then(() => {
+                    window.location.reload()
+                })
+                .catch((e) => {
+                    alert(e.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.')
+                    window.location.reload()
+                })
+        },
+        handlerNewContact() {
+            this.$data.payloads.contact = {
+                id: null,
+                name: null,
+                email: null,
+                number: null,
+                whatsapp: null,
+            }
+
+            $('#contactModal').modal('toggle')
+        },
+        handlerEditContact(contactId) {
+            this.$data.payloads.contact = this.Contact.find((v) => v.id == contactId)
+
+            $('#contactModal').modal('toggle')
+        },
+        handlerDeleteContact(contactId) {
+            if (!confirm('Confirma exclusão?')) return
+
+            __api__.delete('/api/contacts/' + contactId)
+            window.location.reload()
+        },
+        handlerContactSubmit(e) {
+            e.preventDefault()
+
+            let method = this.$data.payloads.contact.id ? __api__.put : __api__.post
+            let url = this.$data.payloads.contact.id
+                ? '/api/contacts/' + this.$data.payloads.contact.id
+                : '/api/contacts'
+
+            method(url, {
+                name: this.$data.payloads.contact.name,
+                email: this.$data.payloads.contact.email,
+                number: this.$data.payloads.contact.number,
+                whatsapp: this.$data.payloads.contact.whatsapp,
                 ClientId: this.$data.id,
             })
                 .then(() => {

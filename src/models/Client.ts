@@ -11,6 +11,7 @@ import {
 } from 'sequelize'
 
 import db from '../db'
+import Contact from './Contact'
 
 import Credential from './Credential'
 import Project from './Project'
@@ -38,18 +39,23 @@ class Client extends Model<InferAttributes<Client>, InferCreationAttributes<Clie
     declare createProject: HasManyCreateAssociationMixin<Project, 'ClientId'>
 
     declare getService_orders: HasManyGetAssociationsMixin<Service_order>
-    declare createService_order: HasManyCreateAssociationMixin<Service_order, 'ProjectId'>
+    declare createService_order: HasManyCreateAssociationMixin<Service_order, 'ClientId'>
+
+    declare getContacts: HasManyGetAssociationsMixin<Contact>
+    declare createContact: HasManyCreateAssociationMixin<Contact, 'ClientId'>
 
     declare credentials: NonAttribute<Credential[]>
     declare servers: NonAttribute<Server[]>
     declare projects: NonAttribute<Project[]>
     declare service_orders: NonAttribute<Service_order[]>
+    declare contacts: NonAttribute<Contact[]>
 
     declare static associations: {
         credentials: Association<Client, Credential>
         servers: Association<Client, Server>
         projects: Association<Client, Project>
-        service_orders: Association<Project, Service_order>
+        service_orders: Association<Client, Service_order>
+        contacts: Association<Client, Contact>
     }
 }
 
@@ -98,8 +104,13 @@ Client.hasMany(Service_order, {
     onDelete: 'RESTRICT',
 })
 
+Client.hasMany(Contact, {
+    onDelete: 'RESTRICT',
+})
+
 Project.belongsTo(Client)
 Server.belongsTo(Client)
 Service_order.belongsTo(Client)
+Contact.belongsTo(Client)
 
 export default Client

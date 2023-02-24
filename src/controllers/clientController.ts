@@ -1,6 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
 
 import Client from '../models/Client'
+import Contact from '../models/Contact'
 import Credential from '../models/Credential'
 import Project from '../models/Project'
 import Server from '../models/Server'
@@ -19,7 +20,7 @@ class clientController {
     static async show(req: clientRequest, res: FastifyReply): Promise<FastifyReply> {
         return res.send(
             await Client.findByPk(req.params.id, {
-                include: [Credential, Project, Server, Service_order],
+                include: [Credential, Project, Server, Service_order, Contact],
             }),
         )
     }
