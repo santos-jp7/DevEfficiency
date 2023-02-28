@@ -152,7 +152,7 @@ const client = new Vue({
             $('#contactModal').modal('toggle')
         },
         handlerEditContact(contactId) {
-            this.$data.payloads.contact = this.Contact.find((v) => v.id == contactId)
+            this.$data.payloads.contact = this.Contacts.find((v) => v.id == contactId)
 
             $('#contactModal').modal('toggle')
         },
