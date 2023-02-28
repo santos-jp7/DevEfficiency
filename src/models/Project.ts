@@ -38,14 +38,18 @@ class Project extends Model<InferAttributes<Project>, InferCreationAttributes<Pr
     declare getChecks: HasManyGetAssociationsMixin<Check>
     declare createCheck: HasManyCreateAssociationMixin<Check, 'ProjectId'>
 
-    declare subprojects: NonAttribute<Subproject[]>
-    declare service_orders: NonAttribute<Service_order[]>
-    declare checks: NonAttribute<Check[]>
+    declare Subprojects: NonAttribute<Subproject[]>
+    declare Service_orders: NonAttribute<Service_order[]>
+    declare Checks: NonAttribute<Check[]>
+
+    declare Client: NonAttribute<Client>
 
     declare static associations: {
-        subprojects: Association<Project, Subproject>
-        service_orders: Association<Project, Service_order>
-        checks: Association<Project, Check>
+        Subprojects: Association<Project, Subproject>
+        Service_orders: Association<Project, Service_order>
+        Checks: Association<Project, Check>
+
+        Client: Association<Project, Client>
     }
 
     declare createdAt: CreationOptional<Date>

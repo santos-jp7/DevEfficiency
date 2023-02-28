@@ -32,7 +32,9 @@ const project = new Vue({
                 description: null,
                 url: null,
                 condition: null,
+                verify_status: true,
                 send_alert: null,
+                message: null,
             },
         },
         references: {
@@ -139,7 +141,9 @@ const project = new Vue({
                 description: null,
                 url: null,
                 condition: null,
+                verify_status: true,
                 send_alert: null,
+                message: null,
             }
 
             $('#checkModal').modal('toggle')
@@ -165,7 +169,9 @@ const project = new Vue({
                 description: this.$data.payloads.check.description,
                 url: this.$data.payloads.check.url,
                 condition: this.$data.payloads.check.condition,
+                verify_status: this.$data.payloads.check.verify_status,
                 send_alert: this.$data.payloads.check.send_alert,
+                message: this.$data.payloads.check.message,
                 ProjectId: this.$data.id,
             })
                 .then(() => {

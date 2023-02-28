@@ -16,7 +16,7 @@ import Server from './models/Server'
 import Contact from './models/Contact'
 import Check from './models/Check'
 
-async function syncModels(): Promise<void> {
+async function syncModels(): Promise<true> {
     // const files = fs.readdirSync(path.resolve("src", "models"));
 
     // files.forEach((modelName) => {
@@ -43,6 +43,8 @@ async function syncModels(): Promise<void> {
     await Protocol_product.sync()
 
     await Receipts.sync()
+
+    return true
 }
 
 export default syncModels

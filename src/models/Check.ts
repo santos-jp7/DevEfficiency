@@ -1,4 +1,13 @@
-import { Model, InferAttributes, InferCreationAttributes, CreationOptional, ForeignKey, DataTypes } from 'sequelize'
+import {
+    Model,
+    InferAttributes,
+    InferCreationAttributes,
+    CreationOptional,
+    ForeignKey,
+    DataTypes,
+    NonAttribute,
+    Association,
+} from 'sequelize'
 
 import db from '../db'
 
@@ -10,10 +19,18 @@ class Check extends Model<InferAttributes<Check>, InferCreationAttributes<Check>
     declare url: string
     declare condition: string
     declare send_alert: boolean
+    declare message: string
+    declare verify_status: CreationOptional<boolean>
 
     declare status: CreationOptional<'OK' | 'Error'>
 
     declare ProjectId: ForeignKey<Project['id']>
+
+    declare Project: NonAttribute<Project>
+
+    declare static associations: {
+        Project: Association<Check, Project>
+    }
 
     declare createdAt: CreationOptional<Date>
     declare updatedAt: CreationOptional<Date>
@@ -36,10 +53,18 @@ Check.init(
         },
         condition: {
             type: DataTypes.STRING,
-            allowNull: false,
         },
         send_alert: {
-            type: DataTypes.STRING,
+            type: DataTypes.BOOLEAN,
+            defaultValue: false,
+        },
+        message: {
+            type: DataTypes.TEXT,
+            allowNull: false,
+        },
+        verify_status: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: true,
         },
         status: {
             type: DataTypes.ENUM,
