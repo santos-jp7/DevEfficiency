@@ -1,4 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
+import Check from '../models/Check'
 
 import Client from '../models/Client'
 import Project from '../models/Project'
@@ -32,7 +33,7 @@ class projectsController {
     static async show(req: projectsRequest, res: FastifyReply): Promise<FastifyReply> {
         return res.send(
             await Project.findByPk(req.params.id, {
-                include: [Subproject, Service_order, Client],
+                include: [Subproject, Service_order, Client, Check],
             }),
         )
     }

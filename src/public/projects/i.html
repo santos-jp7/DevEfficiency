@@ -191,6 +191,47 @@
                         </table>
                     </div>
                 </div>
+
+                <div class="col border rounded p-2">
+                    <div class="d-flex justify-content-between mb-2">
+                        <h5>Checks</h5>
+                        <button class="btn" v-on:click="handlerNewCheck">
+                            <i class="fa-solid fa-plus"></i> Adicionar check
+                        </button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-striped border">
+                            <thead>
+                                <tr>
+                                    <th scope="col">#</th>
+                                    <th scope="col">Descrição</th>
+                                    <th scope="col">Status</th>
+                                    <th scope="col">Editar</th>
+                                    <th scope="col">Excluir</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="check of Checks">
+                                    <th scope="row">{{check.id}}</th>
+                                    <td>{{check.description}}</td>
+                                    <td>{{check.status}}</td>
+                                    <td>
+                                        <i
+                                            class="fa-solid fa-pen-to-square btn btn-sm text-primary"
+                                            v-on:click="handlerEditCheck(check.id)"
+                                        ></i>
+                                    </td>
+                                    <td>
+                                        <i
+                                            class="fa-solid fa-trash btn btn-sm text-primary"
+                                            v-on:click="handlerDeleteCheck(check.id)"
+                                        ></i>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
 
             <!-- Modal Os -->
@@ -292,6 +333,74 @@
                                         <option value="Bot">Bot</option>
                                         <option value="Outros">Outros</option>
                                     </select>
+                                </div>
+
+                                <div class="row mb-3">
+                                    <input type="submit" class="form-control btn btn-dark btn-block" value="Enviar" />
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Check -->
+            <div class="modal fade" id="checkModal" tabindex="-1" aria-labelledby="checkModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h1 class="modal-title fs-5" id="checkModalLabel">Check</h1>
+                            <button
+                                type="button"
+                                class="btn-close"
+                                data-bs-dismiss="modal"
+                                aria-label="Fechar"
+                            ></button>
+                        </div>
+                        <div class="modal-body">
+                            <form @submit="handlerCheckSubmit">
+                                <div class="row mb-3">
+                                    <label class="form-label" for="description">Descrição</label>
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="description"
+                                        v-model="payloads.check.description"
+                                        required
+                                    />
+                                </div>
+
+                                <div class="row mb-3">
+                                    <label class="form-label" for="url">URL</label>
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="url"
+                                        v-model="payloads.check.url"
+                                        required
+                                    />
+                                </div>
+
+                                <div class="row mb-3">
+                                    <label class="form-label" for="condition">Condição</label>
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="condition"
+                                        v-model="payloads.check.condition"
+                                        required
+                                    />
+
+                                    <small>&bull; $ = Response (json/text)</small>
+                                </div>
+
+                                <div class="d-flex flex-row m-0 mb-3" style="gap: 10px">
+                                    <input
+                                        class="form-check-input"
+                                        type="checkbox"
+                                        v-model="payloads.check.send_alert"
+                                    />
+                                    <span>Enviar alerta</span>
                                 </div>
 
                                 <div class="row mb-3">

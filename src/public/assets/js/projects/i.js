@@ -15,6 +15,7 @@ const project = new Vue({
         },
         Subprojects: [],
         Service_orders: [],
+        Checks: [],
         payloads: {
             service_order: {
                 subject: null,
@@ -25,6 +26,13 @@ const project = new Vue({
                 name: null,
                 url: null,
                 type: null,
+            },
+            check: {
+                id: null,
+                description: null,
+                url: null,
+                condition: null,
+                send_alert: null,
             },
         },
         references: {
@@ -115,6 +123,49 @@ const project = new Vue({
                 name: this.$data.payloads.subproject.name,
                 url: this.$data.payloads.subproject.url,
                 type: this.$data.payloads.subproject.type,
+                ProjectId: this.$data.id,
+            })
+                .then(() => {
+                    window.location.reload()
+                })
+                .catch((e) => {
+                    alert(e.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.')
+                    window.location.reload()
+                })
+        },
+        handlerNewCheck() {
+            this.$data.payloads.check = {
+                id: null,
+                description: null,
+                url: null,
+                condition: null,
+                send_alert: null,
+            }
+
+            $('#checkModal').modal('toggle')
+        },
+        handlerEditCheck(checkId) {
+            this.$data.payloads.check = this.Checks.find((v) => v.id == checkId)
+
+            $('#checkModal').modal('toggle')
+        },
+        handlerDeleteCheck(checkId) {
+            if (!confirm('Confirma exclusão?')) return
+
+            __api__.delete('/api/checks/' + checkId)
+            window.location.reload()
+        },
+        handlerCheckSubmit(e) {
+            e.preventDefault()
+
+            let method = this.$data.payloads.check.id ? __api__.put : __api__.post
+            let url = this.$data.payloads.check.id ? '/api/checks/' + this.$data.payloads.check.id : '/api/checks'
+
+            method(url, {
+                description: this.$data.payloads.check.description,
+                url: this.$data.payloads.check.url,
+                condition: this.$data.payloads.check.condition,
+                send_alert: this.$data.payloads.check.send_alert,
                 ProjectId: this.$data.id,
             })
                 .then(() => {

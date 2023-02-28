@@ -12,6 +12,7 @@ import {
 } from 'sequelize'
 
 import db from '../db'
+import Check from './Check'
 
 import Client from './Client'
 import Server from './Server'
@@ -34,12 +35,17 @@ class Project extends Model<InferAttributes<Project>, InferCreationAttributes<Pr
     declare getService_order: HasManyGetAssociationsMixin<Service_order>
     declare createService_order: HasManyCreateAssociationMixin<Service_order, 'ProjectId'>
 
+    declare getChecks: HasManyGetAssociationsMixin<Check>
+    declare createCheck: HasManyCreateAssociationMixin<Check, 'ProjectId'>
+
     declare subprojects: NonAttribute<Subproject[]>
     declare service_orders: NonAttribute<Service_order[]>
+    declare checks: NonAttribute<Check[]>
 
     declare static associations: {
         subprojects: Association<Project, Subproject>
         service_orders: Association<Project, Service_order>
+        checks: Association<Project, Check>
     }
 
     declare createdAt: CreationOptional<Date>
@@ -85,6 +91,11 @@ Project.hasMany(Service_order, {
     onDelete: 'RESTRICT',
 })
 
+Project.hasMany(Check, {
+    onDelete: 'RESTRICT',
+})
+
 Service_order.belongsTo(Project)
+Check.belongsTo(Project)
 
 export default Project

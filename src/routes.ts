@@ -17,6 +17,7 @@ import isAuthed from './middlewares/isAuthed'
 import currentOs from './utils/currentOs'
 import serversController from './controllers/serversController'
 import contactsController from './controllers/contactsController'
+import checksController from './controllers/checksController'
 
 const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.get('/', helloController.handler)
@@ -89,6 +90,12 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.post('/servers', { preHandler: [isAuthed] }, serversController.store)
     instance.put('/servers/:id', { preHandler: [isAuthed] }, serversController.update)
     instance.delete('/servers/:id', { preHandler: [isAuthed] }, serversController.destroy)
+
+    instance.get('/checks', { preHandler: [isAuthed] }, checksController.index)
+    instance.get('/checks/:id', { preHandler: [isAuthed] }, checksController.show)
+    instance.post('/checks', { preHandler: [isAuthed] }, checksController.store)
+    instance.put('/checks/:id', { preHandler: [isAuthed] }, checksController.update)
+    instance.delete('/checks/:id', { preHandler: [isAuthed] }, checksController.destroy)
 
     instance.get('/utils/currentOs', { preHandler: [isAuthed] }, currentOs)
 
