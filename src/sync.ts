@@ -33,9 +33,9 @@ async function syncModels(): Promise<true> {
     await Credential.sync()
     await Server.sync()
 
-    await Project.sync()
+    await Project.sync({ alter: true })
     await Subproject.sync()
-    await Check.sync()
+    await Check.sync({ alter: true })
 
     await Service_order.sync()
     await Protocol.sync()
