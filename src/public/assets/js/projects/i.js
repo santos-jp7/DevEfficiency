@@ -34,6 +34,7 @@ const project = new Vue({
                 condition: null,
                 verify_status: true,
                 send_alert: null,
+                path_return: null,
                 message: null,
             },
         },
@@ -143,6 +144,7 @@ const project = new Vue({
                 condition: null,
                 verify_status: true,
                 send_alert: null,
+                path_return: null,
                 message: null,
             }
 
@@ -171,6 +173,7 @@ const project = new Vue({
                 condition: this.$data.payloads.check.condition,
                 verify_status: this.$data.payloads.check.verify_status,
                 send_alert: this.$data.payloads.check.send_alert,
+                path_return: this.$data.payloads.check.path_return,
                 message: this.$data.payloads.check.message,
                 ProjectId: this.$data.id,
             })

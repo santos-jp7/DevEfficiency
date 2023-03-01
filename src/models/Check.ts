@@ -20,6 +20,8 @@ class Check extends Model<InferAttributes<Check>, InferCreationAttributes<Check>
     declare condition: string
     declare send_alert: boolean
     declare message: string
+    declare path_return: CreationOptional<string>
+    declare return: CreationOptional<string>
     declare verify_status: CreationOptional<boolean>
 
     declare status: CreationOptional<'OK' | 'Error'>
@@ -65,6 +67,12 @@ Check.init(
         verify_status: {
             type: DataTypes.BOOLEAN,
             defaultValue: true,
+        },
+        path_return: {
+            type: DataTypes.STRING,
+        },
+        return: {
+            type: DataTypes.STRING,
         },
         status: {
             type: DataTypes.ENUM,

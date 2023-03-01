@@ -19,21 +19,29 @@ class checksController {
     }
 
     static async store(req: checksRequest, res: FastifyReply): Promise<FastifyReply> {
-        const { description, url, condition, send_alert, verify_status, message, ProjectId } = req.body
+        const { description, url, condition, send_alert, verify_status, message, path_return, ProjectId } = req.body
 
         const project = await Project.findByPk(ProjectId)
-        const check = await project?.createCheck({ description, url, condition, send_alert, verify_status, message })
+        const check = await project?.createCheck({
+            description,
+            url,
+            condition,
+            send_alert,
+            verify_status,
+            message,
+            path_return,
+        })
 
         return res.send(check)
     }
 
     static async update(req: checksRequest, res: FastifyReply): Promise<FastifyReply> {
         const { id } = req.params
-        const { description, url, condition, send_alert, verify_status, message } = req.body
+        const { description, url, condition, send_alert, verify_status, message, path_return } = req.body
 
         const check = await Check.findByPk(id)
 
-        await check?.update({ description, url, condition, send_alert, verify_status, message })
+        await check?.update({ description, url, condition, send_alert, verify_status, message, path_return })
         await check?.save()
 
         return res.send(check)

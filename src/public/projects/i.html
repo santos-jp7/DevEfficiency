@@ -206,6 +206,7 @@
                                     <th scope="col">#</th>
                                     <th scope="col">Descrição</th>
                                     <th scope="col">Status</th>
+                                    <th scope="col">Retorno</th>
                                     <th scope="col">Editar</th>
                                     <th scope="col">Excluir</th>
                                 </tr>
@@ -215,6 +216,7 @@
                                     <th scope="row">{{check.id}}</th>
                                     <td>{{check.description}}</td>
                                     <td>{{check.status}}</td>
+                                    <td>{{check.return}}</td>
                                     <td>
                                         <i
                                             class="fa-solid fa-pen-to-square btn btn-sm text-primary"
@@ -388,6 +390,18 @@
                                         class="form-control"
                                         id="condition"
                                         v-model="payloads.check.condition"
+                                    />
+
+                                    <small>&bull; $ = Response (json/text)</small>
+                                </div>
+
+                                <div class="row mb-3">
+                                    <label class="form-label" for="path_return">Retorno (path)</label>
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="path_return"
+                                        v-model="payloads.check.path_return"
                                     />
 
                                     <small>&bull; $ = Response (json/text)</small>

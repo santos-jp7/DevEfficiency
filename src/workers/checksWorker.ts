@@ -35,6 +35,7 @@ export default new (class checksWorker {
 
                 if (!c) {
                     check.status = 'Error'
+                    check.return = eval(check.path_return)
 
                     if (check.send_alert)
                         sendMail(
@@ -44,6 +45,7 @@ export default new (class checksWorker {
                         )
                 } else {
                     check.status = 'OK'
+                    check.return = eval(check.path_return)
                 }
 
                 await check.save()
