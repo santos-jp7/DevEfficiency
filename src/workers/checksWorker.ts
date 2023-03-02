@@ -29,13 +29,14 @@ export default new (class checksWorker {
 
                 const $ = response.data
 
+                check.return = eval(check.path_return)
+
                 const c = eval(check.condition)
                 if (!c && check.status == 'Error') continue
                 if (c && check.status == 'OK') continue
 
                 if (!c) {
                     check.status = 'Error'
-                    check.return = eval(check.path_return)
 
                     if (check.send_alert)
                         sendMail(
@@ -45,12 +46,12 @@ export default new (class checksWorker {
                         )
                 } else {
                     check.status = 'OK'
-                    check.return = eval(check.path_return)
                 }
 
                 await check.save()
             } catch (e) {
                 check.status = 'Error'
+                check.return = 'Error'
                 await check.save()
             }
         }
