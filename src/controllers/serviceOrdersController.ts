@@ -1,11 +1,16 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
-import Client from '../models/Client'
+import fs from 'fs'
+import path from 'path'
+import ejs from 'ejs'
 
+import Client from '../models/Client'
 import Project from '../models/Project'
 import Protocol from '../models/Protocol'
+import Protocol_product from '../models/Protocol_product'
 import Protocol_register from '../models/Protocol_register'
 import Receipts from '../models/Receipts'
 import Service_order from '../models/Service_order'
+import Product from '../models/Product'
 
 type serviceOrdersRequest = FastifyRequest<{
     Body: Service_order
@@ -89,6 +94,35 @@ class serviceOrdersController {
         await os?.save()
 
         return res.send(os)
+    }
+
+    static async pdf(req: serviceOrdersRequest, res: FastifyReply) {
+        const { id } = req.params
+
+        const os = await Service_order.findByPk(id, {
+            include: [
+                Client,
+                { model: Protocol, include: [Protocol_register, { model: Protocol_product, include: [Product] }] },
+                { model: Project, include: [Client] },
+            ],
+        })
+
+        console.log(os?.toJSON())
+
+        const template = fs.readFileSync(path.resolve('src', 'views', 'budget.ejs'), 'utf-8')
+
+        const html = ejs.render(template, { os })
+
+        const page = await global.browser.newPage()
+        await page.setContent(html, { waitUntil: 'networkidle0' })
+        await page.emulateMediaType('screen')
+        const pdf = await page.pdf()
+        await page.close()
+
+        res.header('Content-Type', 'application/pdf')
+        res.header('Content-Disposition', `attachment; filename=os_${os?.id}.pdf`)
+
+        return res.send(pdf)
     }
 }
 
