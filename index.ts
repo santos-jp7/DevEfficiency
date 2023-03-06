@@ -8,7 +8,9 @@ declare global {
 
 ;(async () => {
     global.browser = await puppeteer.launch({
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        headless: true,
+        executablePath: '/usr/bin/google-chrome',
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu'],
     })
 })()
 
