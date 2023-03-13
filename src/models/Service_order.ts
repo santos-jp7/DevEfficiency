@@ -21,7 +21,9 @@ class Service_order extends Model<InferAttributes<Service_order>, InferCreationA
     declare id: CreationOptional<number>
     declare subject: string
     declare description: CreationOptional<string>
-    declare status: CreationOptional<'Em avaliação' | 'Em correções' | 'Pendente' | 'Finalizado' | 'Cancelado'>
+    declare status: CreationOptional<
+        'Em avaliação' | 'Orçamento enviado' | 'Em correções' | 'Pendente' | 'Finalizado' | 'Cancelado'
+    >
 
     declare ProjectId: ForeignKey<Project['id']>
     declare ClientId: ForeignKey<Client['id']>
@@ -59,7 +61,7 @@ Service_order.init(
         },
         status: {
             type: DataTypes.ENUM,
-            values: ['Em avaliação', 'Em correções', 'Pendente', 'Finalizado', 'Cancelado'],
+            values: ['Em avaliação', 'Orçamento enviado', 'Em correções', 'Pendente', 'Finalizado', 'Cancelado'],
             defaultValue: 'Em avaliação',
         },
         createdAt: DataTypes.DATE,
