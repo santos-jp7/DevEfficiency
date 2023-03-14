@@ -6,10 +6,30 @@ const service_orders = new Vue({
         service_ordersOrigin: [],
         service_orders: [],
         q: null,
+        currentSort: 'name',
+        currentSortDir: 'asc',
     },
     methods: {
         handlerSearch() {
             this.service_orders = this.service_ordersOrigin.filter((v) => v.subject.includes(this.q))
+        },
+
+        sort: function (s) {
+            console.log(s)
+
+            if (s === this.currentSort) {
+                this.currentSortDir = this.currentSortDir === 'asc' ? 'desc' : 'asc'
+            }
+
+            this.currentSort = s
+
+            this.service_orders = this.service_orders.sort((a, b) => {
+                let modifier = 1
+                if (this.currentSortDir === 'desc') modifier = -1
+                if (a[this.currentSort] < b[this.currentSort]) return -1 * modifier
+                if (a[this.currentSort] > b[this.currentSort]) return 1 * modifier
+                return 0
+            })
         },
     },
     mounted: function () {
