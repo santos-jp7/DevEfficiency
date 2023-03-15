@@ -8,7 +8,7 @@ const service_orders = new Vue({
         q: null,
         currentSort: 'name',
         currentSortDir: 'asc',
-        currentStatus: '',
+        currentStatus: [''],
     },
     methods: {
         handlerSearch() {

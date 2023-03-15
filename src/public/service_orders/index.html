@@ -59,7 +59,7 @@
                     <h5>Ordens de serviço</h5>
                 </div>
                 <div class="w-15 d-flex" style="gap: 5px">
-                    <select class="form-select" v-model="currentStatus" id="currentStatus">
+                    <select class="form-select" v-model="currentStatus" id="currentStatus" size="4" multiple>
                         <option value="">Todos</option>
                         <option value="Em avaliação">Em avaliação</option>
                         <option value="Orçamento enviado">Orçamento enviado</option>
@@ -95,7 +95,7 @@
                     <tbody>
                         <tr
                             v-for="service_order of service_orders"
-                            v-if="!currentStatus || service_order.status == currentStatus"
+                            v-if="!currentStatus[0] || currentStatus.includes(service_order.status)"
                         >
                             <th scope="row">{{service_order.id}}</th>
                             <td>{{service_order.subject}}</td>
