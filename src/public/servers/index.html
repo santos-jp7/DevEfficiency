@@ -58,8 +58,7 @@
                 <div class="w-80">
                     <h5>Servidores</h5>
                 </div>
-                <div class="w-15">
-                    <a class="btn btn-dark btn-block w-100 mb-1" href="../servers/i.html">Novo servidor</a>
+                <div class="w-15 d-flex" style="gap: 5px">
                     <input
                         type="search"
                         class="form-control"
@@ -67,6 +66,8 @@
                         v-model="q"
                         v-on:keyup="handlerSearch"
                     />
+
+                    <a class="btn btn-dark" href="../servers/i.html"><i class="fa-solid fa-plus"></i></a>
                 </div>
             </div>
 
