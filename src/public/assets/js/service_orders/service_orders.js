@@ -32,6 +32,25 @@ const service_orders = new Vue({
                 return 0
             })
         },
+
+        exportToFile: function () {
+            const o = document.getElementById('table-os')
+            const tab = o.cloneNode(true)
+
+            let tab_text = "<table border='2px'><tr>"
+
+            for (let i = 0; i < tab.rows.length; i++) {
+                tab.rows[i].deleteCell(5)
+                tab_text = tab_text + tab.rows[i].innerHTML + '</tr>'
+            }
+
+            tab_text = tab_text + '</table>'
+            tab_text = tab_text.replace(/<A[^>]*>|<\/A>/g, '')
+            tab_text = tab_text.replace(/<img[^>]*>/gi, '')
+            tab_text = tab_text.replace(/<input[^>]*>|<\/input>/gi, '')
+
+            window.open('data:application/vnd.ms-excel,' + encodeURIComponent(tab_text))
+        },
     },
     mounted: function () {
         const token = localStorage.getItem('token')

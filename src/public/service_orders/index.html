@@ -58,7 +58,7 @@
                 <div class="w-80">
                     <h5>Ordens de serviço</h5>
                 </div>
-                <div class="w-15">
+                <div class="w-15 d-flex" style="gap: 5px">
                     <select class="form-select" v-model="currentStatus" id="currentStatus">
                         <option value="">Todos</option>
                         <option value="Em avaliação">Em avaliação</option>
@@ -68,11 +68,15 @@
                         <option value="Finalizado">Finalizado</option>
                         <option value="Cancelado">Cancelado</option>
                     </select>
+
+                    <button class="btn btn-dark" v-on:click="exportToFile">
+                        <i class="fa-solid fa-file-export"></i>
+                    </button>
                 </div>
             </div>
 
             <div class="table-responsive m-2">
-                <table class="table table-striped border" data-toggle="table">
+                <table class="table table-striped border" data-toggle="table" id="table-os">
                     <thead>
                         <tr>
                             <th scope="col" style="cursor: pointer" v-on:click="sort('id')">
