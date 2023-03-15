@@ -59,13 +59,15 @@
                     <h5>Ordens de serviço</h5>
                 </div>
                 <div class="w-15">
-                    <input
-                        type="search"
-                        class="form-control"
-                        placeholder="Pesquisar"
-                        v-model="q"
-                        v-on:keyup="handlerSearch"
-                    />
+                    <select class="form-select" v-model="currentStatus" id="currentStatus">
+                        <option value="">Todos</option>
+                        <option value="Em avaliação">Em avaliação</option>
+                        <option value="Orçamento enviado">Orçamento enviado</option>
+                        <option value="Em correções">Em correções</option>
+                        <option value="Pendente">Pendente</option>
+                        <option value="Finalizado">Finalizado</option>
+                        <option value="Cancelado">Cancelado</option>
+                    </select>
                 </div>
             </div>
 
@@ -86,7 +88,10 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="service_order of service_orders">
+                        <tr
+                            v-for="service_order of service_orders"
+                            v-if="!currentStatus || service_order.status == currentStatus"
+                        >
                             <th scope="row">{{service_order.id}}</th>
                             <td>{{service_order.subject}}</td>
                             <td>{{service_order.status}}</td>
