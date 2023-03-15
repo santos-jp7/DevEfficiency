@@ -61,7 +61,10 @@
             alt=""
             width="60"
         />
-        <h1>Orçamento</h1>
+        <h1>
+            <%= ( os.Protocol?.status == "Em aberto" ? "Orçamento" : (os.Protocol?.status == "Liberado para pagamento" ?
+            "Fatura" : (os.Protocol?.status == "Fechado" ? "Recibo" : "") ) ) %>
+        </h1>
     </nav>
 
     <br />
