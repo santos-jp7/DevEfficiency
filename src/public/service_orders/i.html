@@ -191,14 +191,16 @@
                                         <td>{{protocol_register.type}}</td>
                                         <td>
                                             <i
-                                                class="fa-solid fa-pen-to-square btn btn-sm text-primary"
+                                                class="fa-solid fa-pen-to-square"
                                                 v-on:click="handlerEditProtocolRegister(protocol_register.id)"
+                                                style="cursor: pointer"
                                             ></i>
                                         </td>
                                         <td>
                                             <i
-                                                class="fa-solid fa-trash btn btn-sm text-primary"
+                                                class="fa-solid fa-trash"
                                                 v-on:click="handlerDeleteProtocolRegister(protocol_register.id)"
+                                                style="cursor: pointer"
                                             ></i>
                                         </td>
                                     </tr>
@@ -238,14 +240,16 @@
                                         <td>{{moment(receipt.createdAt).format('DD/MM/YYYY HH:mm')}}</td>
                                         <td>
                                             <i
-                                                class="fa-solid fa-pen-to-square btn btn-sm text-primary"
+                                                class="fa-solid fa-pen-to-square"
                                                 v-on:click="handlerEditReceipt(receipt.id)"
+                                                style="cursor: pointer"
                                             ></i>
                                         </td>
                                         <td>
                                             <i
-                                                class="fa-solid fa-trash btn btn-sm text-primary"
+                                                class="fa-solid fa-trash"
                                                 v-on:click="handlerDeleteReceipt(receipt.id)"
+                                                style="cursor: pointer"
                                             ></i>
                                         </td>
                                     </tr>
@@ -283,14 +287,16 @@
                                         <td>{{product.charge_type}}</td>
                                         <td>
                                             <i
-                                                class="fa-solid fa-pen-to-square btn btn-sm text-primary"
+                                                class="fa-solid fa-pen-to-square"
                                                 v-on:click="handlerEditProtocolProduct(product.id)"
+                                                style="cursor: pointer"
                                             ></i>
                                         </td>
                                         <td>
                                             <i
-                                                class="fa-solid fa-trash btn btn-sm text-primary"
+                                                class="fa-solid fa-trash"
                                                 v-on:click="handlerDeleteProtocolProduct(product.id)"
+                                                style="cursor: pointer"
                                             ></i>
                                         </td>
                                     </tr>

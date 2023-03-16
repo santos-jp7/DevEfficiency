@@ -204,14 +204,16 @@
                                     <td>{{contact.whatsapp}}</td>
                                     <td>
                                         <i
-                                            class="fa-solid fa-pen-to-square btn btn-sm text-primary"
+                                            class="fa-solid fa-pen-to-square"
                                             v-on:click="handlerEditContact(contact.id)"
+                                            style="cursor: pointer"
                                         ></i>
                                     </td>
                                     <td>
                                         <i
-                                            class="fa-solid fa-trash btn btn-sm text-primary"
+                                            class="fa-solid fa-trash"
                                             v-on:click="handlerDeleteContact(contact.id)"
+                                            style="cursor: pointer"
                                         ></i>
                                     </td>
                                 </tr>
@@ -249,14 +251,16 @@
                                     <td>{{credential.password}}</td>
                                     <td>
                                         <i
-                                            class="fa-solid fa-pen-to-square btn btn-sm text-primary"
+                                            class="fa-solid fa-pen-to-square"
                                             v-on:click="handlerEditCredential(credential.id)"
+                                            style="cursor: pointer"
                                         ></i>
                                     </td>
                                     <td>
                                         <i
-                                            class="fa-solid fa-trash btn btn-sm text-primary"
+                                            class="fa-solid fa-trash"
                                             v-on:click="handlerDeleteCredential(credential.id)"
+                                            style="cursor: pointer"
                                         ></i>
                                     </td>
                                 </tr>
