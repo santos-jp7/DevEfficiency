@@ -132,12 +132,14 @@
             <tr>
                 <th class="low">#</th>
                 <th>Descrição</th>
+                <th>Tipo de cobrança</th>
                 <th>Valor</th>
             </tr>
             <% for(let product of os.Protocol?.Protocol_products){ %>
             <tr>
                 <td><%= product.ProductId %></td>
                 <td><%= product.Product?.description %></td>
+                <td><%= product.charge_type %></td>
                 <td><%= (product.value).toLocaleString('pt-br',{style: 'currency', currency: 'BRL'}) %></td>
             </tr>
             <% } %>
