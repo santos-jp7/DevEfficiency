@@ -8,6 +8,7 @@ import {
     HasManyGetAssociationsMixin,
     HasManyCreateAssociationMixin,
     Association,
+    NonAttribute,
 } from 'sequelize'
 
 import db from '../db'
@@ -33,10 +34,14 @@ class Protocol extends Model<InferAttributes<Protocol>, InferCreationAttributes<
     declare getReceipts: HasManyGetAssociationsMixin<Receipts>
     declare createReceipt: HasManyCreateAssociationMixin<Receipts, 'ProtocolId'>
 
+    declare Protocol_registers: NonAttribute<Protocol_register[]>
+    declare Protocol_products: NonAttribute<Protocol_product[]>
+    declare Receipts: NonAttribute<Receipts[]>
+
     declare static associations: {
-        protocol_register: Association<Protocol, Protocol_register>
-        protocol_product: Association<Protocol, Protocol_product>
-        receipts: Association<Protocol, Receipts>
+        Protocol_registers: Association<Protocol, Protocol_register>
+        Protocol_products: Association<Protocol, Protocol_product>
+        Receipts: Association<Protocol, Receipts>
     }
 
     declare createdAt: CreationOptional<Date>

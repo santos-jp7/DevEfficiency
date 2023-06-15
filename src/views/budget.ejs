@@ -50,6 +50,9 @@
             justify-content: end;
 
             gap: 2px;
+
+            width: 280px;
+            margin-left: auto;
         }
 
         .total>.line {
@@ -58,6 +61,22 @@
             justify-content: end;
 
             gap: 10px;
+        }
+
+        .total>.line.border {
+            border-top: #666 1px solid;
+        }
+
+        .total>.line>.left {
+            margin-right: auto;
+        }
+
+        .total>.line>.bold {
+            font-weight: bolder;
+        }
+
+        .total>.line>.big {
+            font-size: 22px;
         }
     </style>
 </head>
@@ -118,95 +137,103 @@
 
     <hr />
 
-    <section class="services">
-        <h2>Serviços e despesas</h2>
+    <% if(os.Protocol?.Protocol_registers?.length> 0){ %>
+        <section class="services">
+            <h2>Serviços e despesas</h2>
 
-        <table>
-            <tr>
-                <th>Descrição</th>
-                <th>Valor</th>
-                <th>Tipo</th>
-            </tr>
-            <% for(let register of os.Protocol?.Protocol_registers){ %>
+            <table>
                 <tr>
-                    <td>
-                        <%= register.description %>
-                    </td>
-                    <td>
-                        <%= (register.value).toLocaleString('pt-br',{style: 'currency' , currency: 'BRL' }) %>
-                    </td>
-                    <td>
-                        <%= register.type %>
-                    </td>
+                    <th>Descrição</th>
+                    <th>Valor</th>
+                    <th>Tipo</th>
                 </tr>
-                <% } %>
-        </table>
-    </section>
-
-    <section class="products">
-        <h2>Produtos</h2>
-
-        <table>
-            <tr>
-                <th class="low">#</th>
-                <th>Descrição</th>
-                <th>Tipo de cobrança</th>
-                <th>Valor</th>
-            </tr>
-            <% for(let product of os.Protocol?.Protocol_products){ %>
-                <tr>
-                    <td>
-                        <%= product.ProductId %>
-                    </td>
-                    <td>
-                        <%= product.Product?.description %>
-                    </td>
-                    <td>
-                        <%= product.charge_type %>
-                    </td>
-                    <td>
-                        <%= (product.value).toLocaleString('pt-br',{style: 'currency' , currency: 'BRL' }) %>
-                    </td>
-                </tr>
-                <% } %>
-        </table>
-    </section>
-
-    <section class="total">
-        <div class="line">
-            <h2>Valor total:</h2>
-            <h1>
-                <%= ((os.Protocol?.Protocol_registers?.reduce((sum, v)=> sum + v.value, 0)) +
-                    (os.Protocol?.Protocol_products?.reduce((sum, v) => sum + v.value,
-                    0))).toLocaleString('pt-br',{style:
-                    'currency', currency: 'BRL'}) %>
-            </h1>
-        </div>
-
-        <% if(os.Protocol?.Receipts?.length> 0){ %>
-            <div class="line">
-                <h2>Valor pago:</h2>
-                <h1>
-                    <%= ((os.Protocol?.Receipts?.reduce((sum, v)=> sum + v.value, 0))).toLocaleString('pt-br',{style:
-                        'currency', currency: 'BRL'}) %>
-                </h1>
-            </div>
-            <% } %>
-
-                <% if(os.Protocol?.status=='Liberado para pagamento' ){ %>
-                    <div class="line">
-                        <h2>Valor devedor:</h2>
-                        <h1>
-                            <%= ( (os.Protocol?.Protocol_registers?.reduce((sum, v)=> sum + v.value, 0)) +
-                                (os.Protocol?.Protocol_products?.reduce((sum, v) => sum + v.value, 0)) -
-                                (os.Protocol?.Receipts?.reduce((sum, v)=> sum + v.value, 0))
-                                ).toLocaleString(' pt-br',{style: 'currency' , currency: 'BRL' }) %>
-                        </h1>
-                    </div>
+                <% for(let register of os.Protocol?.Protocol_registers){ %>
+                    <tr>
+                        <td>
+                            <%= register.description %>
+                        </td>
+                        <td>
+                            <%= (register.value).toLocaleString('pt-br',{style: 'currency' , currency: 'BRL' }) %>
+                        </td>
+                        <td>
+                            <%= register.type %>
+                        </td>
+                    </tr>
                     <% } %>
-    </section>
+            </table>
+        </section>
+        <% } %>
 
-    <script>
-        window.print()
-    </script>
+            <% if(os.Protocol?.Protocol_products?.length> 0){ %>
+                <section class="products">
+                    <h2>Produtos</h2>
+
+                    <table>
+                        <tr>
+                            <th class="low">#</th>
+                            <th>Descrição</th>
+                            <th>Tipo de cobrança</th>
+                            <th>Valor</th>
+                        </tr>
+                        <% for(let product of os.Protocol?.Protocol_products){ %>
+                            <tr>
+                                <td>
+                                    <%= product.ProductId %>
+                                </td>
+                                <td>
+                                    <%= product.Product?.description %>
+                                </td>
+                                <td>
+                                    <%= product.charge_type %>
+                                </td>
+                                <td>
+                                    <%= (product.value).toLocaleString('pt-br',{style: 'currency' , currency: 'BRL' })
+                                        %>
+                                </td>
+                            </tr>
+                            <% } %>
+                    </table>
+                </section>
+                <% } %>
+
+                    <hr>
+
+                    <section class="total">
+                        <div class="line">
+                            <span class="left">Valor total:</span>
+                            <span class="bold">
+                                <%= ((os.Protocol?.Protocol_registers?.reduce((sum, v)=> sum + v.value, 0)) +
+                                    (os.Protocol?.Protocol_products?.reduce((sum, v) => sum + v.value,
+                                    0))).toLocaleString('pt-br',{style:
+                                    'currency', currency: 'BRL'}) %>
+                            </span>
+                        </div>
+
+                        <% if(os.Protocol?.Receipts?.length> 0){ %>
+                            <div class="line">
+                                <span class="left">Valor pago:</span>
+                                <span class="bold">
+                                    <%= ((os.Protocol?.Receipts?.reduce((sum, v)=> sum + v.value,
+                                        0))).toLocaleString('pt-br',{style:
+                                        'currency', currency: 'BRL'}) %>
+                                </span>
+                            </div>
+                            <% } %>
+
+                                <% if(os.Protocol?.status=="Liberado para pagamento" ){ %>
+                                    <div class="line border">
+                                        <span class="left big">Valor devedor:</span>
+                                        <span class="bold big">
+                                            <%= ( (os?.Protocol?.Protocol_registers?.reduce((sum, v)=> sum + v.value, 0)
+                                                ||
+                                                0) +
+                                                (os?.Protocol?.Protocol_products?.reduce((sum, v) => sum + v.value, 0)
+                                                || 0)
+                                                -
+                                                (os?.Protocol?.Receipts?.reduce((sum, v) => sum + v.value, 0) || 0)
+                                                ).toLocaleString('pt-br', { style: 'currency', currency: 'BRL' }) %>
+                                        </span>
+                                    </div>
+                                    <% } %>
+                    </section>
 </body>

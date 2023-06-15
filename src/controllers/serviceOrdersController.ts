@@ -110,8 +110,6 @@ class serviceOrdersController {
             ],
         })
 
-        console.log(os?.toJSON())
-
         const template = fs.readFileSync(path.resolve('src', 'views', 'budget.ejs'), 'utf-8')
 
         const html = ejs.render(template, { os })
