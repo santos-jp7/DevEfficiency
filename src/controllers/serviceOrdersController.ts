@@ -102,7 +102,10 @@ class serviceOrdersController {
         const os = await Service_order.findByPk(id, {
             include: [
                 Client,
-                { model: Protocol, include: [Protocol_register, { model: Protocol_product, include: [Product] }] },
+                {
+                    model: Protocol,
+                    include: [Protocol_register, Receipts, { model: Protocol_product, include: [Product] }],
+                },
                 { model: Project, include: [Client] },
             ],
         })
