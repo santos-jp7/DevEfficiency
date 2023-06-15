@@ -183,7 +183,7 @@
             </h1>
         </div>
 
-        <%= ( os.Receipts.length> 0 ? '
+        <% if(os.Receipts?.length> 0){ %>
             <div class="line">
                 <h2>Valor pago:</h2>
                 <h1>
@@ -191,20 +191,19 @@
                         'currency', currency: 'BRL'}) %>
                 </h1>
             </div>
-            ' : '') %>
+            <% } %>
 
-            <%= ( os.Protocol.status=='Liberado para pagamento' ? '
-            <div class="line">
-                <h2>Valor devedor:</h2>
-                <h1>
-                    <%= (
-                        (os.Protocol?.Protocol_registers?.reduce((sum, v)=> sum + v.value, 0)) +
-                        (os.Protocol?.Protocol_products?.reduce((sum, v) => sum + v.value, 0)) -
-                        (os.Protocol?.Receipts?.reduce((sum, v)=> sum + v.value, 0))
-                        ).toLocaleString(' pt-br',{style: 'currency' , currency: 'BRL' }) %>
-                </h1>
-                </div>
-                ' :'') %>
+                <% if(os.Protocol?.status=='Liberado para pagamento' ){ %>
+                    <div class="line">
+                        <h2>Valor devedor:</h2>
+                        <h1>
+                            <%= ( (os.Protocol?.Protocol_registers?.reduce((sum, v)=> sum + v.value, 0)) +
+                                (os.Protocol?.Protocol_products?.reduce((sum, v) => sum + v.value, 0)) -
+                                (os.Protocol?.Receipts?.reduce((sum, v)=> sum + v.value, 0))
+                                ).toLocaleString(' pt-br',{style: 'currency' , currency: 'BRL' }) %>
+                        </h1>
+                    </div>
+                    <% } %>
     </section>
 
     <script>
