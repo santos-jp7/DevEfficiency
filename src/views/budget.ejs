@@ -187,9 +187,7 @@
             <div class="line">
                 <h2>Valor pago:</h2>
                 <h1>
-                    <%= ((os.Protocol?.Protocol_registers?.reduce((sum, v)=> sum + v.value, 0)) +
-                        (os.Protocol?.Protocol_products?.reduce((sum, v) => sum + v.value,
-                        0))).toLocaleString('pt-br',{style:
+                    <%= ((os.Protocol?.Receipts?.reduce((sum, v)=> sum + v.value, 0))).toLocaleString('pt-br',{style:
                         'currency', currency: 'BRL'}) %>
                 </h1>
             </div>
@@ -199,9 +197,11 @@
             <div class="line">
                 <h2>Valor devedor:</h2>
                 <h1>
-                    <%= ((os.Protocol?.Protocol_registers?.reduce((sum, v)=> sum + v.value, 0)) +
-                        (os.Protocol?.Protocol_products?.reduce((sum, v) => sum + v.value,
-                        0))).toLocaleString(' pt-br',{style: 'currency' , currency: 'BRL' }) %>
+                    <%= (
+                        (os.Protocol?.Protocol_registers?.reduce((sum, v)=> sum + v.value, 0)) +
+                        (os.Protocol?.Protocol_products?.reduce((sum, v) => sum + v.value, 0)) -
+                        (os.Protocol?.Receipts?.reduce((sum, v)=> sum + v.value, 0))
+                        ).toLocaleString(' pt-br',{style: 'currency' , currency: 'BRL' }) %>
                 </h1>
                 </div>
                 ' :'') %>
