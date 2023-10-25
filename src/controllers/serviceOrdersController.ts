@@ -51,12 +51,14 @@ class serviceOrdersController {
     static async store(req: serviceOrdersRequest, res: FastifyReply): Promise<FastifyReply> {
         const { subject, description, ProjectId, ClientId } = req.body
 
-        let aux
+        let project = ProjectId ? await Project.findByPk(ProjectId) : undefined
 
-        if (ProjectId) aux = await Project.findByPk(ProjectId)
-        if (ClientId) aux = await Client.findByPk(ClientId)
-
-        const os = await aux?.createService_order({ subject, description })
+        const os = await Service_order.create({
+            subject,
+            description,
+            ProjectId,
+            ClientId: project?.ClientId ?? ClientId ?? null,
+        })
 
         await os?.createProtocol()
 
