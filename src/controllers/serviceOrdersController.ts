@@ -1,4 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
+import puppeteer, { Browser } from 'puppeteer'
 import fs from 'fs'
 import path from 'path'
 import ejs from 'ejs'
@@ -116,14 +117,21 @@ class serviceOrdersController {
 
         const html = ejs.render(template, { os })
 
-        const page = await global.browser.newPage()
+        const browser = await puppeteer.launch({
+            headless: 'new',
+            executablePath: '/usr/bin/google-chrome',
+            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu'],
+        })
+
+        const page = await browser.newPage()
         await page.setContent(html, { waitUntil: 'networkidle0' })
         await page.emulateMediaType('screen')
         const pdf = await page.pdf()
         await page.close()
+        await browser.close()
 
         res.header('Content-Type', 'application/pdf')
-        res.header('Content-Disposition', `attachment; filename=os_${os?.id}.pdf`)
+        res.header('Content-Disposition', `attachment; filename=os_${os?.id}_${Date.now()}.pdf`)
 
         return res.send(pdf)
     }
