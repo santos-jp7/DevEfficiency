@@ -1,534 +1,435 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-    <head>
-        <meta charset="UTF-8" />
-        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Codlinx - Os</title>
 
-        <link href="../assets/css/bootstrap.min.css" rel="stylesheet" />
-        <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css" />
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Codlinx - Os</title>
 
-        <script src="../assets/js/vue.min.js"></script>
-        <script src="../assets/js/jquery-3.6.1.min.js"></script>
-        <script src="../assets/js/bootstrap.min.js"></script>
-        <script src="../assets/js/axios.min.js"></script>
-        <script src="../assets/js/moment.min.js"></script>
-    </head>
+    <link href="../assets/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css" />
 
-    <body>
-        <nav class="navbar bg-light">
-            <div class="container">
-                <a class="navbar-brand" href="/dashboard">
-                    <img src="../assets/img/logo_cabecalho.png" alt="Codlinx" width="40" height="40" />
-                </a>
+    <script src="../assets/js/vue.min.js"></script>
+    <script src="../assets/js/jquery-3.6.1.min.js"></script>
+    <script src="../assets/js/bootstrap.min.js"></script>
+    <script src="../assets/js/axios.min.js"></script>
+    <script src="../assets/js/moment.min.js"></script>
+</head>
+
+<body>
+    <nav class="navbar bg-light">
+        <div class="container">
+            <a class="navbar-brand" href="/dashboard">
+                <img src="../assets/img/logo_cabecalho.png" alt="Codlinx" width="40" height="40" />
+            </a>
+        </div>
+    </nav>
+
+    <div class="container p-4" id="service_order">
+        <div class="col">
+            <a href="../clients" class="btn btn-dark btn-sm my-2">Clientes</a>
+            <a href="../projects" class="btn btn-dark btn-sm my-2">Projetos</a>
+            <a href="../service_orders" class="btn btn-dark btn-sm my-2">Os</a>
+            <a href="../servers/" class="btn btn-dark btn-sm my-2">Servidores</a>
+            <a href="../products" class="btn btn-dark btn-sm my-2">Produtos</a>
+        </div>
+
+        <hr />
+
+        <div class="d-flex justify-content-between">
+            <h5>Os #{{id}}</h5>
+            <div class="text-end">
+                <h6 v-if="ProjectId">Projeto: <a :href="'../projects/i?id='+ProjectId">{{Project.name}}</a></h6>
+                <h6 v-if="ProjectId">
+                    Cliente: <a :href="'../clients/i?id='+Project.Client.id">{{Project.Client.name}}</a>
+                </h6>
+                <!-- <h6 v-if="ClientId">Cliente: <a :href="'../clients/i?id='+ClientId">{{Client.name}}</a></h6> -->
+                <small>Criado em: {{moment(createdAt).format('DD/MM/YYYY HH:mm')}}</small>
             </div>
-        </nav>
+        </div>
 
-        <div class="container p-4" id="service_order">
-            <div class="col">
-                <a href="../clients" class="btn btn-dark btn-sm my-2">Clientes</a>
-                <a href="../projects" class="btn btn-dark btn-sm my-2">Projetos</a>
-                <a href="../service_orders" class="btn btn-dark btn-sm my-2">Os</a>
-                <a href="../servers/" class="btn btn-dark btn-sm my-2">Servidores</a>
-                <a href="../products" class="btn btn-dark btn-sm my-2">Produtos</a>
+        <form v-on:submit="handlerSubmit">
+            <div class="row">
+                <div class="mb-3 col-lg">
+                    <label for="subject" class="form-label">Assunto</label>
+                    <input type="text" class="form-control" v-model="subject" id="subject" />
+                </div>
+
+                <div class="mb-3 col-lg">
+                    <label for="status" class="form-label">Status</label>
+                    <select class="form-select" v-model="status" id="status">
+                        <option disabled value="">Selecione uma opção</option>
+                        <option value="Em avaliação">Em avaliação</option>
+                        <option value="Orçamento enviado">Orçamento enviado</option>
+                        <option value="Na fila">Na fila</option>
+                        <option value="Em correções">Em correções</option>
+                        <option value="Pendente">Pendente</option>
+                        <option value="Finalizado">Finalizado</option>
+                        <option value="Cancelado">Cancelado</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row">
+                <div class="mb-3 col-lg">
+                    <label for="description" class="form-label">Descrição</label>
+                    <textarea type="text" class="form-control" v-model="description" id="description"
+                        rows="4"></textarea>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-dark">Enviar</button>
+            &bull;
+            <a class="btn btn-dark" :href="'/api/os/'+id+'/pdf'" download><i class="fa-solid fa-download"></i></a>
+            <hr />
+        </form>
+
+        <section id="protocol" v-if="Protocol">
+            <div class="row">
+                <div class="col-lg">
+                    <h5>Protocolo</h5>
+
+                    <form v-on:submit="handlerProtocolSubmit">
+                        <div class="row">
+                            <div class="mb-3 col-lg">
+                                <label for="protocolStatus" class="form-label">Status</label>
+                                <select class="form-select" v-model="Protocol.status" id="protocolStatus">
+                                    <option disabled value="">Selecione uma opção</option>
+                                    <option value="Em aberto">Em aberto</option>
+                                    <option value="Liberado para pagamento">Liberado para pagamento</option>
+                                    <option value="Fechado">Fechado</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-dark">Enviar</button>
+                    </form>
+                </div>
+                <div class="col-lg mt-2 border rounded p-2">
+                    <h5>Valores</h5>
+
+                    <ul>
+                        <li>
+                            <span>Total: {{((Protocol?.Protocol_registers?.reduce((sum, v) => sum + v.value, 0)) +
+                                (Protocol?.Protocol_products?.reduce((sum, v) => sum + v.value,
+                                0))).toLocaleString('pt-br',{style: 'currency', currency: 'BRL'})}}
+                            </span>
+                        </li>
+                        <li>
+                            <span>Serviço: {{Protocol?.Protocol_registers?.reduce((sum, v) => (v.type == 'Serviço' ?
+                                sum + v.value : sum), 0).toLocaleString('pt-br',{style: 'currency', currency:
+                                'BRL'})}}
+                            </span>
+                        </li>
+                        <li>
+                            <span>Despesas: {{Protocol?.Protocol_registers?.reduce((sum, v) => (v.type == 'Despesa' ?
+                                sum + v.value : sum), 0).toLocaleString('pt-br',{style: 'currency', currency:
+                                'BRL'})}}
+                            </span>
+                        </li>
+                        <li>
+                            <span>Produtos: {{Protocol?.Protocol_products?.reduce((sum, v) => sum + v.value,
+                                0).toLocaleString('pt-br',{style: 'currency', currency: 'BRL'})}}
+                            </span>
+                        </li>
+                        <li>
+                            <span>Valor recebido: {{Protocol?.Receipts?.reduce((sum, v) => (sum + v.value),
+                                0).toLocaleString('pt-br',{style: 'currency', currency: 'BRL'})}}
+                            </span>
+                        </li>
+                        <li>
+                            <span>Valor a receber: {{((Protocol?.Protocol_registers?.reduce((sum, v) => sum +
+                                v.value, 0)) + (Protocol?.Protocol_products?.reduce((sum, v) => sum + v.value, 0)) -
+                                Protocol?.Receipts?.reduce((sum, v) => (sum + v.value),
+                                0)).toLocaleString('pt-br',{style: 'currency', currency: 'BRL'})}}
+                            </span>
+                        </li>
+                    </ul>
+                </div>
             </div>
 
             <hr />
 
-            <div class="d-flex justify-content-between">
-                <h5>Os #{{id}}</h5>
-                <div class="text-end">
-                    <h6 v-if="ProjectId">Projeto: <a :href="'../projects/i?id='+ProjectId">{{Project.name}}</a></h6>
-                    <h6 v-if="ProjectId">
-                        Cliente: <a :href="'../clients/i?id='+Project.Client.id">{{Project.Client.name}}</a>
-                    </h6>
-                    <h6 v-if="ClientId">Cliente: <a :href="'../clients/i?id='+ClientId">{{Client.name}}</a></h6>
-                    <small>Criado em: {{moment(createdAt).format('DD/MM/YYYY HH:mm')}}</small>
+            <div class="row" style="gap: 10px">
+                <div class="col border rounded p-2">
+                    <div class="d-flex justify-content-between mb-2">
+                        <h5>Registro</h5>
+                        <button class="btn" v-on:click="handlerNewProtocolRegister">
+                            <i class="fa-solid fa-plus"></i> Adicionar registro
+                        </button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-striped border">
+                            <thead>
+                                <tr>
+                                    <th scope="col">#</th>
+                                    <th scope="col">Descrição</th>
+                                    <th scope="col">Valor</th>
+                                    <th scope="col">Tipo</th>
+                                    <th scope="col">Editar</th>
+                                    <th scope="col">Excluir</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="protocol_register of Protocol.Protocol_registers">
+                                    <th scope="row">{{protocol_register.id}}</th>
+                                    <td>{{protocol_register.description}}</td>
+                                    <td>
+                                        {{protocol_register.value.toLocaleString('pt-br',{style: 'currency',
+                                        currency: 'BRL'})}}
+                                    </td>
+                                    <td>{{protocol_register.type}}</td>
+                                    <td>
+                                        <i class="fa-solid fa-pen-to-square"
+                                            v-on:click="handlerEditProtocolRegister(protocol_register.id)"
+                                            style="cursor: pointer"></i>
+                                    </td>
+                                    <td>
+                                        <i class="fa-solid fa-trash"
+                                            v-on:click="handlerDeleteProtocolRegister(protocol_register.id)"
+                                            style="cursor: pointer"></i>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="col border rounded p-2">
+                    <div class="d-flex justify-content-between mb-2">
+                        <h5>Recibos</h5>
+                        <button class="btn" v-on:click="handlerNewReceipt">
+                            <i class="fa-solid fa-plus"></i> Adicionar recibo
+                        </button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-striped border">
+                            <thead>
+                                <tr>
+                                    <th scope="col">#</th>
+                                    <th scope="col">Valor</th>
+                                    <th scope="col">Método</th>
+                                    <th scope="col">Observação</th>
+                                    <th scope="col">Data</th>
+                                    <th scope="col">Editar</th>
+                                    <th scope="col">Excluir</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="receipt of Protocol.Receipts">
+                                    <th scope="row">{{receipt.id}}</th>
+                                    <td>
+                                        {{receipt.value.toLocaleString('pt-br',{style: 'currency', currency:
+                                        'BRL'})}}
+                                    </td>
+                                    <td>{{receipt.method}}</td>
+                                    <td>{{receipt.note}}</td>
+                                    <td>{{moment(receipt.createdAt).format('DD/MM/YYYY HH:mm')}}</td>
+                                    <td>
+                                        <i class="fa-solid fa-pen-to-square" v-on:click="handlerEditReceipt(receipt.id)"
+                                            style="cursor: pointer"></i>
+                                    </td>
+                                    <td>
+                                        <i class="fa-solid fa-trash" v-on:click="handlerDeleteReceipt(receipt.id)"
+                                            style="cursor: pointer"></i>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="col border rounded p-2">
+                    <div class="d-flex justify-content-between mb-2">
+                        <h5>Produtos</h5>
+                        <button class="btn" v-on:click="handlerNewProtocolProduct">
+                            <i class="fa-solid fa-plus"></i> Adicionar produto
+                        </button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-striped border">
+                            <thead>
+                                <tr>
+                                    <th scope="col">#</th>
+                                    <th scope="col">Produto</th>
+                                    <th scope="col">Valor</th>
+                                    <th scope="col">Tipo de cobrança</th>
+                                    <th scope="col">Editar</th>
+                                    <th scope="col">Excluir</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="product of Protocol.Protocol_products">
+                                    <th scope="row">{{product.id}}</th>
+                                    <td>{{product?.Product?.description}}</td>
+                                    <td>
+                                        {{product.value.toLocaleString('pt-br',{style: 'currency', currency:
+                                        'BRL'})}}
+                                    </td>
+                                    <td>{{product.charge_type}}</td>
+                                    <td>
+                                        <i class="fa-solid fa-pen-to-square"
+                                            v-on:click="handlerEditProtocolProduct(product.id)"
+                                            style="cursor: pointer"></i>
+                                    </td>
+                                    <td>
+                                        <i class="fa-solid fa-trash"
+                                            v-on:click="handlerDeleteProtocolProduct(product.id)"
+                                            style="cursor: pointer"></i>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
+        </section>
 
-            <form v-on:submit="handlerSubmit">
-                <div class="row">
-                    <div class="mb-3 col-lg">
-                        <label for="subject" class="form-label">Assunto</label>
-                        <input type="text" class="form-control" v-model="subject" id="subject" />
+        <br />
+
+        <!-- Modal Protocol Register -->
+        <div class="modal fade" id="protocolRegisterModal" tabindex="-1" aria-labelledby="protocolRegisterModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h1 class="modal-title fs-5" id="protocolRegisterModalLabel">Registro</h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
                     </div>
-
-                    <div class="mb-3 col-lg">
-                        <label for="status" class="form-label">Status</label>
-                        <select class="form-select" v-model="status" id="status">
-                            <option disabled value="">Selecione uma opção</option>
-                            <option value="Em avaliação">Em avaliação</option>
-                            <option value="Orçamento enviado">Orçamento enviado</option>
-                            <option value="Na fila">Na fila</option>
-                            <option value="Em correções">Em correções</option>
-                            <option value="Pendente">Pendente</option>
-                            <option value="Finalizado">Finalizado</option>
-                            <option value="Cancelado">Cancelado</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="mb-3 col-lg">
-                        <label for="description" class="form-label">Descrição</label>
-                        <textarea
-                            type="text"
-                            class="form-control"
-                            v-model="description"
-                            id="description"
-                            rows="4"
-                        ></textarea>
-                    </div>
-                </div>
-
-                <button type="submit" class="btn btn-dark">Enviar</button>
-                &bull;
-                <a class="btn btn-dark" :href="'/api/os/'+id+'/pdf'" download><i class="fa-solid fa-download"></i></a>
-                <hr />
-            </form>
-
-            <section id="protocol" v-if="Protocol">
-                <div class="row">
-                    <div class="col-lg">
-                        <h5>Protocolo</h5>
-
-                        <form v-on:submit="handlerProtocolSubmit">
-                            <div class="row">
-                                <div class="mb-3 col-lg">
-                                    <label for="protocolStatus" class="form-label">Status</label>
-                                    <select class="form-select" v-model="Protocol.status" id="protocolStatus">
-                                        <option disabled value="">Selecione uma opção</option>
-                                        <option value="Em aberto">Em aberto</option>
-                                        <option value="Liberado para pagamento">Liberado para pagamento</option>
-                                        <option value="Fechado">Fechado</option>
-                                    </select>
-                                </div>
+                    <div class="modal-body">
+                        <form @submit="handlerProtocolRegisterSubmit">
+                            <div class="row mb-3">
+                                <label class="form-label" for="description">Descrição</label>
+                                <input type="text" class="form-control" id="description"
+                                    v-model="payloads.protocolRegister.description" required />
                             </div>
 
-                            <button type="submit" class="btn btn-dark">Enviar</button>
+                            <div class="row mb-3">
+                                <label class="form-label" for="value">Valor</label>
+                                <input type="number" class="form-control" id="value"
+                                    v-model="payloads.protocolRegister.value" step="0.01" required />
+                            </div>
+
+                            <div class="row mb-3">
+                                <label class="form-label" for="type">Tipo</label>
+                                <select class="form-control" id="type" v-model="payloads.protocolRegister.type"
+                                    required>
+                                    <option disabled value="">Selecione uma opção</option>
+                                    <option value="Serviço">Serviço</option>
+                                    <option value="Despesa">Despesa</option>
+                                </select>
+                            </div>
+
+                            <div class="row mb-3">
+                                <input type="submit" class="form-control btn btn-dark btn-block" value="Enviar" />
+                            </div>
                         </form>
-                    </div>
-                    <div class="col-lg mt-2 border rounded p-2">
-                        <h5>Valores</h5>
-
-                        <ul>
-                            <li>
-                                <span
-                                    >Total: {{((Protocol?.Protocol_registers?.reduce((sum, v) => sum + v.value, 0)) +
-                                    (Protocol?.Protocol_products?.reduce((sum, v) => sum + v.value,
-                                    0))).toLocaleString('pt-br',{style: 'currency', currency: 'BRL'})}}
-                                </span>
-                            </li>
-                            <li>
-                                <span
-                                    >Serviço: {{Protocol?.Protocol_registers?.reduce((sum, v) => (v.type == 'Serviço' ?
-                                    sum + v.value : sum), 0).toLocaleString('pt-br',{style: 'currency', currency:
-                                    'BRL'})}}
-                                </span>
-                            </li>
-                            <li>
-                                <span
-                                    >Despesas: {{Protocol?.Protocol_registers?.reduce((sum, v) => (v.type == 'Despesa' ?
-                                    sum + v.value : sum), 0).toLocaleString('pt-br',{style: 'currency', currency:
-                                    'BRL'})}}
-                                </span>
-                            </li>
-                            <li>
-                                <span
-                                    >Produtos: {{Protocol?.Protocol_products?.reduce((sum, v) => sum + v.value,
-                                    0).toLocaleString('pt-br',{style: 'currency', currency: 'BRL'})}}
-                                </span>
-                            </li>
-                            <li>
-                                <span
-                                    >Valor recebido: {{Protocol?.Receipts?.reduce((sum, v) => (sum + v.value),
-                                    0).toLocaleString('pt-br',{style: 'currency', currency: 'BRL'})}}
-                                </span>
-                            </li>
-                            <li>
-                                <span
-                                    >Valor a receber: {{((Protocol?.Protocol_registers?.reduce((sum, v) => sum +
-                                    v.value, 0)) + (Protocol?.Protocol_products?.reduce((sum, v) => sum + v.value, 0)) -
-                                    Protocol?.Receipts?.reduce((sum, v) => (sum + v.value),
-                                    0)).toLocaleString('pt-br',{style: 'currency', currency: 'BRL'})}}
-                                </span>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-
-                <hr />
-
-                <div class="row" style="gap: 10px">
-                    <div class="col border rounded p-2">
-                        <div class="d-flex justify-content-between mb-2">
-                            <h5>Registro</h5>
-                            <button class="btn" v-on:click="handlerNewProtocolRegister">
-                                <i class="fa-solid fa-plus"></i> Adicionar registro
-                            </button>
-                        </div>
-                        <div class="table-responsive">
-                            <table class="table table-striped border">
-                                <thead>
-                                    <tr>
-                                        <th scope="col">#</th>
-                                        <th scope="col">Descrição</th>
-                                        <th scope="col">Valor</th>
-                                        <th scope="col">Tipo</th>
-                                        <th scope="col">Editar</th>
-                                        <th scope="col">Excluir</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="protocol_register of Protocol.Protocol_registers">
-                                        <th scope="row">{{protocol_register.id}}</th>
-                                        <td>{{protocol_register.description}}</td>
-                                        <td>
-                                            {{protocol_register.value.toLocaleString('pt-br',{style: 'currency',
-                                            currency: 'BRL'})}}
-                                        </td>
-                                        <td>{{protocol_register.type}}</td>
-                                        <td>
-                                            <i
-                                                class="fa-solid fa-pen-to-square"
-                                                v-on:click="handlerEditProtocolRegister(protocol_register.id)"
-                                                style="cursor: pointer"
-                                            ></i>
-                                        </td>
-                                        <td>
-                                            <i
-                                                class="fa-solid fa-trash"
-                                                v-on:click="handlerDeleteProtocolRegister(protocol_register.id)"
-                                                style="cursor: pointer"
-                                            ></i>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <div class="col border rounded p-2">
-                        <div class="d-flex justify-content-between mb-2">
-                            <h5>Recibos</h5>
-                            <button class="btn" v-on:click="handlerNewReceipt">
-                                <i class="fa-solid fa-plus"></i> Adicionar recibo
-                            </button>
-                        </div>
-                        <div class="table-responsive">
-                            <table class="table table-striped border">
-                                <thead>
-                                    <tr>
-                                        <th scope="col">#</th>
-                                        <th scope="col">Valor</th>
-                                        <th scope="col">Método</th>
-                                        <th scope="col">Observação</th>
-                                        <th scope="col">Data</th>
-                                        <th scope="col">Editar</th>
-                                        <th scope="col">Excluir</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="receipt of Protocol.Receipts">
-                                        <th scope="row">{{receipt.id}}</th>
-                                        <td>
-                                            {{receipt.value.toLocaleString('pt-br',{style: 'currency', currency:
-                                            'BRL'})}}
-                                        </td>
-                                        <td>{{receipt.method}}</td>
-                                        <td>{{receipt.note}}</td>
-                                        <td>{{moment(receipt.createdAt).format('DD/MM/YYYY HH:mm')}}</td>
-                                        <td>
-                                            <i
-                                                class="fa-solid fa-pen-to-square"
-                                                v-on:click="handlerEditReceipt(receipt.id)"
-                                                style="cursor: pointer"
-                                            ></i>
-                                        </td>
-                                        <td>
-                                            <i
-                                                class="fa-solid fa-trash"
-                                                v-on:click="handlerDeleteReceipt(receipt.id)"
-                                                style="cursor: pointer"
-                                            ></i>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <div class="col border rounded p-2">
-                        <div class="d-flex justify-content-between mb-2">
-                            <h5>Produtos</h5>
-                            <button class="btn" v-on:click="handlerNewProtocolProduct">
-                                <i class="fa-solid fa-plus"></i> Adicionar produto
-                            </button>
-                        </div>
-                        <div class="table-responsive">
-                            <table class="table table-striped border">
-                                <thead>
-                                    <tr>
-                                        <th scope="col">#</th>
-                                        <th scope="col">Produto</th>
-                                        <th scope="col">Valor</th>
-                                        <th scope="col">Tipo de cobrança</th>
-                                        <th scope="col">Editar</th>
-                                        <th scope="col">Excluir</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="product of Protocol.Protocol_products">
-                                        <th scope="row">{{product.id}}</th>
-                                        <td>{{product?.Product?.description}}</td>
-                                        <td>
-                                            {{product.value.toLocaleString('pt-br',{style: 'currency', currency:
-                                            'BRL'})}}
-                                        </td>
-                                        <td>{{product.charge_type}}</td>
-                                        <td>
-                                            <i
-                                                class="fa-solid fa-pen-to-square"
-                                                v-on:click="handlerEditProtocolProduct(product.id)"
-                                                style="cursor: pointer"
-                                            ></i>
-                                        </td>
-                                        <td>
-                                            <i
-                                                class="fa-solid fa-trash"
-                                                v-on:click="handlerDeleteProtocolProduct(product.id)"
-                                                style="cursor: pointer"
-                                            ></i>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <br />
-
-            <!-- Modal Protocol Register -->
-            <div
-                class="modal fade"
-                id="protocolRegisterModal"
-                tabindex="-1"
-                aria-labelledby="protocolRegisterModalLabel"
-                aria-hidden="true"
-            >
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h1 class="modal-title fs-5" id="protocolRegisterModalLabel">Registro</h1>
-                            <button
-                                type="button"
-                                class="btn-close"
-                                data-bs-dismiss="modal"
-                                aria-label="Fechar"
-                            ></button>
-                        </div>
-                        <div class="modal-body">
-                            <form @submit="handlerProtocolRegisterSubmit">
-                                <div class="row mb-3">
-                                    <label class="form-label" for="description">Descrição</label>
-                                    <input
-                                        type="text"
-                                        class="form-control"
-                                        id="description"
-                                        v-model="payloads.protocolRegister.description"
-                                        required
-                                    />
-                                </div>
-
-                                <div class="row mb-3">
-                                    <label class="form-label" for="value">Valor</label>
-                                    <input
-                                        type="number"
-                                        class="form-control"
-                                        id="value"
-                                        v-model="payloads.protocolRegister.value"
-                                        step="0.01"
-                                        required
-                                    />
-                                </div>
-
-                                <div class="row mb-3">
-                                    <label class="form-label" for="type">Tipo</label>
-                                    <select
-                                        class="form-control"
-                                        id="type"
-                                        v-model="payloads.protocolRegister.type"
-                                        required
-                                    >
-                                        <option disabled value="">Selecione uma opção</option>
-                                        <option value="Serviço">Serviço</option>
-                                        <option value="Despesa">Despesa</option>
-                                    </select>
-                                </div>
-
-                                <div class="row mb-3">
-                                    <input type="submit" class="form-control btn btn-dark btn-block" value="Enviar" />
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Modal Receipt -->
-            <div
-                class="modal fade"
-                id="receiptModal"
-                tabindex="-1"
-                aria-labelledby="receiptModalLabel"
-                aria-hidden="true"
-            >
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h1 class="modal-title fs-5" id="receiptModalLabel">Recibo</h1>
-                            <button
-                                type="button"
-                                class="btn-close"
-                                data-bs-dismiss="modal"
-                                aria-label="Fechar"
-                            ></button>
-                        </div>
-                        <div class="modal-body">
-                            <form @submit="handlerReceiptSubmit">
-                                <div class="row mb-3">
-                                    <label class="form-label" for="value">Valor</label>
-                                    <input
-                                        type="number"
-                                        class="form-control"
-                                        id="value"
-                                        v-model="payloads.receipt.value"
-                                        step="0.01"
-                                        required
-                                    />
-                                </div>
-
-                                <div class="row mb-3">
-                                    <label class="form-label" for="method">Método</label>
-                                    <select class="form-control" id="method" v-model="payloads.receipt.method" required>
-                                        <option disabled value="">Selecione uma opção</option>
-                                        <option value="Pix">Pix</option>
-                                        <option value="Boleto">Boleto</option>
-                                        <option value="Cartão">Cartão</option>
-                                        <option value="Transferência">Transferência</option>
-                                        <option value="Espécie">Espécie</option>
-                                    </select>
-                                </div>
-
-                                <div class="row mb-3">
-                                    <label class="form-label" for="note">Observação</label>
-                                    <input
-                                        type="text"
-                                        class="form-control"
-                                        id="note"
-                                        v-model="payloads.receipt.note"
-                                        required
-                                    />
-                                </div>
-
-                                <div class="row mb-3">
-                                    <input type="submit" class="form-control btn btn-dark btn-block" value="Enviar" />
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Modal Receipt -->
-            <div
-                class="modal fade"
-                id="protocolProductModal"
-                tabindex="-1"
-                aria-labelledby="protocolProductModalLabel"
-                aria-hidden="true"
-            >
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h1 class="modal-title fs-5" id="protocolProductModalLabel">Produto</h1>
-                            <button
-                                type="button"
-                                class="btn-close"
-                                data-bs-dismiss="modal"
-                                aria-label="Fechar"
-                            ></button>
-                        </div>
-                        <div class="modal-body">
-                            <form @submit="handlerProtocolProductsSubmit">
-                                <div class="row mb-3">
-                                    <label class="form-label" for="product">Produto</label>
-                                    <select
-                                        class="form-control"
-                                        id="product"
-                                        v-model="payloads.protocolProduct.ProductId"
-                                        required
-                                    >
-                                        <option disabled value="null">Selecione um produto</option>
-                                        <option v-for="option of references.products" :value="option.id">
-                                            #{{option.id}} - {{option.description}}
-                                            [{{option.value.toLocaleString('pt-br',{style: 'currency', currency:
-                                            'BRL'})}}]
-                                        </option>
-                                    </select>
-                                </div>
-
-                                <div class="row mb-3">
-                                    <label class="form-label" for="charge_type">Tipo de cobrança</label>
-                                    <select
-                                        class="form-control"
-                                        id="charge_type"
-                                        v-model="payloads.protocolProduct.charge_type"
-                                        @change="handlerProtocolProductsChangeChargeType"
-                                        required
-                                    >
-                                        <option disabled value="null">Selecione uma opção</option>
-                                        <option value="Único">Único</option>
-                                        <option value="Mensal">Mensal</option>
-                                        <option value="Anual">Anual</option>
-                                    </select>
-                                </div>
-
-                                <div class="row mb-3">
-                                    <label class="form-label" for="value">Valor</label>
-                                    <input
-                                        type=""
-                                        class="form-control"
-                                        id="value"
-                                        v-model="payloads.protocolProduct.value"
-                                        step="0.01"
-                                        required
-                                    />
-                                </div>
-
-                                <div class="row mb-3">
-                                    <label class="form-label" for="discount">Desconto (%)</label>
-                                    <input
-                                        type="number"
-                                        step="any"
-                                        class="form-control"
-                                        id="discount"
-                                        v-model="payloads.protocolProduct.discount"
-                                        @keyup="handlerProtocolProductsChangeDiscount"
-                                    />
-                                </div>
-
-                                <div class="row mb-3">
-                                    <input type="submit" class="form-control btn btn-dark btn-block" value="Enviar" />
-                                </div>
-                            </form>
-                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <script src="../assets/js/service_orders/i.js"></script>
-    </body>
+        <!-- Modal Receipt -->
+        <div class="modal fade" id="receiptModal" tabindex="-1" aria-labelledby="receiptModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h1 class="modal-title fs-5" id="receiptModalLabel">Recibo</h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form @submit="handlerReceiptSubmit">
+                            <div class="row mb-3">
+                                <label class="form-label" for="value">Valor</label>
+                                <input type="number" class="form-control" id="value" v-model="payloads.receipt.value"
+                                    step="0.01" required />
+                            </div>
+
+                            <div class="row mb-3">
+                                <label class="form-label" for="method">Método</label>
+                                <select class="form-control" id="method" v-model="payloads.receipt.method" required>
+                                    <option disabled value="">Selecione uma opção</option>
+                                    <option value="Pix">Pix</option>
+                                    <option value="Boleto">Boleto</option>
+                                    <option value="Cartão">Cartão</option>
+                                    <option value="Transferência">Transferência</option>
+                                    <option value="Espécie">Espécie</option>
+                                </select>
+                            </div>
+
+                            <div class="row mb-3">
+                                <label class="form-label" for="note">Observação</label>
+                                <input type="text" class="form-control" id="note" v-model="payloads.receipt.note"
+                                    required />
+                            </div>
+
+                            <div class="row mb-3">
+                                <input type="submit" class="form-control btn btn-dark btn-block" value="Enviar" />
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Receipt -->
+        <div class="modal fade" id="protocolProductModal" tabindex="-1" aria-labelledby="protocolProductModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h1 class="modal-title fs-5" id="protocolProductModalLabel">Produto</h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form @submit="handlerProtocolProductsSubmit">
+                            <div class="row mb-3">
+                                <label class="form-label" for="product">Produto</label>
+                                <select class="form-control" id="product" v-model="payloads.protocolProduct.ProductId"
+                                    required>
+                                    <option disabled value="null">Selecione um produto</option>
+                                    <option v-for="option of references.products" :value="option.id">
+                                        #{{option.id}} - {{option.description}}
+                                        [{{option.value.toLocaleString('pt-br',{style: 'currency', currency:
+                                        'BRL'})}}]
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div class="row mb-3">
+                                <label class="form-label" for="charge_type">Tipo de cobrança</label>
+                                <select class="form-control" id="charge_type"
+                                    v-model="payloads.protocolProduct.charge_type"
+                                    @change="handlerProtocolProductsChangeChargeType" required>
+                                    <option disabled value="null">Selecione uma opção</option>
+                                    <option value="Único">Único</option>
+                                    <option value="Mensal">Mensal</option>
+                                    <option value="Anual">Anual</option>
+                                </select>
+                            </div>
+
+                            <div class="row mb-3">
+                                <label class="form-label" for="value">Valor</label>
+                                <input type="" class="form-control" id="value" v-model="payloads.protocolProduct.value"
+                                    step="0.01" required />
+                            </div>
+
+                            <div class="row mb-3">
+                                <label class="form-label" for="discount">Desconto (%)</label>
+                                <input type="number" step="any" class="form-control" id="discount"
+                                    v-model="payloads.protocolProduct.discount"
+                                    @keyup="handlerProtocolProductsChangeDiscount" />
+                            </div>
+
+                            <div class="row mb-3">
+                                <input type="submit" class="form-control btn btn-dark btn-block" value="Enviar" />
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../assets/js/service_orders/i.js"></script>
+</body>
+
 </html>

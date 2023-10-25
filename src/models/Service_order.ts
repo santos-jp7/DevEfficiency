@@ -84,5 +84,6 @@ Service_order.init(
 Service_order.hasOne(Protocol, {
     onDelete: 'RESTRICT',
 })
+Protocol.belongsTo(Service_order)
 
 export default Service_order

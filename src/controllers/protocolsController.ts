@@ -1,20 +1,35 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
+import { literal } from 'sequelize'
 import Product from '../models/Product'
 
 import Protocol from '../models/Protocol'
 import Protocol_product from '../models/Protocol_product'
 import Protocol_register from '../models/Protocol_register'
 import Receipts from '../models/Receipts'
+import Client from '../models/Client'
+import { WhereOptions } from 'sequelize'
+import Service_order from '../models/Service_order'
 
 type protocolsRequest = FastifyRequest<{
     Body: Protocol
     Params: Protocol
+    Querystring: {
+        ClientId: Client['id']
+    }
     Headers: any
 }>
 
 class protocolsController {
-    static async index(req: FastifyRequest, res: FastifyReply): Promise<FastifyReply> {
-        return res.send(await Protocol.findAll())
+    static async index(req: protocolsRequest, res: FastifyReply): Promise<FastifyReply> {
+        const { ClientId } = req.query
+
+        let where: WhereOptions<Protocol> = {}
+
+        if (ClientId) where['$Service_order.ClientId$'] = ClientId
+
+        return res.send(
+            await Protocol.findAll({ where, include: [Service_order, Protocol_register, Receipts, Protocol_product] }),
+        )
     }
 
     static async show(req: protocolsRequest, res: FastifyReply): Promise<FastifyReply> {
