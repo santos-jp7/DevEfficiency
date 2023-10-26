@@ -261,13 +261,29 @@ const client = new Vue({
             let receipt_total = 0
 
             for (let key of keys) {
+                if (key == 'Fechado') key = 'Faturamento'
+
                 this.$data.calcs.protocols[key] = 0
 
                 for (let { Protocol_products, Protocol_registers, Receipts } of groups[key]) {
                     this.$data.calcs.protocols[key] += Protocol_registers.reduce((sum, v) => sum + v.value, 0)
                     this.$data.calcs.protocols[key] += Protocol_products.reduce((sum, v) => sum + v.value, 0)
 
-                    receipt_total += Receipts.reduce((sum, v) => sum + v.value, 0)
+                    const registerGroups = Object.groupBy(Protocol_registers, ({ type }) => type)
+                    const registerKeys = Object.keys(registerGroups)
+
+                    for (let registerKey of registerKeys) {
+                        this.$data.calcs.protocols[registerKey] = registerGroups[registerKey].reduce(
+                            (sum, v) => sum + v.value,
+                            0,
+                        )
+                    }
+
+                    const receipts = Receipts.reduce((sum, v) => sum + v.value, 0)
+                    if (key == 'Liberado para pagamento' || key == 'Em aberto')
+                        this.$data.calcs.protocols[key] -= receipts
+
+                    receipt_total += receipts
                 }
             }
 
