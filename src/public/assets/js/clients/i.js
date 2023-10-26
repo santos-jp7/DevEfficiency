@@ -261,8 +261,6 @@ const client = new Vue({
             let receipt_total = 0
 
             for (let key of keys) {
-                if (key == 'Fechado') key = 'Faturamento'
-
                 this.$data.calcs.protocols[key] = 0
 
                 for (let { Protocol_products, Protocol_registers, Receipts } of groups[key]) {
