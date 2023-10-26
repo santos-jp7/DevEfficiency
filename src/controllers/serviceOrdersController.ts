@@ -93,6 +93,15 @@ class serviceOrdersController {
             await protocol?.save()
         }
 
+        if (status == 'Cancelado') {
+            const total_receipt = (await protocol?.getReceipts())?.reduce((sum, v) => sum + v.value, 0) || 0
+
+            if (total_receipt > 0) throw new Error('Não é possivel finalizar, protocolo com recebimentos.')
+
+            await protocol?.update({ status: 'Cancelado' })
+            await protocol?.save()
+        }
+
         await os?.update({ description, subject, status })
         await os?.save()
 

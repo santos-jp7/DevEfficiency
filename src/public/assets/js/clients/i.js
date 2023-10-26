@@ -258,14 +258,22 @@ const client = new Vue({
             const groups = Object.groupBy(protocols, ({ status }) => status)
             const keys = Object.keys(groups)
 
+            let receipt_total = 0
+
             for (let key of keys) {
                 this.$data.calcs.protocols[key] = 0
 
-                for (let { Protocol_products, Protocol_registers } of groups[key]) {
+                for (let { Protocol_products, Protocol_registers, Receipts } of groups[key]) {
                     this.$data.calcs.protocols[key] += Protocol_registers.reduce((sum, v) => sum + v.value, 0)
                     this.$data.calcs.protocols[key] += Protocol_products.reduce((sum, v) => sum + v.value, 0)
+
+                    receipt_total += Receipts.reduce((sum, v) => sum + v.value, 0)
                 }
             }
+
+            if ('Fechado' in this.$data.calcs.protocols)
+                if (receipt_total != this.$data.calcs.protocols['Fechado'])
+                    this.$data.calcs.protocols['Total pago'] = receipt_total
         },
     },
     mounted: function () {

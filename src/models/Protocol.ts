@@ -21,7 +21,7 @@ import Service_order from './Service_order'
 class Protocol extends Model<InferAttributes<Protocol>, InferCreationAttributes<Protocol>> {
     declare id: CreationOptional<number>
 
-    declare status: CreationOptional<'Em aberto' | 'Liberado para pagamento' | 'Fechado'>
+    declare status: CreationOptional<'Em aberto' | 'Liberado para pagamento' | 'Fechado' | 'Cancelado'>
 
     declare serviceOrderId: ForeignKey<Service_order['id']>
 
@@ -57,7 +57,7 @@ Protocol.init(
         },
         status: {
             type: DataTypes.ENUM,
-            values: ['Em aberto', 'Liberado para pagamento', 'Fechado'],
+            values: ['Em aberto', 'Liberado para pagamento', 'Fechado', 'Cancelado'],
             defaultValue: 'Em aberto',
         },
         createdAt: DataTypes.DATE,
