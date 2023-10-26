@@ -13,6 +13,9 @@ const client = new Vue({
         Servers: [],
         Service_orders: [],
         Contacts: [],
+        calcs: {
+            protocols: {},
+        },
         payloads: {
             project: {
                 id: null,
@@ -250,6 +253,20 @@ const client = new Vue({
                     '$1.$2.$3/$4-$5',
                 )
         },
+        calcProtocols() {
+            const protocols = this.$data.Service_orders?.map((v) => v.Protocol)
+            const groups = Object.groupBy(protocols, ({ status }) => status)
+            const keys = Object.keys(groups)
+
+            for (let key of keys) {
+                this.$data.calcs.protocols[key] = 0
+
+                for (let { Protocol_products, Protocol_registers } of groups[key]) {
+                    this.$data.calcs.protocols[key] += Protocol_registers.reduce((sum, v) => sum + v.value, 0)
+                    this.$data.calcs.protocols[key] += Protocol_products.reduce((sum, v) => sum + v.value, 0)
+                }
+            }
+        },
     },
     mounted: function () {
         const token = localStorage.getItem('token')
@@ -283,6 +300,7 @@ const client = new Vue({
                 Object.keys(data).forEach((key) => (this.$data[key] = data[key]))
 
                 this.maskDocument()
+                this.calcProtocols()
             })
             .catch((error) => {
                 console.log(error)

@@ -1,4 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
+import { HasMany } from 'sequelize'
 
 import Client from '../models/Client'
 import Contact from '../models/Contact'
@@ -6,6 +7,10 @@ import Credential from '../models/Credential'
 import Project from '../models/Project'
 import Server from '../models/Server'
 import Service_order from '../models/Service_order'
+import Protocol from '../models/Protocol'
+import Protocol_register from '../models/Protocol_register'
+import Receipts from '../models/Receipts'
+import Protocol_product from '../models/Protocol_product'
 
 type clientRequest = FastifyRequest<{
     Body: Client
@@ -20,7 +25,16 @@ class clientController {
     static async show(req: clientRequest, res: FastifyReply): Promise<FastifyReply> {
         return res.send(
             await Client.findByPk(req.params.id, {
-                include: [Credential, Project, Server, Service_order, Contact],
+                include: [
+                    Credential,
+                    Project,
+                    Server,
+                    {
+                        model: Service_order,
+                        include: [{ model: Protocol, include: [Protocol_register, Protocol_product, Receipts] }],
+                    },
+                    Contact,
+                ],
             }),
         )
     }
