@@ -6,6 +6,7 @@ const project = new Vue({
         id: 0,
         description: null,
         value: null,
+        profit: null,
     },
     methods: {
         handlerSubmit(e) {
@@ -14,7 +15,7 @@ const project = new Vue({
             let method = this.$data.id ? __api__.put : __api__.post
             let url = this.$data.id ? '/api/products/' + this.$data.id : '/api/products'
 
-            method(url, { description: this.$data.description, value: this.$data.value })
+            method(url, { description: this.$data.description, value: this.$data.value, profit: this.$data.profit })
                 .then(({ data }) => {
                     window.location.href = '/products/i?id=' + data.id
                 })

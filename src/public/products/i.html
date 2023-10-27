@@ -1,62 +1,69 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-    <head>
-        <meta charset="UTF-8" />
-        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Codlinx - Produto</title>
 
-        <link href="../assets/css/bootstrap.min.css" rel="stylesheet" />
-        <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css" />
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Codlinx - Produto</title>
 
-        <script src="../assets/js/vue.min.js"></script>
-        <script src="../assets/js/jquery-3.6.1.min.js"></script>
-        <script src="../assets/js/bootstrap.min.js"></script>
-        <script src="../assets/js/axios.min.js"></script>
-        <script src="../assets/js/moment.min.js"></script>
-    </head>
+    <link href="../assets/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css" />
 
-    <body>
-        <nav class="navbar bg-light">
-            <div class="container">
-                <a class="navbar-brand" href="/dashboard">
-                    <img src="../assets/img/logo_cabecalho.png" alt="Codlinx" width="40" height="40" />
-                </a>
-            </div>
-        </nav>
+    <script src="../assets/js/vue.min.js"></script>
+    <script src="../assets/js/jquery-3.6.1.min.js"></script>
+    <script src="../assets/js/bootstrap.min.js"></script>
+    <script src="../assets/js/axios.min.js"></script>
+    <script src="../assets/js/moment.min.js"></script>
+</head>
 
-        <div class="container p-4" id="product">
-            <div class="col">
-                <a href="../clients" class="btn btn-dark btn-sm my-2">Clientes</a>
-                <a href="../projects" class="btn btn-dark btn-sm my-2">Projetos</a>
-                <a href="../service_orders" class="btn btn-dark btn-sm my-2">Os</a>
-                <a href="../servers/" class="btn btn-dark btn-sm my-2">Servidores</a>
-                <a href="../products" class="btn btn-dark btn-sm my-2">Produtos</a>
-            </div>
+<body>
+    <nav class="navbar bg-light">
+        <div class="container">
+            <a class="navbar-brand" href="/dashboard">
+                <img src="../assets/img/logo_cabecalho.png" alt="Codlinx" width="40" height="40" />
+            </a>
+        </div>
+    </nav>
 
-            <hr />
-
-            <div class="d-flex justify-content-between">
-                <h5>Produto #{{id}}</h5>
-            </div>
-
-            <form v-on:submit="handlerSubmit">
-                <div class="row">
-                    <div class="mb-3 col-lg">
-                        <label for="description" class="form-label">Descrição:</label>
-                        <input type="text" class="form-control" v-model="description" id="description" />
-                    </div>
-
-                    <div class="mb-3 col-lg">
-                        <label for="value" class="form-label">Valor:</label>
-                        <input type="number" class="form-control" v-model="value" id="value" step="0.01" />
-                    </div>
-                </div>
-
-                <button type="submit" class="btn btn-dark">Enviar</button>
-            </form>
+    <div class="container p-4" id="product">
+        <div class="col">
+            <a href="../clients" class="btn btn-dark btn-sm my-2">Clientes</a>
+            <a href="../projects" class="btn btn-dark btn-sm my-2">Projetos</a>
+            <a href="../service_orders" class="btn btn-dark btn-sm my-2">Os</a>
+            <a href="../servers/" class="btn btn-dark btn-sm my-2">Servidores</a>
+            <a href="../products" class="btn btn-dark btn-sm my-2">Produtos</a>
         </div>
 
-        <script src="../assets/js/products/i.js"></script>
-    </body>
+        <hr />
+
+        <div class="d-flex justify-content-between">
+            <h5>Produto #{{id}}</h5>
+        </div>
+
+        <form v-on:submit="handlerSubmit">
+            <div class="row">
+                <div class="mb-3 col-lg">
+                    <label for="description" class="form-label">Descrição:</label>
+                    <input type="text" class="form-control" v-model="description" id="description" />
+                </div>
+
+                <div class="mb-3 col-sm">
+                    <label for="value" class="form-label">Valor:</label>
+                    <input type="number" class="form-control" v-model="value" id="value" step="0.01" />
+                </div>
+
+                <div class="mb-3 col-sm">
+                    <label for="profit" class="form-label">Lucro:</label>
+                    <input type="number" class="form-control" v-model="profit" id="profit" step="0.01" />
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-dark">Enviar</button>
+        </form>
+    </div>
+
+    <script src="../assets/js/products/i.js"></script>
+</body>
+
 </html>

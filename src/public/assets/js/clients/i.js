@@ -258,14 +258,20 @@ const client = new Vue({
             const groups = Object.groupBy(protocols, ({ status }) => status)
             const keys = Object.keys(groups)
 
-            let receipt_total = 0
+            let receiptTotal = 0
+
+            this.$data.calcs.protocols['Produtos'] = 0
 
             for (let key of keys) {
                 this.$data.calcs.protocols[key] = 0
 
                 for (let { Protocol_products, Protocol_registers, Receipts } of groups[key]) {
-                    this.$data.calcs.protocols[key] += Protocol_registers.reduce((sum, v) => sum + v.value, 0)
-                    this.$data.calcs.protocols[key] += Protocol_products.reduce((sum, v) => sum + v.value, 0)
+                    const protocolRegistersTotal = Protocol_registers.reduce((sum, v) => sum + v.value, 0)
+                    const protocolProductsTotal = Protocol_products.reduce((sum, v) => sum + v.value, 0)
+
+                    this.$data.calcs.protocols[key] += protocolRegistersTotal
+                    this.$data.calcs.protocols[key] += protocolProductsTotal
+                    this.$data.calcs.protocols['Produtos'] += protocolProductsTotal
 
                     const registerGroups = Object.groupBy(Protocol_registers, ({ type }) => type)
                     const registerKeys = Object.keys(registerGroups)
@@ -281,13 +287,13 @@ const client = new Vue({
                     if (key == 'Liberado para pagamento' || key == 'Em aberto')
                         this.$data.calcs.protocols[key] -= receipts
 
-                    receipt_total += receipts
+                    receiptTotal += receipts
                 }
             }
 
             if ('Fechado' in this.$data.calcs.protocols)
-                if (receipt_total != this.$data.calcs.protocols['Fechado'])
-                    this.$data.calcs.protocols['Total pago'] = receipt_total
+                if (receiptTotal != this.$data.calcs.protocols['Fechado'])
+                    this.$data.calcs.protocols['Total pago'] = receiptTotal
         },
     },
     mounted: function () {
