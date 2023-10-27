@@ -135,7 +135,20 @@
 
             <div class="col border rounded p-2">
                 <div class="d-flex justify-content-between mb-2">
-                    <h5>Relatório</h5>
+                    <h5>Relatórios</h5>
+                </div>
+                <div class="my-1">
+                    <a class="btn btn-sm btn-dark my-1" :href="'/api/protocols/pdf?type=Em aberto&ClientId='+id"
+                        download><i class="fa-solid fa-download"></i> Em aberto</a>
+                    &bull;
+                    <a class="btn btn-sm btn-dark my-1"
+                        :href="'/api/protocols/pdf?type=Liberado para pagamento&ClientId='+id" download><i
+                            class="fa-solid fa-download"></i> Liberado para
+                        pagamento</a>
+                    &bull;
+                    <a class="btn btn-sm btn-dark my-1" :href="'/api/protocols/pdf?type=Fechado&ClientId='+id"
+                        download><i class="fa-solid fa-download"></i>
+                        Fechado</a>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-striped border">
