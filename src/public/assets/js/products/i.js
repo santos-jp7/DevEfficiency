@@ -6,7 +6,7 @@ const project = new Vue({
         id: 0,
         description: null,
         value: null,
-        profit: null,
+        coust: null,
     },
     methods: {
         handlerSubmit(e) {
