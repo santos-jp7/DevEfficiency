@@ -325,6 +325,13 @@ const client = new Vue({
             if ('Fechado' in this.$data.calcs.protocols)
                 if (receiptTotal != this.$data.calcs.protocols['Fechado'])
                     this.$data.calcs.protocols['Total pago'] = receiptTotal
+
+            client.$data.calcs.protocols = Object.keys(client.$data.calcs.protocols)
+                .sort()
+                .reduce(function (acc, key) {
+                    acc[key] = client.$data.calcs.protocols[key]
+                    return acc
+                }, {})
         },
     },
     mounted: function () {
