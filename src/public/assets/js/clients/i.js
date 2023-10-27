@@ -273,7 +273,7 @@ const client = new Vue({
                     const protocolRegistersTotal = Protocol_registers.reduce((sum, v) => sum + v.value, 0)
 
                     const protocolProductsTotal = Protocol_products.reduce((sum, v) => sum + v.value, 0)
-                    const protocolProductsProfit = Protocol_products.reduce((sum, v) => sum + v.profit, 0)
+                    const protocolProductsProfit = Protocol_products.reduce((sum, v) => sum + v.Product.profit, 0)
                     const protocolProductsCost = protocolProductsTotal - protocolProductsProfit
 
                     this.$data.calcs.protocols[key] += protocolRegistersTotal

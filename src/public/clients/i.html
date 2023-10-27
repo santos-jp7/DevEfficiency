@@ -112,6 +112,7 @@
                             <tr>
                                 <th scope="col">#</th>
                                 <th scope="col">Assunto</th>
+                                <th scope="col">Projeto</th>
                                 <th scope="col">Status</th>
                                 <th scope="col">Abrir</th>
                             </tr>
@@ -120,6 +121,7 @@
                             <tr v-for="service_order of Service_orders">
                                 <th scope="row">{{service_order.id}}</th>
                                 <td>{{service_order.subject}}</td>
+                                <td>{{service_order.Project?.name || "-"}}</td>
                                 <td>{{service_order.status}}</td>
                                 <td>
                                     <a :href="'/service_orders/i?id='+service_order.id"><i
@@ -141,7 +143,6 @@
                             <tr>
                                 <th scope="col">Tipo</th>
                                 <th scope="col">Valor total</th>
-                                <th scope="col">Abrir</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -150,10 +151,6 @@
                                 <td>
                                     {{calcs.protocols[v].toLocaleString('pt-br',{style: 'currency', currency:
                                     'BRL'})}}
-                                </td>
-                                <td>
-                                    <a :href="'/protocols?ClientId='+id+'&status='+v"><i
-                                            class="fa-solid fa-arrow-right"></i></a>
                                 </td>
                             </tr>
                         </tbody>
