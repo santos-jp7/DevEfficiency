@@ -267,6 +267,14 @@ const client = new Vue({
             this.$data.calcs.protocols['Produtos - Despesa'] = 0
 
             for (let key of keys) {
+                this.$data.calcs.protocols[`Os - ${key}`] = 0
+
+                this.$data.calcs.protocols[`Produtos - ${key}`] = 0
+                this.$data.calcs.protocols[`Produtos - Lucro - ${key}`] = 0
+                this.$data.calcs.protocols[`Produtos - Despesa - ${key}`] = 0
+            }
+
+            for (let key of keys) {
                 this.$data.calcs.protocols[key] = 0
 
                 for (let { Protocol_products, Protocol_registers, Receipts } of groups[key]) {
@@ -280,10 +288,15 @@ const client = new Vue({
                     this.$data.calcs.protocols[key] += protocolProductsTotal
 
                     this.$data.calcs.protocols['Os'] += protocolRegistersTotal
+                    this.$data.calcs.protocols[`Os - ${key}`] += protocolRegistersTotal
 
                     this.$data.calcs.protocols['Produtos'] += protocolProductsTotal
                     this.$data.calcs.protocols['Produtos - Lucro'] += protocolProductsProfit
                     this.$data.calcs.protocols['Produtos - Despesa'] += protocolProductsCost
+
+                    this.$data.calcs.protocols[`Produtos - ${key}`] += protocolProductsTotal
+                    this.$data.calcs.protocols[`Produtos - Lucro - ${key}`] += protocolProductsProfit
+                    this.$data.calcs.protocols[`Produtos - Despesa - ${key}`] += protocolProductsCost
 
                     const registerGroups = Object.groupBy(Protocol_registers, ({ type }) => type)
                     const registerKeys = Object.keys(registerGroups)
@@ -292,10 +305,13 @@ const client = new Vue({
                         if (!(`Os - ${registerKey}` in this.$data.calcs.protocols))
                             this.$data.calcs.protocols[`Os - ${registerKey}`] = 0
 
-                        this.$data.calcs.protocols[`Os - ${registerKey}`] += registerGroups[registerKey].reduce(
-                            (sum, v) => sum + v.value,
-                            0,
-                        )
+                        if (!(`Os - ${registerKey} - ${key}` in this.$data.calcs.protocols))
+                            this.$data.calcs.protocols[`Os - ${registerKey} - ${key}`] = 0
+
+                        const productProtocolTotal = registerGroups[registerKey].reduce((sum, v) => sum + v.value, 0)
+
+                        this.$data.calcs.protocols[`Os - ${registerKey}`] += productProtocolTotal
+                        this.$data.calcs.protocols[`Os - ${registerKey} - ${key}`] += productProtocolTotal
                     }
 
                     const receipts = Receipts.reduce((sum, v) => sum + v.value, 0)
