@@ -1,0 +1,253 @@
+<head>
+    <style>
+        body {
+            margin: 1px;
+            padding: 25px;
+        }
+
+        .between {
+            display: flex;
+
+            flex-direction: row;
+            justify-content: space-between;
+        }
+
+        .columns {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        table {
+            width: 100%;
+        }
+
+        table,
+        th,
+        td {
+            border: solid 1px #000;
+            padding: 3px;
+        }
+
+        table {
+            border-collapse: collapse;
+            caption-side: bottom;
+        }
+
+        caption {
+            font-size: 16px;
+            font-weight: bold;
+            padding-top: 5px;
+        }
+
+        th.low {
+            width: 5%;
+        }
+
+        .total {
+            display: flex;
+            flex-direction: column;
+            justify-content: end;
+
+            gap: 2px;
+
+            width: 280px;
+            margin-left: auto;
+        }
+
+        .total>.line {
+            display: flex;
+            flex-direction: row;
+            justify-content: end;
+
+            gap: 10px;
+        }
+
+        .total>.line.border {
+            border-top: #666 1px solid;
+        }
+
+        .total>.line>.left {
+            margin-right: auto;
+        }
+
+        .total>.line>.bold {
+            font-weight: bolder;
+        }
+
+        .total>.line>.big {
+            font-size: 22px;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="between">
+        <img src="data:image/png;base64,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"
+            alt="" width="60" />
+        <h1>
+            <%= ( type=="Em aberto" ? "Orçamento" : (type=="Liberado para pagamento" ? "Fatura" : (type=="Fechado"
+                ? "Recibo" : "" ) ) ) %>
+        </h1>
+    </nav>
+
+    <br />
+    <hr />
+
+    <section class="details between">
+        <div class="columns">
+            <b>Codlinx</b>
+            <span>Soluções inteligentes para um mundo conectado.</span>
+            <span>(31) 3191-0305</span>
+        </div>
+        <div class="columns">
+            <span>Data: <%= ` ${String(new Date().getDate()).padStart(2, "0" )}/${String(new Date().getMonth()
+                    +1).padStart(2, "0" )}/${new Date().getFullYear()}`%></span>
+        </div>
+    </section>
+
+    <hr />
+
+    <section class="client between">
+        <div class="columns">
+            <b>Cliente:</b>
+            <span>
+                <%= client.name %>
+            </span>
+            <span>
+                <%= client.email %>
+            </span>
+        </div>
+    </section>
+
+    <hr />
+
+    <% for(let os of oss){ %>
+
+        <section class="os between">
+            <div class="columns">
+                <b>
+                    <%= os.ProjectId ? `[${os.Project?.name}]` : "" %>
+                        <%= os.subject %>
+                </b>
+                <span>
+                    <%= os.description %>
+                </span>
+            </div>
+        </section>
+
+        <hr />
+
+        <% if(os.Protocol?.Protocol_registers?.length> 0){ %>
+            <section class="services">
+                <h2>Serviços e despesas</h2>
+
+                <table>
+                    <tr>
+                        <th>Descrição</th>
+                        <th>Valor</th>
+                        <th>Tipo</th>
+                    </tr>
+                    <% for(let register of os.Protocol?.Protocol_registers){ %>
+                        <tr>
+                            <td>
+                                <%= register.description %>
+                            </td>
+                            <td>
+                                <%= (register.value).toLocaleString('pt-br',{style: 'currency' , currency: 'BRL' }) %>
+                            </td>
+                            <td>
+                                <%= register.type %>
+                            </td>
+                        </tr>
+                        <% } %>
+                </table>
+            </section>
+            <% } %>
+
+                <% if(os.Protocol?.Protocol_products?.length> 0){ %>
+                    <section class="products">
+                        <h2>Produtos</h2>
+
+                        <table>
+                            <tr>
+                                <th class="low">#</th>
+                                <th>Descrição</th>
+                                <th>Tipo de cobrança</th>
+                                <th>Valor</th>
+                            </tr>
+                            <% for(let product of os.Protocol?.Protocol_products){ %>
+                                <tr>
+                                    <td>
+                                        <%= product.ProductId %>
+                                    </td>
+                                    <td>
+                                        <%= product.Product?.description %>
+                                    </td>
+                                    <td>
+                                        <%= product.charge_type %>
+                                    </td>
+                                    <td>
+                                        <%= (product.value).toLocaleString('pt-br',{style: 'currency' , currency: 'BRL'
+                                            }) %>
+                                    </td>
+                                </tr>
+                                <% } %>
+                        </table>
+                    </section>
+                    <% } %>
+
+                        <hr>
+                        <% } %>
+                            <section class="total">
+                                <div class="line">
+                                    <span class="left">Valor total:</span>
+                                    <span class="bold">
+                                        <%= ((oss.map(os=> os.Protocol?.Protocol_registers?.reduce((sum, v) => sum +
+                                            v.value, 0)).reduce((sum, v) => sum + v, 0))
+                                            +
+                                            (oss.map(os => os.Protocol?.Protocol_products?.reduce((sum, v) => sum +
+                                            v.value,
+                                            0)).reduce((sum, v) => sum + v, 0)))
+                                            .toLocaleString('pt-br',{style: 'currency', currency: 'BRL'}) %>
+                                    </span>
+                                </div>
+
+                                <% if(oss.map(os=> os.Protocol?.Receipts?.reduce((sum, v) => sum + v.value,
+                                    0)).reduce((sum, v) => sum + v, 0) > 0){ %>
+                                    <div class="line">
+                                        <span class="left">Valor pago:</span>
+                                        <span class="bold">
+                                            <%= (oss.map(os=> os.Protocol?.Receipts?.reduce((sum, v) => sum + v.value,
+                                                0)).reduce((sum, v) => sum + v, 0)).toLocaleString('pt-br',{style:
+                                                'currency', currency: 'BRL'}) %>
+                                        </span>
+                                    </div>
+                                    <% } %>
+
+                                        <% if(type=="Liberado para pagamento" ){ %>
+                                            <div class="line border">
+                                                <span class="left big">Valor devedor:</span>
+                                                <span class="bold big">
+                                                    <%= ((oss.map( os=>
+                                                        os.Protocol?.Protocol_registers?.reduce((sum, v) => sum +
+                                                        v.value,
+                                                        0)).reduce((sum, v) => sum + v, 0)
+                                                        ||
+                                                        0) +
+                                                        (oss.map(os=> os.Protocol?.Protocol_products?.reduce((sum, v) =>
+                                                        sum + v.value,
+                                                        0)).reduce((sum, v) => sum + v, 0)
+                                                        || 0)
+                                                        -
+                                                        (oss.map(os=> os.Protocol?.Receipts?.reduce((sum, v) => sum +
+                                                        v.value,
+                                                        0)).reduce((sum, v) => sum + v, 0) ||
+                                                        0)
+                                                        ).toLocaleString('pt-br', { style: 'currency', currency: 'BRL'
+                                                        }) %>
+                                                </span>
+                                            </div>
+                                            <% } %>
+                            </section>
+</body>
