@@ -6,7 +6,7 @@ class Product extends Model<InferAttributes<Product>, InferCreationAttributes<Pr
     declare id: CreationOptional<number>
     declare description: string
     declare value: number
-    declare profit: number
+    declare coust: number
 
     declare createdAt: CreationOptional<Date>
     declare updatedAt: CreationOptional<Date>
@@ -28,7 +28,7 @@ Product.init(
             allowNull: false,
             defaultValue: 0,
         },
-        profit: {
+        coust: {
             type: DataTypes.FLOAT,
             allowNull: false,
             defaultValue: 0,

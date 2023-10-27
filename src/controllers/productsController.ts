@@ -18,20 +18,20 @@ class productsController {
     }
 
     static async store(req: productsRequest, res: FastifyReply): Promise<FastifyReply> {
-        const { description, value, profit } = req.body
+        const { description, value, coust } = req.body
 
-        const product = await Product.create({ description, value, profit })
+        const product = await Product.create({ description, value, coust })
 
         return res.send(product)
     }
 
     static async update(req: productsRequest, res: FastifyReply): Promise<FastifyReply> {
         const { id } = req.params
-        const { description, value, profit } = req.body
+        const { description, value, coust } = req.body
 
         const product = await Product.findByPk(id)
 
-        await product?.update({ description, value, profit })
+        await product?.update({ description, value, coust })
         await product?.save()
 
         return res.send(product)

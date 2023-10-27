@@ -264,14 +264,14 @@ const client = new Vue({
 
             this.$data.calcs.protocols['Produtos'] = 0
             this.$data.calcs.protocols['Produtos - Lucro'] = 0
-            this.$data.calcs.protocols['Produtos - Despesa'] = 0
+            this.$data.calcs.protocols['Produtos - Custo'] = 0
 
             for (let key of keys) {
                 this.$data.calcs.protocols[`Os - ${key}`] = 0
 
                 this.$data.calcs.protocols[`Produtos - ${key}`] = 0
                 this.$data.calcs.protocols[`Produtos - Lucro - ${key}`] = 0
-                this.$data.calcs.protocols[`Produtos - Despesa - ${key}`] = 0
+                this.$data.calcs.protocols[`Produtos - Custo - ${key}`] = 0
             }
 
             for (let key of keys) {
@@ -281,8 +281,8 @@ const client = new Vue({
                     const protocolRegistersTotal = Protocol_registers.reduce((sum, v) => sum + v.value, 0)
 
                     const protocolProductsTotal = Protocol_products.reduce((sum, v) => sum + v.value, 0)
-                    const protocolProductsProfit = Protocol_products.reduce((sum, v) => sum + v.Product.profit, 0)
-                    const protocolProductsCost = protocolProductsTotal - protocolProductsProfit
+                    const protocolProductsCoust = Protocol_products.reduce((sum, v) => sum + v.Product.coust, 0)
+                    let protocolProductsProfit = protocolProductsTotal - protocolProductsCoust
 
                     this.$data.calcs.protocols[key] += protocolRegistersTotal
                     this.$data.calcs.protocols[key] += protocolProductsTotal
@@ -292,11 +292,11 @@ const client = new Vue({
 
                     this.$data.calcs.protocols['Produtos'] += protocolProductsTotal
                     this.$data.calcs.protocols['Produtos - Lucro'] += protocolProductsProfit
-                    this.$data.calcs.protocols['Produtos - Despesa'] += protocolProductsCost
+                    this.$data.calcs.protocols['Produtos - Custo'] += protocolProductsCoust
 
                     this.$data.calcs.protocols[`Produtos - ${key}`] += protocolProductsTotal
                     this.$data.calcs.protocols[`Produtos - Lucro - ${key}`] += protocolProductsProfit
-                    this.$data.calcs.protocols[`Produtos - Despesa - ${key}`] += protocolProductsCost
+                    this.$data.calcs.protocols[`Produtos - Custo - ${key}`] += protocolProductsCost
 
                     const registerGroups = Object.groupBy(Protocol_registers, ({ type }) => type)
                     const registerKeys = Object.keys(registerGroups)
