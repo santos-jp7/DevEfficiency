@@ -260,24 +260,39 @@ const client = new Vue({
 
             let receiptTotal = 0
 
+            this.$data.calcs.protocols['Os'] = 0
+
             this.$data.calcs.protocols['Produtos'] = 0
+            this.$data.calcs.protocols['Produtos - Lucro'] = 0
+            this.$data.calcs.protocols['Produtos - Despesa'] = 0
 
             for (let key of keys) {
                 this.$data.calcs.protocols[key] = 0
 
                 for (let { Protocol_products, Protocol_registers, Receipts } of groups[key]) {
                     const protocolRegistersTotal = Protocol_registers.reduce((sum, v) => sum + v.value, 0)
+
                     const protocolProductsTotal = Protocol_products.reduce((sum, v) => sum + v.value, 0)
+                    const protocolProductsProfit = Protocol_products.reduce((sum, v) => sum + v.profit, 0)
+                    const protocolProductsCost = protocolProductsTotal - protocolProductsProfit
 
                     this.$data.calcs.protocols[key] += protocolRegistersTotal
                     this.$data.calcs.protocols[key] += protocolProductsTotal
+
+                    this.$data.calcs.protocols['Os'] += protocolRegistersTotal
+
                     this.$data.calcs.protocols['Produtos'] += protocolProductsTotal
+                    this.$data.calcs.protocols['Produtos - Lucro'] += protocolProductsProfit
+                    this.$data.calcs.protocols['Produtos - Despesa'] += protocolProductsCost
 
                     const registerGroups = Object.groupBy(Protocol_registers, ({ type }) => type)
                     const registerKeys = Object.keys(registerGroups)
 
                     for (let registerKey of registerKeys) {
-                        this.$data.calcs.protocols[registerKey] = registerGroups[registerKey].reduce(
+                        if (!(`Os - ${registerKey}` in this.$data.calcs.protocols))
+                            this.$data.calcs.protocols[`Os - ${registerKey}`] = 0
+
+                        this.$data.calcs.protocols[`Os - ${registerKey}`] += registerGroups[registerKey].reduce(
                             (sum, v) => sum + v.value,
                             0,
                         )

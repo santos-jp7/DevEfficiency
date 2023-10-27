@@ -26,10 +26,12 @@ Product.init(
         value: {
             type: DataTypes.FLOAT,
             allowNull: false,
+            defaultValue: 0,
         },
         profit: {
             type: DataTypes.FLOAT,
-            allowNull: true,
+            allowNull: false,
+            defaultValue: 0,
         },
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
