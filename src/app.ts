@@ -22,6 +22,7 @@ app.addHook('preHandler', (req, reply, done) => {
 
 app.register(helmet, {
     contentSecurityPolicy: false,
+    referrerPolicy: false,
 })
 
 app.register(fileStatic, {
