@@ -296,7 +296,7 @@ const client = new Vue({
 
                     this.$data.calcs.protocols[`Produtos - ${key}`] += protocolProductsTotal
                     this.$data.calcs.protocols[`Produtos - Lucro - ${key}`] += protocolProductsProfit
-                    this.$data.calcs.protocols[`Produtos - Custo - ${key}`] += protocolProductsCost
+                    this.$data.calcs.protocols[`Produtos - Custo - ${key}`] += protocolProductsCoust
 
                     const registerGroups = Object.groupBy(Protocol_registers, ({ type }) => type)
                     const registerKeys = Object.keys(registerGroups)
