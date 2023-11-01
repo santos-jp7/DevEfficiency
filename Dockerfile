@@ -11,8 +11,10 @@ RUN apt-get update && apt-get install gnupg wget -y && \
     apt-get install google-chrome-stable -y --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
-COPY . .
+COPY ./package.json .
 RUN npm install
+
+COPY . .
 
 RUN npm run build
 CMD npm start

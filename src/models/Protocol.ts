@@ -12,8 +12,8 @@ import {
 } from 'sequelize'
 
 import db from '../db'
-import Protocol_product from './Protocol_product'
 
+import Protocol_product from './Protocol_product'
 import Protocol_register from './Protocol_register'
 import Receipts from './Receipts'
 import Service_order from './Service_order'
@@ -68,6 +68,25 @@ Protocol.init(
         sequelize: db,
     },
 )
+
+Protocol.beforeSave(async (protocol) => {
+    if (protocol.status == 'Fechado') {
+        const total_cost =
+            ((await protocol?.getProtocol_registers())?.reduce((sum, v) => sum + v.value, 0) || 0) +
+            ((await protocol?.getProtocol_products())?.reduce((sum, v) => sum + v.value, 0) || 0)
+
+        const total_receipt = (await protocol?.getReceipts())?.reduce((sum, v) => sum + v.value, 0) || 0
+
+        if (total_receipt < total_cost)
+            throw new Error('Não é possivel finalizar, protocolo com recebimentos pendentes.')
+    }
+
+    if (protocol.status == 'Cancelado') {
+        const total_receipt = (await protocol?.getReceipts())?.reduce((sum, v) => sum + v.value, 0) || 0
+
+        if (total_receipt > 0) throw new Error('Não é possivel finalizar, protocolo com recebimentos.')
+    }
+})
 
 Protocol.hasMany(Protocol_register, {
     onDelete: 'RESTRICT',

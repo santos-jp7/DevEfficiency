@@ -12,6 +12,7 @@ import Protocol_register from '../models/Protocol_register'
 import Receipts from '../models/Receipts'
 import Service_order from '../models/Service_order'
 import Product from '../models/Product'
+import db from '../db'
 
 type serviceOrdersRequest = FastifyRequest<{
     Body: Service_order
@@ -70,6 +71,8 @@ class serviceOrdersController {
         const { id } = req.params
         const { description, subject, status } = req.body
 
+        const transaction = await db.transaction()
+
         const os = await Service_order.findByPk(id)
         const protocol = await os?.getProtocol()
 
@@ -79,28 +82,10 @@ class serviceOrdersController {
             if (current_os) throw new Error(`Já possuimos uma Os em correções (Os #${current_os.id}).`)
         }
 
-        if (status == 'Finalizado') {
-            const total_cost =
-                ((await protocol?.getProtocol_registers())?.reduce((sum, v) => sum + v.value, 0) || 0) +
-                ((await protocol?.getProtocol_products())?.reduce((sum, v) => sum + v.value, 0) || 0)
+        if (status == 'Finalizado') await protocol?.update({ status: 'Fechado' })
+        if (status == 'Cancelado') await protocol?.update({ status: 'Cancelado' })
 
-            const total_receipt = (await protocol?.getReceipts())?.reduce((sum, v) => sum + v.value, 0) || 0
-
-            if (total_receipt < total_cost)
-                throw new Error('Não é possivel finalizar, protocolo com recebimentos pendentes.')
-
-            await protocol?.update({ status: 'Fechado' })
-            await protocol?.save()
-        }
-
-        if (status == 'Cancelado') {
-            const total_receipt = (await protocol?.getReceipts())?.reduce((sum, v) => sum + v.value, 0) || 0
-
-            if (total_receipt > 0) throw new Error('Não é possivel finalizar, protocolo com recebimentos.')
-
-            await protocol?.update({ status: 'Cancelado' })
-            await protocol?.save()
-        }
+        await protocol?.save({ transaction })
 
         await os?.update({ description, subject, status })
         await os?.save()

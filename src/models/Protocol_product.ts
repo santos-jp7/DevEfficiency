@@ -1,9 +1,20 @@
-import { Model, InferAttributes, InferCreationAttributes, CreationOptional, ForeignKey, DataTypes } from 'sequelize'
+import {
+    Model,
+    InferAttributes,
+    InferCreationAttributes,
+    CreationOptional,
+    ForeignKey,
+    DataTypes,
+    HasOneGetAssociationMixin,
+    HasOneCreateAssociationMixin,
+    Association,
+} from 'sequelize'
 
 import db from '../db'
 
 import Product from './Product'
 import Protocol from './Protocol'
+import License from './License'
 
 class Protocol_product extends Model<InferAttributes<Protocol_product>, InferCreationAttributes<Protocol_product>> {
     declare id: CreationOptional<number>
@@ -13,9 +24,17 @@ class Protocol_product extends Model<InferAttributes<Protocol_product>, InferCre
 
     declare ProductId: ForeignKey<Product['id']>
     declare ProtocolId: ForeignKey<Protocol['id']>
+    declare LicenseId: ForeignKey<License['id']>
+
+    declare getLicense: HasOneGetAssociationMixin<License>
+    declare createLicense: HasOneCreateAssociationMixin<License>
 
     declare createdAt: CreationOptional<Date>
     declare updatedAt: CreationOptional<Date>
+
+    declare static associations: {
+        license: Association<Protocol_product, License>
+    }
 }
 
 Protocol_product.init(

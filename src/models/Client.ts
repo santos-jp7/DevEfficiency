@@ -18,6 +18,7 @@ import Project from './Project'
 import Server from './Server'
 import Service_order from './Service_order'
 import Protocol from './Protocol'
+import License from './License'
 
 class Client extends Model<InferAttributes<Client>, InferCreationAttributes<Client>> {
     declare id: CreationOptional<number>
@@ -51,6 +52,7 @@ class Client extends Model<InferAttributes<Client>, InferCreationAttributes<Clie
     declare service_orders: NonAttribute<Service_order[]>
     declare contacts: NonAttribute<Contact[]>
     declare protocols: NonAttribute<Protocol[]>
+    declare licenses: NonAttribute<License[]>
 
     declare static associations: {
         credentials: Association<Client, Credential>
@@ -59,6 +61,7 @@ class Client extends Model<InferAttributes<Client>, InferCreationAttributes<Clie
         service_orders: Association<Client, Service_order>
         contacts: Association<Client, Contact>
         protocols: Association<Client, Protocol>
+        licenses: Association<Client, License>
     }
 }
 
