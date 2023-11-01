@@ -58,7 +58,15 @@
                     <input type="number" class="form-control" v-model="coust" id="profit" step="0.01" />
                 </div>
             </div>
-
+            <div class="row">
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" value="" id="generate_license"
+                        v-model="generate_license">
+                    <label class="form-check-label" for="generate_license">
+                        Gerar licença
+                    </label>
+                </div>
+            </div>
             <button type="submit" class="btn btn-dark">Enviar</button>
         </form>
     </div>

@@ -7,6 +7,7 @@ class Product extends Model<InferAttributes<Product>, InferCreationAttributes<Pr
     declare description: string
     declare value: number
     declare coust: number
+    declare generate_license: boolean
 
     declare createdAt: CreationOptional<Date>
     declare updatedAt: CreationOptional<Date>
@@ -32,6 +33,11 @@ Product.init(
             type: DataTypes.FLOAT,
             allowNull: false,
             defaultValue: 0,
+        },
+        generate_license: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
         },
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
