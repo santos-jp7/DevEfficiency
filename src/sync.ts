@@ -15,6 +15,7 @@ import Protocol_product from './models/Protocol_product'
 import Server from './models/Server'
 import Contact from './models/Contact'
 import Check from './models/Check'
+import License from './models/License'
 
 async function syncModels(): Promise<true> {
     // const files = fs.readdirSync(path.resolve("src", "models"));
@@ -27,7 +28,7 @@ async function syncModels(): Promise<true> {
 
     await Client.sync()
 
-    await Product.sync()
+    await Product.sync({ alter: { drop: false } })
 
     await Contact.sync()
     await Credential.sync()
@@ -36,11 +37,12 @@ async function syncModels(): Promise<true> {
     await Project.sync()
     await Subproject.sync()
     await Check.sync()
+    await License.sync()
 
     await Service_order.sync()
     await Protocol.sync()
     await Protocol_register.sync()
-    await Protocol_product.sync()
+    await Protocol_product.sync({ alter: { drop: false } })
 
     await Receipts.sync()
 

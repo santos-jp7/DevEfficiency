@@ -76,19 +76,15 @@ class serviceOrdersController {
         const os = await Service_order.findByPk(id)
         const protocol = await os?.getProtocol()
 
-        if (status == 'Em correções') {
-            const current_os = await Service_order.findOne({ where: { status: 'Em correções' } })
-
-            if (current_os) throw new Error(`Já possuimos uma Os em correções (Os #${current_os.id}).`)
-        }
-
         if (status == 'Finalizado') await protocol?.update({ status: 'Fechado' })
         if (status == 'Cancelado') await protocol?.update({ status: 'Cancelado' })
 
         await protocol?.save({ transaction })
 
         await os?.update({ description, subject, status })
-        await os?.save()
+        await os?.save({ transaction })
+
+        await transaction.commit()
 
         return res.send(os)
     }

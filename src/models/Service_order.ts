@@ -81,6 +81,14 @@ Service_order.init(
     },
 )
 
+Service_order.beforeSave(async (service_order) => {
+    if (service_order.status == 'Em correções') {
+        const current_os = await Service_order.findOne({ where: { status: 'Em correções' } })
+
+        if (current_os) throw new Error(`Já possuimos uma Os em correções (Os #${current_os.id}).`)
+    }
+})
+
 Service_order.hasOne(Protocol, {
     onDelete: 'RESTRICT',
 })

@@ -1,5 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
-import puppeteer, { Browser } from 'puppeteer'
+import puppeteer from 'puppeteer'
 import fs from 'fs'
 import path from 'path'
 import ejs from 'ejs'
@@ -10,9 +10,7 @@ import Protocol_product from '../models/Protocol_product'
 import Protocol_register from '../models/Protocol_register'
 import Receipts from '../models/Receipts'
 import Client from '../models/Client'
-import Service_order from '../models/Service_order'
 import Project from '../models/Project'
-import canUpdateProtocol from '../utils/canUpdateProtocol'
 
 type protocolsRequest = FastifyRequest<{
     Body: Protocol
