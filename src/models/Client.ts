@@ -19,6 +19,7 @@ import Server from './Server'
 import Service_order from './Service_order'
 import Protocol from './Protocol'
 import License from './License'
+import Subscription from './Subscription'
 
 class Client extends Model<InferAttributes<Client>, InferCreationAttributes<Client>> {
     declare id: CreationOptional<number>
@@ -46,6 +47,8 @@ class Client extends Model<InferAttributes<Client>, InferCreationAttributes<Clie
     declare getContacts: HasManyGetAssociationsMixin<Contact>
     declare createContact: HasManyCreateAssociationMixin<Contact, 'ClientId'>
 
+    declare getSubscription: HasManyGetAssociationsMixin<Subscription>
+
     declare credentials: NonAttribute<Credential[]>
     declare servers: NonAttribute<Server[]>
     declare projects: NonAttribute<Project[]>
@@ -53,6 +56,7 @@ class Client extends Model<InferAttributes<Client>, InferCreationAttributes<Clie
     declare contacts: NonAttribute<Contact[]>
     declare protocols: NonAttribute<Protocol[]>
     declare licenses: NonAttribute<License[]>
+    declare subscriptions: NonAttribute<Subscription[]>
 
     declare static associations: {
         credentials: Association<Client, Credential>
@@ -62,6 +66,7 @@ class Client extends Model<InferAttributes<Client>, InferCreationAttributes<Clie
         contacts: Association<Client, Contact>
         protocols: Association<Client, Protocol>
         licenses: Association<Client, License>
+        subscriptions: Association<Client, Subscription>
     }
 }
 
@@ -114,9 +119,14 @@ Client.hasMany(Contact, {
     onDelete: 'RESTRICT',
 })
 
+Client.hasMany(Subscription, {
+    onDelete: 'RESTRICT',
+})
+
 Project.belongsTo(Client)
 Server.belongsTo(Client)
 Service_order.belongsTo(Client)
 Contact.belongsTo(Client)
+Subscription.belongsTo(Client)
 
 export default Client

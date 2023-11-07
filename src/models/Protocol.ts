@@ -11,19 +11,23 @@ import {
     NonAttribute,
 } from 'sequelize'
 
+import moment from 'moment'
+
 import db from '../db'
 
 import Protocol_product from './Protocol_product'
 import Protocol_register from './Protocol_register'
 import Receipts from './Receipts'
 import Service_order from './Service_order'
+import Subscription from './Subscription'
 
 class Protocol extends Model<InferAttributes<Protocol>, InferCreationAttributes<Protocol>> {
     declare id: CreationOptional<number>
 
     declare status: CreationOptional<'Em aberto' | 'Liberado para pagamento' | 'Fechado' | 'Cancelado'>
 
-    declare serviceOrderId: ForeignKey<Service_order['id']>
+    declare ServiceOrderId: ForeignKey<Service_order['id']>
+    declare SubscriptionId: ForeignKey<Subscription['id']>
 
     declare getProtocol_registers: HasManyGetAssociationsMixin<Protocol_register>
     declare createProtocol_register: HasManyCreateAssociationMixin<Protocol_register, 'ProtocolId'>
@@ -69,24 +73,10 @@ Protocol.init(
     },
 )
 
-Protocol.beforeSave(async (protocol) => {
-    if (protocol.status == 'Fechado') {
-        const total_cost =
-            ((await protocol?.getProtocol_registers())?.reduce((sum, v) => sum + v.value, 0) || 0) +
-            ((await protocol?.getProtocol_products())?.reduce((sum, v) => sum + v.value, 0) || 0)
-
-        const total_receipt = (await protocol?.getReceipts())?.reduce((sum, v) => sum + v.value, 0) || 0
-
-        if (total_receipt < total_cost)
-            throw new Error('Não é possivel finalizar, protocolo com recebimentos pendentes.')
-    }
-
-    if (protocol.status == 'Cancelado') {
-        const total_receipt = (await protocol?.getReceipts())?.reduce((sum, v) => sum + v.value, 0) || 0
-
-        if (total_receipt > 0) throw new Error('Não é possivel finalizar, protocolo com recebimentos.')
-    }
+Subscription.hasMany(Protocol, {
+    onDelete: 'RESTRICT',
 })
+Protocol.belongsTo(Subscription)
 
 Protocol.hasMany(Protocol_register, {
     onDelete: 'RESTRICT',
@@ -98,6 +88,68 @@ Protocol.hasMany(Protocol_product, {
 
 Protocol.hasMany(Receipts, {
     onDelete: 'RESTRICT',
+})
+
+Protocol.beforeSave(async (protocol) => {
+    const service_order = protocol?.ServiceOrderId ? await Service_order.findByPk(protocol.ServiceOrderId) : false
+    const subscription = protocol?.SubscriptionId ? await Subscription.findByPk(protocol.SubscriptionId) : false
+
+    console.log('protocolllll')
+    console.log(protocol)
+
+    const protocol_products = await protocol?.getProtocol_products()
+    const protocol_registers = await protocol?.getProtocol_registers()
+
+    const receipts = await protocol?.getReceipts()
+
+    const total_cost =
+        (protocol_registers?.reduce((sum, v) => sum + v.value, 0) || 0) +
+        (protocol_products?.reduce((sum, v) => sum + v.value, 0) || 0)
+
+    const total_receipt = receipts?.reduce((sum, v) => sum + v.value, 0) || 0
+
+    if (protocol.status == 'Fechado') {
+        if (total_receipt < total_cost)
+            throw new Error('Não é possivel finalizar, protocolo com recebimentos pendentes.')
+
+        if (service_order && !subscription) {
+            let charge_type: Protocol_product['charge_type'] | false = false
+
+            if (protocol_products.find((v) => v.charge_type == 'Mensal')) charge_type = 'Mensal'
+            if (protocol_products.find((v) => v.charge_type == 'Anual')) charge_type = 'Anual'
+
+            if (charge_type) {
+                let dueAt: Date | false = false
+
+                if (charge_type == 'Mensal') dueAt = moment().add(30, 'days').toDate()
+                if (charge_type == 'Anual') dueAt = moment().add(365, 'days').toDate()
+
+                if (!dueAt) throw new Error('Não foi possivel criar assinatura. Divergência com tipos de cobranças.')
+
+                const subscription = await Subscription.create({
+                    dueAt,
+                    ClientId: service_order.ClientId,
+                    ProjectId: service_order.ProjectId,
+                })
+
+                protocol.SubscriptionId = subscription.id
+
+                for await (let protocol_product of protocol_products) {
+                    if (!protocol_product.LicenseId) continue
+
+                    const license = await protocol_product.getLicense()
+
+                    license.SubscriptionId = subscription.id
+
+                    await license.save()
+                }
+            }
+        }
+    }
+
+    if (protocol.status == 'Cancelado') {
+        if (total_receipt > 0) throw new Error('Não é possivel finalizar, protocolo com recebimentos.')
+    }
 })
 
 export default Protocol

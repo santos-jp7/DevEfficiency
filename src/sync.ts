@@ -1,6 +1,3 @@
-import fs from 'fs'
-import path from 'path'
-
 import User from './models/User'
 import Client from './models/Client'
 import Credential from './models/Credential'
@@ -16,17 +13,12 @@ import Server from './models/Server'
 import Contact from './models/Contact'
 import Check from './models/Check'
 import License from './models/License'
+import Subscription from './models/Subscription'
 
 async function syncModels(): Promise<true> {
-    // const files = fs.readdirSync(path.resolve("src", "models"));
-
-    // files.forEach((modelName) => {
-    //     require(`./models/${modelName}`).default.sync({alter: true});
-    // });
-
     await User.sync()
 
-    await Client.sync()
+    await Client.sync({ alter: { drop: false } })
 
     await Product.sync({ alter: { drop: false } })
 
@@ -34,13 +26,16 @@ async function syncModels(): Promise<true> {
     await Credential.sync()
     await Server.sync()
 
-    await Project.sync()
+    await Project.sync({ alter: { drop: false } })
     await Subproject.sync()
     await Check.sync()
-    await License.sync()
 
     await Service_order.sync()
-    await Protocol.sync()
+    await Subscription.sync({ alter: { drop: false } })
+
+    await License.sync({ alter: { drop: false } })
+
+    await Protocol.sync({ alter: { drop: false } })
     await Protocol_register.sync()
     await Protocol_product.sync({ alter: { drop: false } })
 

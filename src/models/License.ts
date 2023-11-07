@@ -2,11 +2,14 @@ import { Model, InferAttributes, InferCreationAttributes, CreationOptional, Fore
 
 import db from '../db'
 import Protocol_product from './Protocol_product'
+import Subscription from './Subscription'
 
 class License extends Model<InferAttributes<License>, InferCreationAttributes<License>> {
     declare id: CreationOptional<number>
     declare key: string
     declare status: CreationOptional<'Ativo' | 'Inativo'>
+
+    declare SubscriptionId: ForeignKey<Subscription['id']>
 
     declare createdAt: CreationOptional<Date>
     declare updatedAt: CreationOptional<Date>
@@ -33,7 +36,7 @@ License.init(
         updatedAt: DataTypes.DATE,
     },
     {
-        tableName: 'license',
+        tableName: 'licenses',
         sequelize: db,
     },
 )
