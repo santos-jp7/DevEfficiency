@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Codlinx - Assinatura</title>
+
+    <link href="../assets/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css" />
+
+    <script src="../assets/js/vue.min.js"></script>
+    <script src="../assets/js/jquery-3.6.1.min.js"></script>
+    <script src="../assets/js/bootstrap.min.js"></script>
+    <script src="../assets/js/axios.min.js"></script>
+    <script src="../assets/js/moment.min.js"></script>
+</head>
+
+<body>
+    <nav class="navbar bg-light">
+        <div class="container">
+            <a class="navbar-brand" href="/dashboard">
+                <img src="../assets/img/logo_cabecalho.png" alt="Codlinx" width="40" height="40" />
+            </a>
+        </div>
+    </nav>
+
+    <div class="container p-4" id="subscription">
+        <div class="col">
+            <a href="../clients" class="btn btn-dark btn-sm my-2">Clientes</a>
+            <a href="../projects" class="btn btn-dark btn-sm my-2">Projetos</a>
+            <a href="../service_orders" class="btn btn-dark btn-sm my-2">Os</a>
+            <a href="../subscriptions" class="btn btn-dark btn-sm my-2">Assinaturas</a>
+            <a href="../servers/" class="btn btn-dark btn-sm my-2">Servidores</a>
+            <a href="../products" class="btn btn-dark btn-sm my-2">Produtos</a>
+        </div>
+
+        <hr />
+
+        <div class="d-flex justify-content-between">
+            <h5>Assinatura #{{id}}</h5>
+            <div class="text-end">
+                <h6 v-if="ProjectId">Projeto: <a :href="'../projects/i?id='+ProjectId">{{Project.name}}</a></h6>
+                <h6 v-if="ClientId">Cliente: <a :href="'../clients/i?id='+ClientId">{{Client.name}}</a></h6>
+                <small>Criado em: {{moment(createdAt).format('DD/MM/YYYY HH:mm')}}</small>
+                <br>
+                <small>Expira em: {{moment(dueAt).format('DD/MM/YYYY')}}</small>
+            </div>
+        </div>
+
+        <form v-on:submit="handlerSubmit">
+            <div class="row">
+                <div class="mb-3 col-lg">
+                    <label for="name" class="form-label">Nome</label>
+                    <input type="text" class="form-control" v-model="name" id="name" />
+                </div>
+
+                <div class="mb-3 col-lg">
+                    <label for="status" class="form-label">Status</label>
+                    <input type="text" class="form-control" v-model="status" id="status" readonly />
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-dark">Enviar</button>
+        </form>
+
+        <hr>
+
+        <section id="protocol" v-if="Protocol">
+            <div class="row" style="gap: 10px">
+                <div class="col border rounded p-2">
+                    <h5>Produtos</h5>
+
+                    <div class="table-responsive">
+                        <table class="table table-striped border">
+                            <thead>
+                                <tr>
+                                    <th scope="col">#</th>
+                                    <th scope="col">Produto</th>
+                                    <th scope="col">Valor</th>
+                                    <th scope="col">Tipo de cobrança</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="product of Protocol.Protocol_products">
+                                    <th scope="row">{{product.id}}</th>
+                                    <td>{{product?.Product?.description}}</td>
+                                    <td>
+                                        {{product.value.toLocaleString('pt-br',{style: 'currency', currency:
+                                        'BRL'})}}
+                                    </td>
+                                    <td>{{product.charge_type}}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+
+                        <span>Total: {{Protocol?.Protocol_products?.reduce((sum, v) => sum + v.value,
+                            0).toLocaleString('pt-br',{style: 'currency', currency: 'BRL'})}}
+                        </span>
+
+                    </div>
+                </div>
+                <div class="col border rounded p-2">
+                    <h5>Protocolos</h5>
+
+                    <div class="table-responsive">
+                        <table class="table table-striped border">
+                            <thead>
+                                <tr>
+                                    <th scope="col">#</th>
+                                    <th scope="col">Status</th>
+                                    <th scope="col">Criado em</th>
+                                    <th scope="col">Fechado em</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="protocol of Protocols">
+                                    <th scope="row">{{protocol.id}}</th>
+                                    <td>{{protocol.status}}</td>
+                                    <td>{{moment(protocol.createdAt).format('DD/MM/YYYY HH:mm')}}</td>
+                                    <td>{{(protocol.closedAt ? moment(protocol.closedAt).format('DD/MM/YYYY HH:mm') :
+                                        "-")}}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script src="../assets/js/subscriptions/i.js"></script>
+</body>
+
+</html>

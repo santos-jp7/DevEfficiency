@@ -5,7 +5,7 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Codlinx - Os</title>
+    <title>Codlinx - Assinaturas</title>
 
     <link href="../assets/css/bootstrap.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css" />
@@ -26,7 +26,7 @@
         </div>
     </nav>
 
-    <div class="container p-4" id="service_orders">
+    <div class="container p-4" id="subscriptions">
         <div class="col">
             <a href="../clients" class="btn btn-dark btn-sm my-2">Clientes</a>
             <a href="../projects" class="btn btn-dark btn-sm my-2">Projetos</a>
@@ -40,17 +40,14 @@
 
         <div class="d-flex flex-wrap justify-content-between">
             <div class="w-80">
-                <h5>Ordens de serviço</h5>
+                <h5>Assinaturas</h5>
             </div>
             <div class="w-15 d-flex" style="gap: 5px">
                 <select class="form-select" v-model="currentStatus" id="currentStatus" size="4" multiple>
                     <option value="">Todos</option>
-                    <option value="Em avaliação">Em avaliação</option>
-                    <option value="Orçamento enviado">Orçamento enviado</option>
-                    <option value="Na fila">Na fila</option>
-                    <option value="Em correções">Em correções</option>
                     <option value="Pendente">Pendente</option>
-                    <option value="Finalizado">Finalizado</option>
+                    <option value="Pago">Pago</option>
+                    <option value="Não pago">Não pago</option>
                     <option value="Cancelado">Cancelado</option>
                 </select>
 
@@ -61,44 +58,41 @@
         </div>
 
         <div class="table-responsive m-2">
-            <table class="table table-striped border" data-toggle="table" id="table-os">
+            <table class="table table-striped border" data-toggle="table" id="table-subscriptions">
                 <thead>
                     <tr>
                         <th scope="col" style="cursor: pointer" v-on:click="sort('id')">
                             # <i class="fa-solid fa-sort"></i>
                         </th>
-                        <th scope="col">Assunto</th>
+                        <th>Nome</th>
                         <th scope="col" style="cursor: pointer" v-on:click="sort('status')">
                             Status <i class="fa-solid fa-sort"></i>
                         </th>
+                        <th scope="col">Expira em</th>
                         <th scope="col">Projeto</th>
                         <th scope="col">Cliente</th>
                         <th scope="col">Abrir</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="service_order of service_orders"
-                        v-if="!currentStatus[0] || currentStatus.includes(service_order.status)">
-                        <th scope="row">{{service_order.id}}</th>
-                        <td>{{service_order.subject}}</td>
-                        <td>{{service_order.status}}</td>
+                    <tr v-for="subscription of subscriptions"
+                        v-if="!currentStatus[0] || currentStatus.includes(subscription.status)">
+                        <th scope="row">{{subscription.id}}</th>
+                        <td>{{subscription.name || "-"}}</td>
+                        <td>{{subscription.status}}</td>
+                        <td>{{moment(subscription.dueAt).format('DD/MM/YYYY')}}</td>
                         <td>
-                            <a :href="'../projects/i?id='+service_order.Project?.id">
-                                {{service_order.Project?.name}}
+                            <a :href="'../projects/i?id='+subscription.Project?.id">
+                                {{subscription.Project?.name}}
                             </a>
                         </td>
-                        <td v-if="service_order.ProjectId">
-                            <a :href="'../clients/i?id='+service_order.Project?.Client.id">
-                                {{service_order.Project?.Client.name}}
-                            </a>
-                        </td>
-                        <td v-if="service_order.ClientId">
-                            <a :href="'../clients/i?id='+service_order.Client?.id">
-                                {{service_order.Client?.name}}
+                        <td v-if="subscription.ClientId">
+                            <a :href="'../clients/i?id='+subscription.Client?.id">
+                                {{subscription.Client?.name}}
                             </a>
                         </td>
                         <td>
-                            <a :href="'../service_orders/i?id='+service_order.id"><i
+                            <a :href="'../subscriptions/i?id='+subscription.id"><i
                                     class="fa-solid fa-arrow-right"></i></a>
                         </td>
                     </tr>
@@ -107,7 +101,7 @@
         </div>
     </div>
 
-    <script src="../assets/js/service_orders/service_orders.js"></script>
+    <script src="../assets/js/subscriptions/subscriptions.js"></script>
 </body>
 
 </html>

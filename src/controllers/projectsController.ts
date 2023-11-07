@@ -5,6 +5,7 @@ import Client from '../models/Client'
 import Project from '../models/Project'
 import Service_order from '../models/Service_order'
 import Subproject from '../models/Subproject'
+import Subscription from '../models/Subscription'
 
 type projectsRequest = FastifyRequest<{
     Body: Project
@@ -33,7 +34,7 @@ class projectsController {
     static async show(req: projectsRequest, res: FastifyReply): Promise<FastifyReply> {
         return res.send(
             await Project.findByPk(req.params.id, {
-                include: [Subproject, Service_order, Client, Check],
+                include: [Subproject, Service_order, Client, Check, Subscription],
             }),
         )
     }

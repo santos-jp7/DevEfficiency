@@ -48,6 +48,8 @@ class Protocol extends Model<InferAttributes<Protocol>, InferCreationAttributes<
         Receipts: Association<Protocol, Receipts>
     }
 
+    declare closedAt: CreationOptional<Date>
+
     declare createdAt: CreationOptional<Date>
     declare updatedAt: CreationOptional<Date>
 }
@@ -64,6 +66,7 @@ Protocol.init(
             values: ['Em aberto', 'Liberado para pagamento', 'Fechado', 'Cancelado'],
             defaultValue: 'Em aberto',
         },
+        closedAt: DataTypes.DATE,
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
     },
@@ -94,9 +97,6 @@ Protocol.beforeSave(async (protocol) => {
     const service_order = protocol?.ServiceOrderId ? await Service_order.findByPk(protocol.ServiceOrderId) : false
     const subscription = protocol?.SubscriptionId ? await Subscription.findByPk(protocol.SubscriptionId) : false
 
-    console.log('protocolllll')
-    console.log(protocol)
-
     const protocol_products = await protocol?.getProtocol_products()
     const protocol_registers = await protocol?.getProtocol_registers()
 
@@ -111,6 +111,35 @@ Protocol.beforeSave(async (protocol) => {
     if (protocol.status == 'Fechado') {
         if (total_receipt < total_cost)
             throw new Error('Não é possivel finalizar, protocolo com recebimentos pendentes.')
+
+        if (subscription && !protocol.closedAt) {
+            let charge_type: Protocol_product['charge_type'] | false = false
+
+            if (protocol_products.find((v) => v.charge_type == 'Mensal')) charge_type = 'Mensal'
+            if (protocol_products.find((v) => v.charge_type == 'Anual')) charge_type = 'Anual'
+
+            let dueAt: Date | false = false
+
+            if (charge_type == 'Mensal') dueAt = moment().add(30, 'days').toDate()
+            if (charge_type == 'Anual') dueAt = moment().add(365, 'days').toDate()
+
+            if (dueAt) {
+                const protocol = await subscription.createProtocol()
+
+                for await (let protocol_product of protocol_products) {
+                    if (['Mensal', 'Anual'].includes(protocol_product.charge_type))
+                        await protocol?.createProtocol_product({
+                            ProductId: protocol_product.ProductId,
+                            value: protocol_product.value,
+                            charge_type: protocol_product.charge_type,
+                        })
+                    else continue
+                }
+
+                subscription.dueAt = dueAt
+                await subscription.save()
+            }
+        }
 
         if (service_order && !subscription) {
             let charge_type: Protocol_product['charge_type'] | false = false
@@ -145,6 +174,8 @@ Protocol.beforeSave(async (protocol) => {
                 }
             }
         }
+
+        protocol.closedAt = moment().toDate()
     }
 
     if (protocol.status == 'Cancelado') {

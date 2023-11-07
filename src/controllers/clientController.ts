@@ -12,6 +12,7 @@ import Protocol_register from '../models/Protocol_register'
 import Receipts from '../models/Receipts'
 import Protocol_product from '../models/Protocol_product'
 import Product from '../models/Product'
+import Subscription from '../models/Subscription'
 
 type clientRequest = FastifyRequest<{
     Body: Client
@@ -30,6 +31,7 @@ class clientController {
                     Credential,
                     Project,
                     Server,
+                    Subscription,
                     {
                         model: Service_order,
                         include: [
