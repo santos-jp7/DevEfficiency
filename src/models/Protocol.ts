@@ -40,11 +40,13 @@ class Protocol extends Model<InferAttributes<Protocol>, InferCreationAttributes<
     declare Protocol_registers: NonAttribute<Protocol_register[]>
     declare Protocol_products: NonAttribute<Protocol_product[]>
     declare Receipts: NonAttribute<Receipts[]>
+    declare Subscription: NonAttribute<Subscription>
 
     declare static associations: {
         Protocol_registers: Association<Protocol, Protocol_register>
         Protocol_products: Association<Protocol, Protocol_product>
         Receipts: Association<Protocol, Receipts>
+        Subscription: Association<Protocol, Subscription>
     }
 
     declare closedAt: CreationOptional<Date>

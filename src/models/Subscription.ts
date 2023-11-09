@@ -18,7 +18,7 @@ import Protocol from './Protocol'
 class Subscription extends Model<InferAttributes<Subscription>, InferCreationAttributes<Subscription>> {
     declare id: CreationOptional<number>
     declare name: CreationOptional<number>
-    declare status: CreationOptional<'Pendente' | 'Pago' | 'Não Pago' | 'Cancelado'>
+    declare status: CreationOptional<'Pendente' | 'Pago' | 'Não pago' | 'Cancelado'>
     declare dueAt: Date
 
     declare getProtocols: HasManyGetAssociationsMixin<Protocol>
