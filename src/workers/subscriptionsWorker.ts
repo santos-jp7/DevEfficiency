@@ -35,7 +35,7 @@ export default new (class subscriptionsWorker {
             }
 
             if (protocol.status == 'Liberado para pagamento') {
-                if (moment().diff(moment(protocol.Subscription.dueAt), 'days') <= 0) continue
+                if (moment().diff(moment(protocol.Subscription.dueAt).add(3, 'days'), 'days') < 0) continue
 
                 protocol.Subscription.status = 'Não pago'
                 await protocol.Subscription.save()

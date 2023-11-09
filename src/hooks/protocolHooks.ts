@@ -49,6 +49,7 @@ class protocolHooks {
                     }
 
                     subscription.dueAt = dueAt
+                    subscription.status = 'Pago'
                     await subscription.save()
                 }
             }
