@@ -136,35 +136,28 @@
 
             <div class="col border rounded p-2">
                 <div class="d-flex justify-content-between mb-2">
-                    <h5>Relatórios</h5>
-                </div>
-                <div class="my-1">
-                    <a class="btn btn-sm btn-dark my-1" :href="'/api/protocols/pdf?type=Em aberto&ClientId='+id"
-                        download><i class="fa-solid fa-download"></i> Em aberto</a>
-                    &bull;
-                    <a class="btn btn-sm btn-dark my-1"
-                        :href="'/api/protocols/pdf?type=Liberado para pagamento&ClientId='+id" download><i
-                            class="fa-solid fa-download"></i> Liberado para
-                        pagamento</a>
-                    &bull;
-                    <a class="btn btn-sm btn-dark my-1" :href="'/api/protocols/pdf?type=Fechado&ClientId='+id"
-                        download><i class="fa-solid fa-download"></i>
-                        Fechado</a>
+                    <h5>Assinaturas</h5>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-striped border">
                         <thead>
                             <tr>
-                                <th scope="col">Tipo</th>
-                                <th scope="col">Valor total</th>
+                                <th scope="col">#</th>
+                                <th scope="col">Nome</th>
+                                <th scope="col">Status</th>
+                                <th scope="col">Expira em</th>
+                                <th scope="col">Abrir</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="v of Object.keys(calcs.protocols)">
-                                <td>{{v}}</td>
+                            <tr v-for="subscription of Subscriptions">
+                                <th scope="row">{{subscription.id}}</th>
+                                <td>{{subscription.name || "-"}}</td>
+                                <td>{{subscription.status}}</td>
+                                <td>{{moment(subscription.dueAt).format('DD/MM/YYYY')}}</td>
                                 <td>
-                                    {{calcs.protocols[v].toLocaleString('pt-br',{style: 'currency', currency:
-                                    'BRL'})}}
+                                    <a :href="'../subscriptions/i?id='+subscription.id"><i
+                                            class="fa-solid fa-arrow-right"></i></a>
                                 </td>
                             </tr>
                         </tbody>
@@ -282,6 +275,48 @@
                                 <td>{{server.provider}}</td>
                                 <td>
                                     <a :href="'/servers/i?id='+server.id"><i class="fa-solid fa-arrow-right"></i></a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <br>
+
+        <div class="row" style="gap: 10px;">
+            <div class="col border rounded p-2">
+                <div class="d-flex justify-content-between mb-2">
+                    <h5>Relatórios</h5>
+                </div>
+                <div class="my-1">
+                    <a class="btn btn-sm btn-dark my-1" :href="'/api/protocols/pdf?type=Em aberto&ClientId='+id"
+                        download><i class="fa-solid fa-download"></i> Em aberto</a>
+                    &bull;
+                    <a class="btn btn-sm btn-dark my-1"
+                        :href="'/api/protocols/pdf?type=Liberado para pagamento&ClientId='+id" download><i
+                            class="fa-solid fa-download"></i> Liberado para
+                        pagamento</a>
+                    &bull;
+                    <a class="btn btn-sm btn-dark my-1" :href="'/api/protocols/pdf?type=Fechado&ClientId='+id"
+                        download><i class="fa-solid fa-download"></i>
+                        Fechado</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-striped border">
+                        <thead>
+                            <tr>
+                                <th scope="col">Tipo</th>
+                                <th scope="col">Valor total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="v of Object.keys(calcs.protocols)">
+                                <td>{{v}}</td>
+                                <td>
+                                    {{calcs.protocols[v].toLocaleString('pt-br',{style: 'currency', currency:
+                                    'BRL'})}}
                                 </td>
                             </tr>
                         </tbody>
