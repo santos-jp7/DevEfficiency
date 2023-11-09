@@ -15,6 +15,7 @@ const project = new Vue({
         },
         Subprojects: [],
         Service_orders: [],
+        Subscriptions: [],
         Checks: [],
         payloads: {
             service_order: {

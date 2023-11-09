@@ -165,7 +165,41 @@
                     </table>
                 </div>
             </div>
+            <div class="col border rounded p-2">
+                <div class="d-flex justify-content-between mb-2">
+                    <h5>Assinaturas</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-striped border">
+                        <thead>
+                            <tr>
+                                <th scope="col">#</th>
+                                <th scope="col">Nome</th>
+                                <th scope="col">Status</th>
+                                <th scope="col">Expira em</th>
+                                <th scope="col">Abrir</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="subscription of Subscriptions">
+                                <th scope="row">{{subscription.id}}</th>
+                                <td>{{subscription.name || "-"}}</td>
+                                <td>{{subscription.status}}</td>
+                                <td>{{moment(subscription.dueAt).format('DD/MM/YYYY')}}</td>
+                                <td>
+                                    <a :href="'../subscriptions/i?id='+subscription.id"><i
+                                            class="fa-solid fa-arrow-right"></i></a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
 
+        <br>
+
+        <div class="row" style="gap: 10px;">
             <div class="col border rounded p-2">
                 <div class="d-flex justify-content-between mb-2">
                     <h5>Checks</h5>
