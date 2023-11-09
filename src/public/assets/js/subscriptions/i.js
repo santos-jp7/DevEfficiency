@@ -26,6 +26,17 @@ const service_order = new Vue({
             Protocol_products: [],
             Receipts: [],
         },
+        payloads: {
+            protocol: {
+                status: null,
+                id: null,
+            },
+            receipt: {
+                value: null,
+                method: null,
+                note: null,
+            },
+        },
     },
     methods: {
         handlerSubmit(e) {
@@ -38,6 +49,104 @@ const service_order = new Vue({
                 })
                 .then(() => {
                     window.location.reload()
+                })
+                .catch((e) => {
+                    alert(e.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.')
+                    window.location.reload()
+                })
+        },
+        handlerOpenProtocol(id) {
+            this.$data.payloads.protocol = {
+                id: null,
+                status: null,
+            }
+
+            __api__
+                .get('/api/protocols/' + id)
+                .then(({ data }) => {
+                    this.$data.payloads.protocol = data
+
+                    $('#protocolModal').modal('toggle')
+                })
+                .catch((error) => {
+                    console.log(error)
+
+                    alert(error.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.')
+                })
+        },
+        handlerProtocolSubmit(e) {
+            e.preventDefault()
+
+            __api__
+                .put('/api/protocols/' + this.$data.payloads.protocol.id, {
+                    status: this.$data.payloads.protocol.status,
+                })
+                .then(() => {
+                    window.location.reload()
+                })
+                .catch((e) => {
+                    alert(e.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.')
+                    window.location.reload()
+                })
+        },
+        handlerNewReceipt() {
+            this.$data.payloads.receipt = {
+                value: null,
+                method: null,
+                note: null,
+            }
+
+            $('#receiptModal').modal('toggle')
+        },
+        handlerEditReceipt(receiptId) {
+            this.$data.payloads.receipt = this.$data.payloads.protocol.Receipts.find((v) => v.id == receiptId)
+
+            $('#receiptModal').modal('toggle')
+        },
+        handlerDeleteReceipt(receiptId) {
+            if (!confirm('Confirma exclusão?')) return
+
+            __api__.delete('/api/protocols/receipts/' + receiptId)
+            __api__
+                .get('/api/protocols/' + this.$data.payloads.protocol.id)
+                .then(({ data }) => {
+                    this.$data.payloads.protocol = data
+
+                    $('#receiptModal').modal('toggle')
+                })
+                .catch((error) => {
+                    console.log(error)
+
+                    alert(error.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.')
+                })
+        },
+        handlerReceiptSubmit(e) {
+            e.preventDefault()
+
+            let method = this.$data.payloads.receipt.id ? __api__.put : __api__.post
+            let url = this.$data.payloads.receipt.id
+                ? '/api/protocols/receipts/' + this.$data.payloads.receipt.id
+                : '/api/protocols/receipts'
+
+            method(url, {
+                value: this.$data.payloads.receipt.value,
+                method: this.$data.payloads.receipt.method,
+                note: this.$data.payloads.receipt.note,
+                ProtocolId: this.$data.payloads.protocol.id,
+            })
+                .then(() => {
+                    __api__
+                        .get('/api/protocols/' + this.$data.payloads.protocol.id)
+                        .then(({ data }) => {
+                            this.$data.payloads.protocol = data
+
+                            $('#receiptModal').modal('toggle')
+                        })
+                        .catch((error) => {
+                            console.log(error)
+
+                            alert(error.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.')
+                        })
                 })
                 .catch((e) => {
                     alert(e.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.')
@@ -75,8 +184,6 @@ const service_order = new Vue({
             .get('/api/subscriptions/' + params.id)
             .then(({ data }) => {
                 Object.keys(data).forEach((key) => (this.$data[key] = data[key]))
-
-                console.log(data)
 
                 __api__
                     .get('/api/protocols/' + data.Protocols[0].id)

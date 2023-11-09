@@ -113,6 +113,7 @@
                                     <th scope="col">Status</th>
                                     <th scope="col">Criado em</th>
                                     <th scope="col">Fechado em</th>
+                                    <th scope="col">Abrir</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -122,6 +123,10 @@
                                     <td>{{moment(protocol.createdAt).format('DD/MM/YYYY HH:mm')}}</td>
                                     <td>{{(protocol.closedAt ? moment(protocol.closedAt).format('DD/MM/YYYY HH:mm') :
                                         "-")}}</td>
+                                    <td>
+                                        <i class="fa-solid fa-arrow-right" v-on:click="handlerOpenProtocol(protocol.id)"
+                                            style="cursor: pointer"></i>
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
@@ -129,6 +134,139 @@
                 </div>
             </div>
         </section>
+
+        <!-- Modal Protocol -->
+        <div class="modal fade" id="protocolModal" tabindex="-1" aria-labelledby="protocolModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h1 class="modal-title fs-5" id="protocolModalLabel">Protocolo</h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form v-on:submit="handlerProtocolSubmit">
+                            <div class="row">
+                                <div class="mb-3 col-lg">
+                                    <label for="protocolStatus" class="form-label">Status</label>
+                                    <select class="form-select" v-model="payloads.protocol.status" id="protocolStatus">
+                                        <option disabled value="">Selecione uma opção</option>
+                                        <option value="Em aberto">Em aberto</option>
+                                        <option value="Liberado para pagamento">Liberado para pagamento</option>
+                                        <option value="Fechado">Fechado</option>
+                                        <option value="Cancelado">Cancelado</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-dark">Enviar</button>
+
+                            <div v-if="payloads.protocol.ServiceOrderId">
+                                <hr>
+                                &bull; Vinculado a: <a
+                                    :href="'../service_orders/i?id=' + payloads.protocol.ServiceOrderId">Os
+                                    #{{payloads.protocol.ServiceOrderId}}</a>
+                            </div>
+
+                            <hr>
+
+                            <div class="row">
+                                <div class="col border rounded p-2">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <h5>Recibos</h5>
+                                        <button type="button" class="btn" v-on:click="handlerNewReceipt">
+                                            <i class="fa-solid fa-plus"></i> Adicionar recibo
+                                        </button>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="table table-striped border">
+                                            <thead>
+                                                <tr>
+                                                    <th scope="col">#</th>
+                                                    <th scope="col">Valor</th>
+                                                    <th scope="col">Método</th>
+                                                    <th scope="col">Observação</th>
+                                                    <th scope="col">Data</th>
+                                                    <th scope="col">Editar</th>
+                                                    <th scope="col">Excluir</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr v-for="receipt of payloads.protocol.Receipts">
+                                                    <th scope="row">{{receipt.id}}</th>
+                                                    <td>
+                                                        {{receipt.value.toLocaleString('pt-br',{style: 'currency',
+                                                        currency:
+                                                        'BRL'})}}
+                                                    </td>
+                                                    <td>{{receipt.method}}</td>
+                                                    <td>{{receipt.note}}</td>
+                                                    <td>{{moment(receipt.createdAt).format('DD/MM/YYYY HH:mm')}}</td>
+                                                    <td>
+                                                        <i class="fa-solid fa-pen-to-square"
+                                                            v-on:click="handlerEditReceipt(receipt.id)"
+                                                            style="cursor: pointer"></i>
+                                                    </td>
+                                                    <td>
+                                                        <i class="fa-solid fa-trash"
+                                                            v-on:click="handlerDeleteReceipt(receipt.id)"
+                                                            style="cursor: pointer"></i>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Modal Receipt -->
+        <div class="modal fade" id="receiptModal" tabindex="-1" aria-labelledby="receiptModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h1 class="modal-title fs-5" id="receiptModalLabel">Recibo</h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form @submit="handlerReceiptSubmit">
+                            <div class="row mb-3">
+                                <label class="form-label" for="value">Valor</label>
+                                <input type="number" class="form-control" id="value" v-model="payloads.receipt.value"
+                                    step="0.01" required />
+                            </div>
+
+                            <div class="row mb-3">
+                                <label class="form-label" for="method">Método</label>
+                                <select class="form-control" id="method" v-model="payloads.receipt.method" required>
+                                    <option disabled value="">Selecione uma opção</option>
+                                    <option value="Pix">Pix</option>
+                                    <option value="Boleto">Boleto</option>
+                                    <option value="Cartão">Cartão</option>
+                                    <option value="Transferência">Transferência</option>
+                                    <option value="Espécie">Espécie</option>
+                                </select>
+                            </div>
+
+                            <div class="row mb-3">
+                                <label class="form-label" for="note">Observação</label>
+                                <input type="text" class="form-control" id="note" v-model="payloads.receipt.note"
+                                    required />
+                            </div>
+
+                            <div class="row mb-3">
+                                <input type="submit" class="form-control btn btn-dark btn-block" value="Enviar" />
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="../assets/js/subscriptions/i.js"></script>
