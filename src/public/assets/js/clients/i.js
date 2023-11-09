@@ -9,6 +9,7 @@ const client = new Vue({
         document: null,
         email: null,
         Credentials: [],
+        Subscriptions: [],
         Projects: [],
         Servers: [],
         Service_orders: [],
@@ -254,7 +255,20 @@ const client = new Vue({
                 )
         },
         calcProtocols() {
-            const protocols = this.$data.Service_orders?.map((v) => v.Protocol)
+            let protocols = []
+
+            if (this.$data.Service_orders?.length)
+                for (let service_order of this.$data.Service_orders) {
+                    protocols.push(service_order.Protocol)
+                }
+
+            if (this.$data.Subscriptions?.length)
+                for (let subscription of this.$data.Subscriptions) {
+                    for (let protocol of subscription.Protocols) {
+                        protocols.push(protocol)
+                    }
+                }
+
             const groups = Object.groupBy(protocols, ({ status }) => status)
             const keys = Object.keys(groups)
 

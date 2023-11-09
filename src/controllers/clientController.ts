@@ -1,5 +1,4 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
-import { HasMany } from 'sequelize'
 
 import Client from '../models/Client'
 import Contact from '../models/Contact'
@@ -31,7 +30,19 @@ class clientController {
                     Credential,
                     Project,
                     Server,
-                    Subscription,
+                    {
+                        model: Subscription,
+                        include: [
+                            {
+                                model: Protocol,
+                                include: [Protocol_register, { model: Protocol_product, include: [Product] }, Receipts],
+                                where: {
+                                    ServiceOrderId: null,
+                                },
+                            },
+                            Project,
+                        ],
+                    },
                     {
                         model: Service_order,
                         include: [
