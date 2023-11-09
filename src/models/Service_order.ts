@@ -16,6 +16,7 @@ import db from '../db'
 import Project from './Project'
 import Protocol from './Protocol'
 import Client from './Client'
+import serviceOrderHooks from '../hooks/serviceOrderHooks'
 
 class Service_order extends Model<InferAttributes<Service_order>, InferCreationAttributes<Service_order>> {
     declare id: CreationOptional<number>
@@ -81,13 +82,7 @@ Service_order.init(
     },
 )
 
-Service_order.beforeSave(async (service_order) => {
-    if (service_order.status == 'Em correções') {
-        const current_os = await Service_order.findOne({ where: { status: 'Em correções' } })
-
-        if (current_os) throw new Error(`Já possuimos uma Os em correções (Os #${current_os.id}).`)
-    }
-})
+Service_order.beforeSave(serviceOrderHooks.beforeSave)
 
 Service_order.hasOne(Protocol, {
     onDelete: 'RESTRICT',
