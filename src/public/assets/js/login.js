@@ -17,7 +17,10 @@ const login = new Vue({
                     localStorage.setItem('expires_in', expires_in)
                     localStorage.setItem('type', type)
 
-                    location.href = document.referrer.includes(location.host) ? document.referrer : './dashboard.html'
+                    location.href =
+                        document.referrer.includes(location.host) && new URL(document.referrer).pathname != '/'
+                            ? document.referrer
+                            : './dashboard.html'
                 })
                 .catch((error) => {
                     console.log(error)
