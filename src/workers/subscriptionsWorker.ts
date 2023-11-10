@@ -24,6 +24,8 @@ export default new (class subscriptionsWorker {
         })
 
         for await (let protocol of protocols) {
+            if (protocol.Subscription.status == 'Cancelado') continue
+
             if (protocol.status == 'Em aberto') {
                 if (moment(protocol.Subscription.dueAt).diff(moment(), 'days') > 7) continue
 

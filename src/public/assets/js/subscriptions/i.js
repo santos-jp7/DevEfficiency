@@ -46,6 +46,7 @@ const service_order = new Vue({
                 .put('/api/subscriptions/' + this.$data.id, {
                     name: this.$data.name,
                     dueAt: this.$data.dueAt,
+                    status: this.$data.status,
                 })
                 .then(() => {
                     window.location.reload()

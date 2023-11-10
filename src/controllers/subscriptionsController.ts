@@ -28,13 +28,14 @@ class subscriptionController {
 
     static async update(req: subscriptionsRequest, res: FastifyReply): Promise<FastifyReply> {
         const { id } = req.params
-        const { name, dueAt } = req.body
+        const { name, dueAt, status } = req.body
 
         const subscription = await Subscription.findByPk(id)
         if (!subscription) throw new Error('Assinatura não encontrada.')
 
         if (name != subscription.name) subscription.name = name
         if (dueAt != subscription.dueAt) subscription.dueAt = dueAt
+        if (status != subscription.status) subscription.status = status
 
         await subscription?.save()
 
