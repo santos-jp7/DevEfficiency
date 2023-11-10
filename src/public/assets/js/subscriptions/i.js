@@ -154,6 +154,16 @@ const service_order = new Vue({
                 })
         },
     },
+    computed: {
+        dueDate: {
+            get() {
+                return moment(this.$data.dueAt).format('YYYY-MM-DD')
+            },
+            set(date) {
+                this.$data.dueAt = moment(date).toDate()
+            },
+        },
+    },
     mounted: function () {
         const token = localStorage.getItem('token')
         const expires_in = localStorage.getItem('expires_in')
