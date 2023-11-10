@@ -36,11 +36,11 @@ class protocolHooks {
                 if (charge_type == 'Anual') dueAt = moment(subscription.dueAt).add(365, 'days').toDate()
 
                 if (dueAt) {
-                    const protocol = await subscription.createProtocol()
+                    const newProtocol = await subscription.createProtocol()
 
                     for await (let protocol_product of protocol_products) {
                         if (['Mensal', 'Anual'].includes(protocol_product.charge_type))
-                            await protocol?.createProtocol_product({
+                            await newProtocol?.createProtocol_product({
                                 ProductId: protocol_product.ProductId,
                                 value: protocol_product.value,
                                 charge_type: protocol_product.charge_type,
@@ -73,11 +73,20 @@ class protocolHooks {
                         dueAt,
                         ClientId: service_order.ClientId,
                         ProjectId: service_order.ProjectId,
+                        status: 'Pago',
                     })
 
                     protocol.SubscriptionId = subscription.id
 
+                    const newProtocol = await subscription.createProtocol()
+
                     for await (let protocol_product of protocol_products) {
+                        await newProtocol?.createProtocol_product({
+                            ProductId: protocol_product.ProductId,
+                            value: protocol_product.value,
+                            charge_type: protocol_product.charge_type,
+                        })
+
                         if (!protocol_product.LicenseId) continue
 
                         const license = await protocol_product.getLicense()
