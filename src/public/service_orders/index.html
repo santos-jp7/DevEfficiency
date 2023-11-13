@@ -87,11 +87,6 @@
                                 {{service_order.Project?.name}}
                             </a>
                         </td>
-                        <td v-if="service_order.ProjectId">
-                            <a :href="'../clients/i?id='+service_order.Project?.Client.id">
-                                {{service_order.Project?.Client.name}}
-                            </a>
-                        </td>
                         <td v-if="service_order.ClientId">
                             <a :href="'../clients/i?id='+service_order.Client?.id">
                                 {{service_order.Client?.name}}
