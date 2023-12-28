@@ -17,26 +17,30 @@ import db from '../db'
 type serviceOrdersRequest = FastifyRequest<{
     Body: Service_order
     Params: Service_order
-    Querystring: {
-        filter: 'last_three' | 'pending'
-    }
+    Querystring: Service_order & { filter: 'last_three' | 'pending' }
     Headers: any
 }>
 
 class serviceOrdersController {
     static async index(req: serviceOrdersRequest, res: FastifyReply): Promise<FastifyReply> {
-        const { filter } = req.query
+        const { filter, ClientId } = req.query
 
-        let limit
+        let limit,
+            where = {}
 
         if (filter == 'last_three') {
             limit = 3
+        }
+
+        if (ClientId) {
+            where = { ClientId: ClientId }
         }
 
         return res.send(
             await Service_order.findAll({
                 order: [['createdAt', 'DESC']],
                 limit,
+                where,
                 include: [{ model: Project, include: [Client] }, Client],
             }),
         )

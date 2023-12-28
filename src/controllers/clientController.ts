@@ -26,35 +26,7 @@ class clientController {
     static async show(req: clientRequest, res: FastifyReply): Promise<FastifyReply> {
         return res.send(
             await Client.findByPk(req.params.id, {
-                include: [
-                    Credential,
-                    Project,
-                    Server,
-                    {
-                        model: Subscription,
-                        include: [
-                            {
-                                model: Protocol,
-                                include: [Protocol_register, { model: Protocol_product, include: [Product] }, Receipts],
-                                where: {
-                                    ServiceOrderId: null,
-                                },
-                            },
-                            Project,
-                        ],
-                    },
-                    {
-                        model: Service_order,
-                        include: [
-                            {
-                                model: Protocol,
-                                include: [Protocol_register, { model: Protocol_product, include: [Product] }, Receipts],
-                            },
-                            Project,
-                        ],
-                    },
-                    Contact,
-                ],
+                include: [Credential, Project, Server, Contact],
             }),
         )
     }

@@ -14,6 +14,7 @@ const client = new Vue({
         Servers: [],
         Service_orders: [],
         Contacts: [],
+        Protocols: [],
         calcs: {
             protocols: {},
         },
@@ -255,21 +256,21 @@ const client = new Vue({
                 )
         },
         calcProtocols() {
-            let protocols = []
+            // let protocols = []
 
-            if (this.$data.Service_orders?.length)
-                for (let service_order of this.$data.Service_orders) {
-                    protocols.push(service_order.Protocol)
-                }
+            // if (this.$data.Service_orders?.length)
+            //     for (let service_order of this.$data.Service_orders) {
+            //         protocols.push(service_order.Protocol)
+            //     }
 
-            if (this.$data.Subscriptions?.length)
-                for (let subscription of this.$data.Subscriptions) {
-                    for (let protocol of subscription.Protocols) {
-                        protocols.push(protocol)
-                    }
-                }
+            // if (this.$data.Subscriptions?.length)
+            //     for (let subscription of this.$data.Subscriptions) {
+            //         for (let protocol of subscription.Protocols) {
+            //             protocols.push(protocol)
+            //         }
+            //     }
 
-            const groups = Object.groupBy(protocols, ({ status }) => status)
+            const groups = Object.groupBy(this.$data.Protocols, ({ status }) => status)
             const keys = Object.keys(groups)
 
             let receiptTotal = 0
@@ -376,8 +377,12 @@ const client = new Vue({
 
         __api__
             .get('/api/clients/' + params.id)
-            .then(({ data }) => {
+            .then(async ({ data }) => {
                 Object.keys(data).forEach((key) => (this.$data[key] = data[key]))
+
+                this.$data.Service_orders = (await __api__.get('/api/os?ClientId=' + data.id)).data
+                this.$data.Subscriptions = (await __api__.get('/api/subscriptions?ClientId=' + data.id)).data
+                this.$data.Protocols = (await __api__.get('/api/protocols?ClientId=' + data.id)).data
 
                 this.maskDocument()
                 this.calcProtocols()

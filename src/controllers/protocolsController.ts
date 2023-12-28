@@ -1,4 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
+import { Op } from 'sequelize'
 import puppeteer from 'puppeteer'
 import fs from 'fs'
 import path from 'path'
@@ -11,6 +12,8 @@ import Protocol_register from '../models/Protocol_register'
 import Receipts from '../models/Receipts'
 import Client from '../models/Client'
 import Project from '../models/Project'
+import Service_order from '../models/Service_order'
+import Subscription from '../models/Subscription'
 
 type protocolsRequest = FastifyRequest<{
     Body: Protocol
@@ -20,8 +23,27 @@ type protocolsRequest = FastifyRequest<{
 }>
 
 class protocolsController {
-    static async index(req: FastifyRequest, res: FastifyReply): Promise<FastifyReply> {
-        return res.send(await Protocol.findAll())
+    static async index(req: protocolsRequest, res: FastifyReply): Promise<FastifyReply> {
+        const { ClientId } = req.query
+
+        let opts = {}
+
+        if (ClientId) {
+            const os_ids = (await Service_order.findAll({ where: { ClientId: ClientId } })).map((v) => v.id)
+            const subscription_ids = (await Subscription.findAll({ where: { ClientId: ClientId } })).map((v) => v.id)
+
+            opts = {
+                include: [Protocol_register, { model: Protocol_product, include: [Product] }, Receipts],
+                where: {
+                    [Op.or]: {
+                        SubscriptionId: subscription_ids,
+                        ServiceOrderId: os_ids,
+                    },
+                },
+            }
+        }
+
+        return res.send(await Protocol.findAll(opts))
     }
 
     static async show(req: protocolsRequest, res: FastifyReply): Promise<FastifyReply> {

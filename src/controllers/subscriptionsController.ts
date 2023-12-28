@@ -9,12 +9,16 @@ import Client from '../models/Client'
 type subscriptionsRequest = FastifyRequest<{
     Body: Subscription
     Params: Subscription
+    Querystring: Subscription
     Headers: any
 }>
 
 class subscriptionController {
-    static async index(req: FastifyRequest, res: FastifyReply): Promise<FastifyReply> {
-        return res.send(await Subscription.findAll({ include: [Project, Client] }))
+    static async index(req: subscriptionsRequest, res: FastifyReply): Promise<FastifyReply> {
+        const { ClientId } = req.query
+
+        if (ClientId) return res.send(await Subscription.findAll({ include: [Project, Client], where: { ClientId } }))
+        else return res.send(await Subscription.findAll({ include: [Project, Client] }))
     }
 
     static async show(req: subscriptionsRequest, res: FastifyReply): Promise<FastifyReply> {
