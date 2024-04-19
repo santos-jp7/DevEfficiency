@@ -32,7 +32,7 @@ services:
         restart: unless-stopped
         env_file: ./.env
         ports:
-            - $PORT:$PORT2
+            - $PORT2:$PORT
         environment:
             - DB_HOST=mysqldb
             - DB_USER=root
