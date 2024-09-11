@@ -25,21 +25,6 @@ services:
             - DB_NAME=$DB_NAME
         stdin_open: true
         tty: true
-    app2:
-        depends_on:
-            - mysqldb
-        build: ./
-        restart: unless-stopped
-        env_file: ./.env
-        ports:
-            - $PORT2:$PORT
-        environment:
-            - DB_HOST=mysqldb
-            - DB_USER=root
-            - DB_PASS=$DB_PASS
-            - DB_NAME=$DB_NAME2
-        stdin_open: true
-        tty: true
 
 volumes:
     db:
