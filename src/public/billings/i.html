@@ -107,25 +107,25 @@
                 </thead>
                 <tbody>
                     <tr v-for="item in billing.BillingProtocols">
-                        <th scope="row">{{item.Protocol.id}}</th>
+                        <th scope="row">{{item.Protocol?.id}}</th>
                         <td>
-                            <div v-if="item.Protocol.SubscriptionId">
-                                <a :href="'../subscriptions/i.html?id='+item.Protocol.SubscriptionId">
-                                    Assinatura #{{item.Protocol.SubscriptionId}}
+                            <div v-if="item.Protocol?.SubscriptionId">
+                                <a :href="'../subscriptions/i.html?id='+item.Protocol?.SubscriptionId">
+                                    Assinatura #{{item.Protocol?.SubscriptionId}}
                                 </a>
                                 <hr>
-                                {{item.Protocol.Subscription.name}}
+                                {{item.Protocol?.Subscription?.name}}
                             </div>
 
                             <div v-if="item.Protocol.ServiceOrderId && item.Protocol.Service_order">
 
                                 <a :href="'../service_orders/i.html?id='+item.Protocol.ServiceOrderId"
-                                    v-if="item.Protocol.ServiceOrderId">
-                                    OS #{{item.Protocol.ServiceOrderId}}
+                                    v-if="item.Protocol?.ServiceOrderId">
+                                    OS #{{item.Protocol?.ServiceOrderId}}
                                 </a>
                                 <hr>
-                                <b>{{item.Protocol.Service_order.Project.name}}</b>:
-                                {{item.Protocol.Service_order.subject}}
+                                <b>{{item.Protocol?.Service_order?.Project?.name}}</b>:
+                                {{item.Protocol?.Service_order?.subject}}
                         </td>
                         <td>{{item.Protocol.status}}</td>
                         <td>{{formatCurrency(item.value)}}</td>
@@ -134,7 +134,7 @@
                             <a href="#" @click="openValueModal(item)"><i class="fa-solid fa-pen-to-square"></i></a>
                         </td>
                         <td>
-                            <a :href="'/protocols/i.html?id='+item.Protocol.id" target="_blank"><i
+                            <a :href="'/protocols/i.html?id='+item.Protocol?.id" target="_blank"><i
                                     class="fa-solid fa-arrow-right"></i></a>
                         </td>
                     </tr>
