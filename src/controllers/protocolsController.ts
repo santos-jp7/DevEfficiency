@@ -26,19 +26,30 @@ class protocolsController {
     static async index(req: protocolsRequest, res: FastifyReply): Promise<FastifyReply> {
         const { ClientId } = req.query
 
-        let opts = {}
+        let opts: any = {
+            include: [
+                Protocol_register, 
+                { model: Protocol_product, include: [Product] }, 
+                Receipts,
+                {
+                    model: Service_order,
+                    include: [Client]
+                },
+                {
+                    model: Subscription,
+                    include: [Client]
+                }
+            ],
+        }
 
         if (ClientId) {
             const os_ids = (await Service_order.findAll({ where: { ClientId: ClientId } })).map((v) => v.id)
             const subscription_ids = (await Subscription.findAll({ where: { ClientId: ClientId } })).map((v) => v.id)
 
-            opts = {
-                include: [Protocol_register, { model: Protocol_product, include: [Product] }, Receipts],
-                where: {
-                    [Op.or]: {
-                        SubscriptionId: subscription_ids,
-                        ServiceOrderId: os_ids,
-                    },
+            opts.where = {
+                [Op.or]: {
+                    SubscriptionId: subscription_ids,
+                    ServiceOrderId: os_ids,
                 },
             }
         }

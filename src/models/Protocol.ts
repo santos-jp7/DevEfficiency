@@ -9,6 +9,7 @@ import {
     HasManyCreateAssociationMixin,
     Association,
     NonAttribute,
+    HasOneGetAssociationMixin,
 } from 'sequelize'
 
 import db from '../db'
@@ -18,6 +19,8 @@ import Protocol_register from './Protocol_register'
 import Receipts from './Receipts'
 import Service_order from './Service_order'
 import Subscription from './Subscription'
+import BillingProtocol from './BillingProtocol'
+
 import protocolHooks from '../hooks/protocolHooks'
 
 class Protocol extends Model<InferAttributes<Protocol>, InferCreationAttributes<Protocol>> {
@@ -27,6 +30,9 @@ class Protocol extends Model<InferAttributes<Protocol>, InferCreationAttributes<
 
     declare ServiceOrderId: ForeignKey<Service_order['id']>
     declare SubscriptionId: ForeignKey<Subscription['id']>
+
+    declare getService_order: HasOneGetAssociationMixin<Service_order>
+    declare getSubscription: HasOneGetAssociationMixin<Subscription>
 
     declare getProtocol_registers: HasManyGetAssociationsMixin<Protocol_register>
     declare createProtocol_register: HasManyCreateAssociationMixin<Protocol_register, 'ProtocolId'>
@@ -94,6 +100,13 @@ Protocol.hasMany(Receipts, {
     onDelete: 'RESTRICT',
 })
 
+Protocol.hasMany(BillingProtocol, {
+    onDelete: 'RESTRICT',
+})
+
+BillingProtocol.belongsTo(Protocol)
+
 Protocol.beforeSave(protocolHooks.beforeSave)
+Protocol.afterUpdate(protocolHooks.afterUpdate)
 
 export default Protocol

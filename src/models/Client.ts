@@ -20,6 +20,7 @@ import Service_order from './Service_order'
 import Protocol from './Protocol'
 import License from './License'
 import Subscription from './Subscription'
+import Billing from './Billing'
 
 class Client extends Model<InferAttributes<Client>, InferCreationAttributes<Client>> {
     declare id: CreationOptional<number>
@@ -48,6 +49,9 @@ class Client extends Model<InferAttributes<Client>, InferCreationAttributes<Clie
     declare createContact: HasManyCreateAssociationMixin<Contact, 'ClientId'>
 
     declare getSubscription: HasManyGetAssociationsMixin<Subscription>
+
+    declare getBillings: HasManyGetAssociationsMixin<Billing>
+    declare createBilling: HasManyCreateAssociationMixin<Billing, 'ClientId'>
 
     declare credentials: NonAttribute<Credential[]>
     declare servers: NonAttribute<Server[]>
@@ -123,10 +127,15 @@ Client.hasMany(Subscription, {
     onDelete: 'RESTRICT',
 })
 
+Client.hasMany(Billing, {
+    onDelete: 'RESTRICT',
+})
+
 Project.belongsTo(Client)
 Server.belongsTo(Client)
 Service_order.belongsTo(Client)
 Contact.belongsTo(Client)
 Subscription.belongsTo(Client)
+Billing.belongsTo(Client)
 
 export default Client

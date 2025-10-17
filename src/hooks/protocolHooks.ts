@@ -3,16 +3,19 @@ import Protocol from '../models/Protocol'
 import Protocol_product from '../models/Protocol_product'
 import Service_order from '../models/Service_order'
 import Subscription from '../models/Subscription'
+import Billing from '../models/Billing'
+import BillingProtocol from '../models/BillingProtocol'
+import { InstanceUpdateOptions } from 'sequelize/types/model'
 
 class protocolHooks {
-    static async beforeSave(protocol: Protocol) {
+    static async beforeSave(protocol: Protocol, options: InstanceUpdateOptions) {
         const service_order = protocol?.ServiceOrderId ? await Service_order.findByPk(protocol.ServiceOrderId) : false
         const subscription = protocol?.SubscriptionId ? await Subscription.findByPk(protocol.SubscriptionId) : false
 
-        const protocol_products = await protocol?.getProtocol_products()
-        const protocol_registers = await protocol?.getProtocol_registers()
+        const protocol_products = await protocol?.getProtocol_products({ transaction: options.transaction })
+        const protocol_registers = await protocol?.getProtocol_registers({ transaction: options.transaction })
 
-        const receipts = await protocol?.getReceipts()
+        const receipts = await protocol?.getReceipts({ transaction: options.transaction })
 
         const total_cost =
             (protocol_registers?.reduce((sum, v) => sum + v.value, 0) || 0) +
@@ -103,6 +106,73 @@ class protocolHooks {
 
         if (protocol.status == 'Cancelado') {
             if (total_receipt > 0) throw new Error('Não é possivel finalizar, protocolo com recebimentos.')
+        }
+    }
+
+    static async afterUpdate(protocol: Protocol, options: InstanceUpdateOptions) {
+        const previousStatus = protocol.previous('status')
+        const currentStatus = protocol.get('status')
+
+        if (currentStatus === 'Liberado para pagamento' && previousStatus !== 'Liberado para pagamento') {
+            const client = protocol.SubscriptionId
+                ? await (await protocol.getSubscription({ transaction: options.transaction }))?.getClient()
+                : protocol.ServiceOrderId
+                ? await (await protocol.getService_order({ transaction: options.transaction }))?.getClient()
+                : null
+
+            if (!client) return
+
+            let billing = await Billing.findOne({
+                where: { ClientId: client.id, status: 'pendente' },
+                transaction: options.transaction,
+            })
+
+            if (!billing) {
+                billing = await Billing.create(
+                    { ClientId: client.id, status: 'pendente' },
+                    { transaction: options.transaction },
+                )
+            }
+
+            const protocol_products = await protocol.getProtocol_products({ transaction: options.transaction })
+            const protocol_registers = await protocol.getProtocol_registers({ transaction: options.transaction })
+            const receipts = await protocol.getReceipts({ transaction: options.transaction })
+
+            const value =
+                (protocol_products.reduce((sum, v) => sum + v.value, 0) || 0) +
+                (protocol_registers.reduce((sum, v) => sum + v.value, 0) || 0) -
+                (receipts.reduce((sum, v) => sum + v.value, 0) || 0)
+
+            await BillingProtocol.create(
+                {
+                    BillingId: billing.id,
+                    ProtocolId: protocol.id,
+                    value,
+                },
+                { transaction: options.transaction },
+            )
+
+            const billingProtocols = await billing.getBillingProtocols({ transaction: options.transaction })
+            const total_value = billingProtocols.reduce((sum, v) => sum + v.value, 0)
+
+            await billing.update({ total_value }, { transaction: options.transaction })
+        } else if (previousStatus === 'Liberado para pagamento' && currentStatus !== 'Liberado para pagamento') {
+            const billingProtocol = await BillingProtocol.findOne({
+                where: { ProtocolId: protocol.id },
+                include: [{ model: Billing, where: { status: 'pendente' } }],
+                transaction: options.transaction,
+            })
+
+            if (billingProtocol) {
+                const billing = await Billing.findByPk(billingProtocol.BillingId, { transaction: options.transaction })
+                await billingProtocol.destroy({ transaction: options.transaction })
+
+                if (billing) {
+                    const billingProtocols = await billing.getBillingProtocols({ transaction: options.transaction })
+                    const total_value = billingProtocols.reduce((sum, v) => sum + v.value, 0)
+                    await billing.update({ total_value }, { transaction: options.transaction })
+                }
+            }
         }
     }
 }

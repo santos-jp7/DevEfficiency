@@ -7,6 +7,7 @@ import {
     DataTypes,
     HasManyGetAssociationsMixin,
     HasManyCreateAssociationMixin,
+    HasOneGetAssociationMixin,
 } from 'sequelize'
 
 import db from '../db'
@@ -23,6 +24,8 @@ class Subscription extends Model<InferAttributes<Subscription>, InferCreationAtt
 
     declare getProtocols: HasManyGetAssociationsMixin<Protocol>
     declare createProtocol: HasManyCreateAssociationMixin<Protocol, 'SubscriptionId'>
+
+    declare getClient: HasOneGetAssociationMixin<Client>
 
     declare ClientId: ForeignKey<Client['id']>
     declare ProjectId: ForeignKey<Project['id']>

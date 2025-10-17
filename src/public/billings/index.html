@@ -5,7 +5,7 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Codlinx - Clientes</title>
+    <title>Codlinx - Cobranças</title>
 
     <link href="../assets/css/bootstrap.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css" />
@@ -26,7 +26,7 @@
         </div>
     </nav>
 
-    <div class="container p-4" id="clients">
+    <div class="container p-4" id="billings">
         <div class="col">
             <a href="../clients" class="btn btn-dark btn-sm my-2">Clientes</a>
             <a href="../projects" class="btn btn-dark btn-sm my-2">Projetos</a>
@@ -36,19 +36,18 @@
             <a href="../products" class="btn btn-dark btn-sm my-2">Produtos</a>
             <a href="../billings" class="btn btn-dark btn-sm my-2">Cobranças</a>
             <a href="../protocols" class="btn btn-dark btn-sm my-2">Protocolos</a>
-
         </div>
 
         <hr />
 
         <div class="d-flex flex-wrap justify-content-between">
             <div class="w-80">
-                <h5>Clientes</h5>
+                <h5>Cobranças</h5>
             </div>
             <div class="w-15 d-flex" style="gap: 5px">
                 <input type="search" class="form-control" placeholder="Pesquisar" v-model="q"
                     v-on:keyup="handlerSearch" />
-                <a class="btn btn-dark" href="../clients/i.html"><i class="fa-solid fa-plus"></i></a>
+                <a class="btn btn-dark" href="../billings/i.html"><i class="fa-solid fa-plus"></i></a>
             </div>
         </div>
 
@@ -57,18 +56,22 @@
                 <thead>
                     <tr>
                         <th scope="col">#</th>
-                        <th scope="col">Nome</th>
-                        <th scope="col">Documento</th>
-                        <th scope="col">Abrir</th>
+                        <th scope="col">Cliente</th>
+                        <th scope="col">Valor</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Vencimento</th>
+                        <th scope="col">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="client of clients">
-                        <th scope="row">{{client.id}}</th>
-                        <td>{{client.name}}</td>
-                        <td>{{maskDocument(client.document)}}</td>
+                    <tr v-for="billing of billings">
+                        <th scope="row">{{billing.id}}</th>
+                        <td>{{billing.Client.name}}</td>
+                        <td>{{formatCurrency(billing.total_value)}}</td>
+                        <td><span :class="'badge bg-' + statusColor(billing.status)">{{billing.status}}</span></td>
+                        <td>{{billing.due_date ? formatDate(billing.due_date) : '-'}}</td>
                         <td>
-                            <a :href="'../clients/i?id='+client.id"><i class="fa-solid fa-arrow-right"></i></a>
+                            <a :href="'../billings/i.html?id='+billing.id"><i class="fa-solid fa-arrow-right"></i></a>
                         </td>
                     </tr>
                 </tbody>
@@ -76,7 +79,7 @@
         </div>
     </div>
 
-    <script src="../assets/js/clients/clients.js"></script>
+    <script src="../assets/js/billings/billings.js"></script>
 </body>
 
 </html>

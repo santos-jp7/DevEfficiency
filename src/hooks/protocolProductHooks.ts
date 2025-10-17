@@ -14,6 +14,14 @@ class protocolProductHooks {
                 throw new Error(`Não é possivel salvar. Produto com tipo ${find.toLowerCase()} já cadastrado.`)
         }
     }
+
+    static async afterCreate(protocol_product: Protocol_product) {
+        const protocol = await Protocol.findByPk(protocol_product.ProtocolId)
+
+        if (protocol && protocol.status === 'Liberado para pagamento') {
+            await protocol.update({ status: 'Em aberto' })
+        }
+    }
 }
 
 export default protocolProductHooks

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Codlinx - Protocolo</title>
+
+    <link href="../assets/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css" />
+
+    <script src="../assets/js/vue.min.js"></script>
+    <script src="../assets/js/jquery-3.6.1.min.js"></script>
+    <script src="../assets/js/bootstrap.min.js"></script>
+    <script src="../assets/js/axios.min.js"></script>
+    <script src="../assets/js/moment.min.js"></script>
+</head>
+
+<body>
+    <nav class="navbar bg-light">
+        <div class="container">
+            <a class="navbar-brand" href="/dashboard">
+                <img src="../assets/img/logo_cabecalho.png" alt="Codlinx" width="40" height="40" />
+            </a>
+        </div>
+    </nav>
+
+    <div class="container p-4" id="protocol">
+        <div class="col">
+            <a href="../clients" class="btn btn-dark btn-sm my-2">Clientes</a>
+            <a href="../projects" class="btn btn-dark btn-sm my-2">Projetos</a>
+            <a href="../service_orders" class="btn btn-dark btn-sm my-2">Os</a>
+            <a href="../subscriptions" class="btn btn-dark btn-sm my-2">Assinaturas</a>
+            <a href="../servers/" class="btn btn-dark btn-sm my-2">Servidores</a>
+            <a href="../products" class="btn btn-dark btn-sm my-2">Produtos</a>
+            <a href="../billings" class="btn btn-dark btn-sm my-2">Cobranças</a>
+            <a href="../protocols" class="btn btn-dark btn-sm my-2">Protocolos</a>
+        </div>
+
+        <hr />
+
+        <h5>Protocolo #{{id}}</h5>
+
+        <form v-on:submit.prevent="updateProtocol">
+            <div class="row">
+                <div class="mb-3 col">
+                    <label class="form-label">Status</label>
+                    <select class="form-control" v-model="protocol.status">
+                        <option value="Em aberto">Em aberto</option>
+                        <option value="Liberado para pagamento">Liberado para pagamento</option>
+                        <option value="Fechado">Fechado</option>
+                        <option value="Cancelado">Cancelado</option>
+                        <option value="pago">Pago</option>
+                    </select>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-dark">Salvar Alterações</button>
+        </form>
+
+        <hr />
+
+        <h5>Produtos</h5>
+        <div class="table-responsive m-2">
+            <table class="table table-striped border">
+                <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Nome</th>
+                        <th scope="col">Tipo de Cobrança</th>
+                        <th scope="col">Valor</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="item in protocol.Protocol_products">
+                        <th scope="row">{{item.Product.id}}</th>
+                        <td>{{item.Product.name}}</td>
+                        <td>{{item.charge_type}}</td>
+                        <td>{{formatCurrency(item.value)}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h5>Serviços</h5>
+        <div class="table-responsive m-2">
+            <table class="table table-striped border">
+                <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Descrição</th>
+                        <th scope="col">Tipo</th>
+                        <th scope="col">Valor</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="item in protocol.Protocol_registers">
+                        <th scope="row">{{item.id}}</th>
+                        <td>{{item.description}}</td>
+                        <td>{{item.type}}</td>
+                        <td>{{formatCurrency(item.value)}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h5>Recebimentos</h5>
+        <div class="table-responsive m-2">
+            <table class="table table-striped border">
+                <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Descrição</th>
+                        <th scope="col">Data</th>
+                        <th scope="col">Valor</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="item in protocol.Receipts">
+                        <th scope="row">{{item.id}}</th>
+                        <td>{{item.description}}</td>
+                        <td>{{formatDate(item.date)}}</td>
+                        <td>{{formatCurrency(item.value)}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <script src="../assets/js/protocols/i.js"></script>
+</body>
+
+</html>

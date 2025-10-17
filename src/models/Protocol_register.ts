@@ -4,6 +4,8 @@ import db from '../db'
 
 import Protocol from './Protocol'
 
+import protocolRegisterHooks from '../hooks/protocolRegisterHooks'
+
 class Protocol_register extends Model<InferAttributes<Protocol_register>, InferCreationAttributes<Protocol_register>> {
     declare id: CreationOptional<number>
 
@@ -46,5 +48,7 @@ Protocol_register.init(
         sequelize: db,
     },
 )
+
+Protocol_register.afterCreate(protocolRegisterHooks.afterCreate)
 
 export default Protocol_register

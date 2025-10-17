@@ -32,6 +32,8 @@ class Service_order extends Model<InferAttributes<Service_order>, InferCreationA
     declare getProtocol: HasOneGetAssociationMixin<Protocol>
     declare createProtocol: HasOneCreateAssociationMixin<Protocol>
 
+    declare getClient: HasOneGetAssociationMixin<Client>
+
     declare Protocol: NonAttribute<Protocol>
     declare Project: NonAttribute<Project>
     declare Client: NonAttribute<Client>

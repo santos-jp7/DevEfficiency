@@ -19,6 +19,9 @@ import serversController from './controllers/serversController'
 import contactsController from './controllers/contactsController'
 import checksController from './controllers/checksController'
 import subscriptionController from './controllers/subscriptionsController'
+import billingController from './controllers/billingController'
+import billingProtocolController from './controllers/billingProtocolController'
+import billingReceipt from './utils/billingReceipt'
 
 const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.get('/', helloController.handler)
@@ -105,6 +108,16 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.get('/subscriptions', { preHandler: [isAuthed] }, subscriptionController.index)
     instance.get('/subscriptions/:id', { preHandler: [isAuthed] }, subscriptionController.show)
     instance.put('/subscriptions/:id', { preHandler: [isAuthed] }, subscriptionController.update)
+
+    instance.get('/billings', { preHandler: [isAuthed] }, billingController.index)
+    instance.get('/billings/:id', { preHandler: [isAuthed] }, billingController.show)
+    instance.post('/billings', { preHandler: [isAuthed] }, billingController.store)
+    instance.put('/billings/:id', { preHandler: [isAuthed] }, billingController.update)
+    instance.delete('/billings/:id', { preHandler: [isAuthed] }, billingController.destroy)
+
+    instance.post('/billing-receipt', { preHandler: [isAuthed] }, billingReceipt)
+
+    instance.put('/billing-protocols/:id', { preHandler: [isAuthed] }, billingProtocolController.update)
 
     instance.get('/utils/currentOs', { preHandler: [isAuthed] }, currentOs)
 

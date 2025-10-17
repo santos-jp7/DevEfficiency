@@ -14,6 +14,8 @@ import Contact from './models/Contact'
 import Check from './models/Check'
 import License from './models/License'
 import Subscription from './models/Subscription'
+import Billing from './models/Billing'
+import BillingProtocol from './models/BillingProtocol'
 
 async function syncModels(): Promise<true> {
     await User.sync()
@@ -38,6 +40,9 @@ async function syncModels(): Promise<true> {
     await Protocol.sync({ alter: { drop: false } })
     await Protocol_register.sync()
     await Protocol_product.sync({ alter: { drop: false } })
+
+    await Billing.sync({ alter: { drop: false } })
+    await BillingProtocol.sync({ alter: { drop: false } })
 
     await Receipts.sync()
 

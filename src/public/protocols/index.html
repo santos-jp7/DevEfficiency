@@ -5,7 +5,7 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Codlinx - Clientes</title>
+    <title>Codlinx - Protocolos</title>
 
     <link href="../assets/css/bootstrap.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css" />
@@ -26,7 +26,7 @@
         </div>
     </nav>
 
-    <div class="container p-4" id="clients">
+    <div class="container p-4" id="protocols">
         <div class="col">
             <a href="../clients" class="btn btn-dark btn-sm my-2">Clientes</a>
             <a href="../projects" class="btn btn-dark btn-sm my-2">Projetos</a>
@@ -36,19 +36,17 @@
             <a href="../products" class="btn btn-dark btn-sm my-2">Produtos</a>
             <a href="../billings" class="btn btn-dark btn-sm my-2">Cobranças</a>
             <a href="../protocols" class="btn btn-dark btn-sm my-2">Protocolos</a>
-
         </div>
 
         <hr />
 
         <div class="d-flex flex-wrap justify-content-between">
             <div class="w-80">
-                <h5>Clientes</h5>
+                <h5>Protocolos</h5>
             </div>
             <div class="w-15 d-flex" style="gap: 5px">
                 <input type="search" class="form-control" placeholder="Pesquisar" v-model="q"
                     v-on:keyup="handlerSearch" />
-                <a class="btn btn-dark" href="../clients/i.html"><i class="fa-solid fa-plus"></i></a>
             </div>
         </div>
 
@@ -57,18 +55,24 @@
                 <thead>
                     <tr>
                         <th scope="col">#</th>
-                        <th scope="col">Nome</th>
-                        <th scope="col">Documento</th>
-                        <th scope="col">Abrir</th>
+                        <th scope="col">Cliente</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">OS/Assinatura</th>
+                        <th scope="col">Data</th>
+                        <th scope="col">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="client of clients">
-                        <th scope="row">{{client.id}}</th>
-                        <td>{{client.name}}</td>
-                        <td>{{maskDocument(client.document)}}</td>
+                    <tr v-for="protocol of protocols">
+                        <th scope="row">{{protocol.id}}</th>
+                        <td>{{ protocol.Service_order ? protocol.Service_order.Client.name :
+                            protocol.Subscription.Client.name }}</td>
+                        <td><span :class="'badge bg-' + statusColor(protocol.status)">{{protocol.status}}</span></td>
+                        <td>{{ protocol.ServiceOrderId ? 'OS #' + protocol.ServiceOrderId : 'Assinatura #' +
+                            protocol.SubscriptionId }}</td>
+                        <td>{{formatDate(protocol.createdAt)}}</td>
                         <td>
-                            <a :href="'../clients/i?id='+client.id"><i class="fa-solid fa-arrow-right"></i></a>
+                            <a :href="'../protocols/i.html?id='+protocol.id"><i class="fa-solid fa-arrow-right"></i></a>
                         </td>
                     </tr>
                 </tbody>
@@ -76,7 +80,7 @@
         </div>
     </div>
 
-    <script src="../assets/js/clients/clients.js"></script>
+    <script src="../assets/js/protocols/protocols.js"></script>
 </body>
 
 </html>

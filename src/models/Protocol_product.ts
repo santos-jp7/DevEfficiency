@@ -63,6 +63,7 @@ Protocol_product.init(
 )
 
 Protocol_product.beforeSave(protocolProductHooks.beforeSave)
+Protocol_product.afterCreate(protocolProductHooks.afterCreate)
 
 Protocol_product.belongsTo(Product)
 
