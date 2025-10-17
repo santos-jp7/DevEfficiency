@@ -77,7 +77,7 @@ const app = new Vue({
             __api__
                 .put(`/api/billing-protocols/${this.currentProtocolId}`, { value: this.currentValue })
                 .then((res) => {
-                    alert('Valor atualizado com sucesso!')
+                    // alert('Valor atualizado com sucesso!')
                     window.location.reload()
                 })
                 .catch((err) => {
