@@ -27,6 +27,7 @@ class Protocol extends Model<InferAttributes<Protocol>, InferCreationAttributes<
     declare id: CreationOptional<number>
 
     declare status: CreationOptional<'Em aberto' | 'Liberado para pagamento' | 'Fechado' | 'Cancelado'>
+    declare notes: CreationOptional<string>
 
     declare ServiceOrderId: ForeignKey<Service_order['id']>
     declare SubscriptionId: ForeignKey<Subscription['id']>
@@ -72,6 +73,9 @@ Protocol.init(
             type: DataTypes.ENUM,
             values: ['Em aberto', 'Liberado para pagamento', 'Fechado', 'Cancelado'],
             defaultValue: 'Em aberto',
+        },
+        notes: {
+            type: DataTypes.TEXT,
         },
         closedAt: DataTypes.DATE,
         createdAt: DataTypes.DATE,

@@ -16,6 +16,7 @@ const service_order = new Vue({
             Protocol_registers: [],
             Protocol_products: [],
             Receipts: [],
+            notes: null,
         },
         Project: {
             name: null,
@@ -71,6 +72,7 @@ const service_order = new Vue({
             __api__
                 .put('/api/protocols/' + this.$data.Protocol.id, {
                     status: this.$data.Protocol.status,
+                    notes: this.$data.Protocol.notes,
                 })
                 .then(() => {
                     window.location.reload()

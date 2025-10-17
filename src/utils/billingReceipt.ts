@@ -47,9 +47,9 @@ export default async function billingReceipt(req: FastifyRequest, res: FastifyRe
                 },
                 { transaction: trx },
             )
-
-            await billing.update({ status: 'pago', payment_date: new Date() }, { transaction: trx })
         }
+
+        await billing.update({ status: 'pago', payment_date: new Date() }, { transaction: trx })
 
         await trx.commit()
 

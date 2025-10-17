@@ -28,17 +28,17 @@ class protocolsController {
 
         let opts: any = {
             include: [
-                Protocol_register, 
-                { model: Protocol_product, include: [Product] }, 
+                Protocol_register,
+                { model: Protocol_product, include: [Product] },
                 Receipts,
                 {
                     model: Service_order,
-                    include: [Client]
+                    include: [Client],
                 },
                 {
                     model: Subscription,
-                    include: [Client]
-                }
+                    include: [Client],
+                },
             ],
         }
 
@@ -67,12 +67,12 @@ class protocolsController {
 
     static async update(req: protocolsRequest, res: FastifyReply): Promise<FastifyReply> {
         const { id } = req.params
-        const { status } = req.body
+        const { status, notes } = req.body
 
         const protocol = await Protocol.findByPk(id)
         if (!protocol) throw new Error('Protocolo não existe.')
 
-        await protocol?.update({ status })
+        await protocol?.update({ status, notes })
         await protocol?.save()
 
         return res.send(protocol)
