@@ -39,7 +39,7 @@ BillingProtocol.init(
             primaryKey: true,
         },
         value: {
-            type: DataTypes.DECIMAL(10, 2),
+            type: DataTypes.FLOAT,
             allowNull: false,
         },
         createdAt: DataTypes.DATE,
