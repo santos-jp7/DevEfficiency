@@ -28,7 +28,9 @@ class billingHooks {
                     (protocol_registers.reduce((sum, v) => sum + v.value, 0) || 0) -
                     (receipts.reduce((sum, v) => sum + v.value, 0) || 0)
 
-                if (protocolValue == billingProtocol.value || protocolValue <= 0) {
+                console.log('Protocol Value:', protocolValue)
+
+                if (protocolValue <= 0) {
                     await protocol.update({ status: 'Fechado' }, { transaction: options.transaction })
 
                     if (protocol.ServiceOrderId) {
@@ -45,18 +47,35 @@ class billingHooks {
                         }
                     }
                 } else {
-                    let currentBilling = await Billing.create({ ClientId: billing.ClientId, status: 'pendente' })
+                    let currentBilling = await Billing.findOne({
+                        where: { ClientId: billing.ClientId, status: 'pendente' },
+                        transaction: options.transaction,
+                    })
+
+                    if (!currentBilling)
+                        currentBilling = await Billing.create(
+                            { ClientId: billing.ClientId, status: 'pendente' },
+                            {
+                                transaction: options.transaction,
+                            },
+                        )
 
                     await BillingProtocol.create(
                         {
                             BillingId: currentBilling.id,
                             ProtocolId: protocol.id,
-                            value: protocolValue,
+                            value: billingProtocol.value,
                         },
                         { transaction: options.transaction },
                     )
 
-                    await currentBilling.update({ total_value: protocolValue }, { transaction: options.transaction })
+                    const billingProtocols = await currentBilling.getBillingProtocols({
+                        transaction: options.transaction,
+                    })
+
+                    const total_value = billingProtocols.reduce((sum, v) => sum + v.value, 0)
+
+                    await currentBilling.update({ total_value: total_value }, { transaction: options.transaction })
                 }
             }
         }

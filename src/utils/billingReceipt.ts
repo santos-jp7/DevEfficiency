@@ -28,6 +28,11 @@ export default async function billingReceipt(req: FastifyRequest, res: FastifyRe
             return res.status(404).send({ error: true, message: 'Cobrança não encontrada' })
         }
 
+        if (billing.status === 'pago') {
+            await trx.rollback()
+            return res.status(400).send({ error: true, message: 'Cobrança já está paga' })
+        }
+
         if (!billing.BillingProtocols || billing.BillingProtocols.length === 0) {
             await trx.rollback()
             return res.status(400).send({ error: true, message: 'Nenhum protocolo associado a esta cobrança' })

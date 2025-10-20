@@ -114,7 +114,7 @@ const app = new Vue({
                     window.location.reload()
                 })
                 .catch((err) => {
-                    alert('Erro ao receber cobrança.')
+                    alert(err.response.data.message || 'Erro ao receber cobrança.')
                     console.error(err)
                 })
         },
