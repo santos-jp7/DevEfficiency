@@ -1,9 +1,12 @@
+import moment from 'moment'
+
 import Billing from '../models/Billing'
 import Protocol from '../models/Protocol'
 import Service_order from '../models/Service_order'
 import Subscription from '../models/Subscription'
 import BillingProtocol from '../models/BillingProtocol'
 import { InstanceUpdateOptions } from 'sequelize/types/model'
+import Client from '../models/Client'
 
 class billingHooks {
     static async afterUpdate(billing: Billing, options: InstanceUpdateOptions) {
@@ -47,18 +50,26 @@ class billingHooks {
                         }
                     }
                 } else {
+                    const client = await Client.findByPk(billing.ClientId, { transaction: options.transaction })
+
                     let currentBilling = await Billing.findOne({
                         where: { ClientId: billing.ClientId, status: 'pendente' },
                         transaction: options.transaction,
                     })
 
-                    if (!currentBilling)
+                    if (!currentBilling) {
+                        const nextDueDate = moment().set('date', client?.due_day || 1)
+                        if (nextDueDate.isBefore(moment(), 'day')) {
+                            nextDueDate.add(1, 'month')
+                        }
+
                         currentBilling = await Billing.create(
-                            { ClientId: billing.ClientId, status: 'pendente' },
+                            { ClientId: billing.ClientId, status: 'pendente', due_date: nextDueDate.toDate() },
                             {
                                 transaction: options.transaction,
                             },
                         )
+                    }
 
                     await BillingProtocol.create(
                         {

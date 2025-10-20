@@ -64,6 +64,11 @@
                     <label for="inputEmail" class="form-label">Email</label>
                     <input type="email" class="form-control" id="inputEmail" v-model="email" />
                 </div>
+
+                <div class="mb-3 col">
+                    <label for="inputDueDay" class="form-label">Dia de vencimento</label>
+                    <input type="number" class="form-control" id="inputDueDay" v-model="due_day" min="1" max="28" />
+                </div>
             </div>
 
             <button type="submit" class="btn btn-dark">Enviar</button>

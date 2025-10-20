@@ -32,22 +32,22 @@ class clientController {
     }
 
     static async store(req: clientRequest, res: FastifyReply): Promise<FastifyReply> {
-        let { name, corporate_name, document, email } = req.body
+        let { name, corporate_name, document, email, due_day } = req.body
 
         if (document) document = document.replace(/[^a-zA-Z0-9 ]/g, '')
 
-        return res.send(await Client.create({ name, corporate_name, document, email }))
+        return res.send(await Client.create({ name, corporate_name, document, email, due_day }))
     }
 
     static async update(req: clientRequest, res: FastifyReply): Promise<FastifyReply> {
         const { id } = req.params
-        let { name, corporate_name, document, email } = req.body
+        let { name, corporate_name, document, email, due_day } = req.body
 
         if (document) document = document.replace(/[^a-zA-Z0-9 ]/g, '')
 
         const client = await Client.findByPk(id)
 
-        await client?.update({ name, corporate_name, document, email })
+        await client?.update({ name, corporate_name, document, email, due_day })
         await client?.save()
 
         return res.send(client)

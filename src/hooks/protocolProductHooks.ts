@@ -18,7 +18,7 @@ class protocolProductHooks {
     static async afterCreate(protocol_product: Protocol_product) {
         const protocol = await Protocol.findByPk(protocol_product.ProtocolId)
 
-        if (protocol && protocol.status === 'Liberado para pagamento') {
+        if (protocol && protocol.status !== 'Em aberto') {
             await protocol.update({ status: 'Em aberto' })
         }
     }

@@ -8,6 +8,7 @@ const client = new Vue({
         corporate_name: null,
         document: null,
         email: null,
+        due_day: 20,
         Credentials: [],
         Subscriptions: [],
         Projects: [],
@@ -65,6 +66,7 @@ const client = new Vue({
                 corporate_name: this.$data.corporate_name,
                 document: this.$data.document,
                 email: this.$data.email,
+                due_day: this.$data.due_day,
             })
                 .then(({ data }) => {
                     window.location.href = '/clients/i?id=' + data.id

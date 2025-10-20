@@ -29,6 +29,7 @@ class Client extends Model<InferAttributes<Client>, InferCreationAttributes<Clie
     declare corporate_name: CreationOptional<string>
     declare document: CreationOptional<string>
     declare email: CreationOptional<string>
+    declare due_day: CreationOptional<number>
 
     declare createdAt: CreationOptional<Date>
     declare updatedAt: CreationOptional<Date>
@@ -93,6 +94,11 @@ Client.init(
         },
         email: {
             type: DataTypes.STRING(128),
+        },
+        due_day: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 20,
         },
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,

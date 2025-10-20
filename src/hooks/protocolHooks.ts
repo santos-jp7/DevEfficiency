@@ -6,6 +6,7 @@ import Subscription from '../models/Subscription'
 import Billing from '../models/Billing'
 import BillingProtocol from '../models/BillingProtocol'
 import { InstanceUpdateOptions } from 'sequelize/types/model'
+import Client from '../models/Client'
 
 class protocolHooks {
     static async beforeSave(protocol: Protocol, options: InstanceUpdateOptions) {
@@ -28,6 +29,8 @@ class protocolHooks {
                 throw new Error('Não é possivel finalizar, protocolo com recebimentos pendentes.')
 
             if (subscription && !protocol.closedAt) {
+                const client = await Client.findByPk(subscription.ClientId)
+
                 let charge_type: Protocol_product['charge_type'] | false = false
 
                 if (protocol_products.find((v) => v.charge_type == 'Mensal')) charge_type = 'Mensal'
@@ -35,8 +38,16 @@ class protocolHooks {
 
                 let dueAt: Date | false = false
 
-                if (charge_type == 'Mensal') dueAt = moment(subscription.dueAt).add(30, 'days').toDate()
-                if (charge_type == 'Anual') dueAt = moment(subscription.dueAt).add(365, 'days').toDate()
+                if (charge_type == 'Mensal')
+                    dueAt = moment()
+                        .set('date', client?.due_day || 1)
+                        .add(1, 'month')
+                        .toDate()
+                if (charge_type == 'Anual')
+                    dueAt = moment()
+                        .set('date', client?.due_day || 1)
+                        .add(1, 'year')
+                        .toDate()
 
                 if (dueAt) {
                     const newProtocol = await subscription.createProtocol()
@@ -58,6 +69,8 @@ class protocolHooks {
             }
 
             if (service_order && !subscription) {
+                const client = await service_order.getClient()
+
                 let charge_type: Protocol_product['charge_type'] | false = false
 
                 if (protocol_products.find((v) => v.charge_type == 'Mensal')) charge_type = 'Mensal'
@@ -66,8 +79,16 @@ class protocolHooks {
                 if (charge_type) {
                     let dueAt: Date | false = false
 
-                    if (charge_type == 'Mensal') dueAt = moment().add(1, 'month').toDate()
-                    if (charge_type == 'Anual') dueAt = moment().add(1, 'year').toDate()
+                    if (charge_type == 'Mensal')
+                        dueAt = moment()
+                            .set('date', client?.due_day || 1)
+                            .add(1, 'month')
+                            .toDate()
+                    if (charge_type == 'Anual')
+                        dueAt = moment()
+                            .set('date', client?.due_day || 1)
+                            .add(1, 'year')
+                            .toDate()
 
                     if (!dueAt)
                         throw new Error('Não foi possivel criar assinatura. Divergência com tipos de cobranças.')
@@ -128,8 +149,13 @@ class protocolHooks {
             })
 
             if (!billing) {
+                const nextDueDate = moment().set('date', client?.due_day || 1)
+                if (nextDueDate.isBefore(moment(), 'day')) {
+                    nextDueDate.add(1, 'month')
+                }
+
                 billing = await Billing.create(
-                    { ClientId: client.id, status: 'pendente' },
+                    { ClientId: client.id, status: 'pendente', due_date: nextDueDate.toDate() },
                     { transaction: options.transaction },
                 )
             }
