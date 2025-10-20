@@ -9,8 +9,34 @@ const service_orders = new Vue({
         currentSort: 'name',
         currentSortDir: 'asc',
         currentStatus: [''],
+        page: 1,
+        limit: 10,
+        total: 0,
+        totalPages: 1,
     },
     methods: {
+        fetchServiceOrders() {
+            let url = `/api/os?page=${this.page}&limit=${this.limit}`
+
+            if (this.currentStatus.length > 0) {
+                this.currentStatus.forEach((status, index) => {
+                    url += `&status[${index}]=${status}`
+                })
+            }
+
+            __api__
+                .get(url)
+                .then(({ data }) => {
+                    this.$data.service_ordersOrigin = data.data
+                    this.$data.service_orders = data.data
+                    this.total = data.total
+                    this.totalPages = Math.ceil(this.total / this.limit)
+                })
+                .catch((error) => {
+                    console.log(error)
+                    alert(error.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.')
+                })
+        },
         handlerSearch() {
             this.service_orders = this.service_ordersOrigin.filter((v) => v.subject.includes(this.q))
         },
@@ -51,6 +77,20 @@ const service_orders = new Vue({
 
             window.open('data:application/vnd.ms-excel,' + encodeURIComponent(tab_text))
         },
+
+        prevPage() {
+            if (this.page > 1) {
+                this.page--
+                this.fetchServiceOrders()
+            }
+        },
+
+        nextPage() {
+            if (this.page < this.totalPages) {
+                this.page++
+                this.fetchServiceOrders()
+            }
+        },
     },
     mounted: function () {
         const token = localStorage.getItem('token')
@@ -74,16 +114,6 @@ const service_orders = new Vue({
             location.href = '/'
         })
 
-        __api__
-            .get('/api/os')
-            .then(({ data }) => {
-                this.$data.service_ordersOrigin = data
-                this.$data.service_orders = data
-            })
-            .catch((error) => {
-                console.log(error)
-
-                alert(error.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.')
-            })
+        this.fetchServiceOrders()
     },
 })

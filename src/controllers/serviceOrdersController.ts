@@ -1,5 +1,6 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
 import puppeteer, { Browser } from 'puppeteer'
+import { Op } from 'sequelize'
 import fs from 'fs'
 import path from 'path'
 import ejs from 'ejs'
@@ -23,27 +24,38 @@ type serviceOrdersRequest = FastifyRequest<{
 
 class serviceOrdersController {
     static async index(req: serviceOrdersRequest, res: FastifyReply): Promise<FastifyReply> {
-        const { filter, ClientId } = req.query
+        let { filter, ClientId, page = 1, limit = 10, status } = req.query as any
 
-        let limit,
-            where = {}
+        let where: any = {}
 
         if (filter == 'last_three') {
             limit = 3
         }
 
         if (ClientId) {
-            where = { ClientId: ClientId }
+            where.ClientId = ClientId
         }
 
-        return res.send(
-            await Service_order.findAll({
-                order: [['createdAt', 'DESC']],
-                limit,
-                where,
-                include: [{ model: Project, include: [Client] }, Client],
-            }),
-        )
+        if (status && status.length > 0) {
+            where.status = {
+                [Op.in]: status,
+            }
+        }
+
+        const { count, rows } = await Service_order.findAndCountAll({
+            order: [['createdAt', 'DESC']],
+            limit: parseInt(limit),
+            offset: (page - 1) * limit,
+            where,
+            include: [{ model: Project, include: [Client] }, Client],
+        })
+
+        return res.send({
+            data: rows,
+            total: count,
+            page: parseInt(page),
+            limit: parseInt(limit),
+        })
     }
 
     static async show(req: serviceOrdersRequest, res: FastifyReply): Promise<FastifyReply> {

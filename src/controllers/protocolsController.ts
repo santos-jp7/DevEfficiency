@@ -24,7 +24,7 @@ type protocolsRequest = FastifyRequest<{
 
 class protocolsController {
     static async index(req: protocolsRequest, res: FastifyReply): Promise<FastifyReply> {
-        const { ClientId } = req.query
+        const { ClientId, page = 1, limit = 10 } = req.query as any
 
         let opts: any = {
             include: [
@@ -40,6 +40,8 @@ class protocolsController {
                     include: [Client],
                 },
             ],
+            limit: parseInt(limit),
+            offset: (page - 1) * limit,
         }
 
         if (ClientId) {
@@ -54,7 +56,14 @@ class protocolsController {
             }
         }
 
-        return res.send(await Protocol.findAll(opts))
+        const { count, rows } = await Protocol.findAndCountAll(opts)
+
+        return res.send({
+            data: rows,
+            total: count,
+            page: parseInt(page),
+            limit: parseInt(limit),
+        })
     }
 
     static async show(req: protocolsRequest, res: FastifyReply): Promise<FastifyReply> {
