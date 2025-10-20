@@ -22,9 +22,14 @@ class receiptsController {
         const { method, value, ProtocolId, note } = req.body
 
         const protocol = await Protocol.findByPk(ProtocolId)
-        const protocol_register = await protocol?.createReceipt({ method, value, note })
+        const receipt = await protocol?.createReceipt({ method, value, note })
 
-        return res.send(protocol_register)
+        if (protocol?.status === 'Liberado para pagamento') {
+            await protocol.update({ status: 'Em aberto' })
+            await protocol.update({ status: 'Liberado para pagamento' })
+        }
+
+        return res.send(receipt)
     }
 
     static async update(req: receiptsRequest, res: FastifyReply): Promise<FastifyReply> {

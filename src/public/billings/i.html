@@ -85,7 +85,10 @@
             <button type="submit" class="btn btn-dark">Salvar Alterações</button>
             <button type="button" class="btn btn-danger" @click="deleteBilling">Excluir Cobrança</button>
             &bull;
-            <button type="button" class="btn btn-primary" @click="handlerBillingReceipt">
+            <button type="button" class="btn btn-primary" @click="handlerBillingReceipt"
+                :disabled="billing.status === 'pago'"
+                :style="billing.status === 'pago' ? 'cursor:not-allowed; pointer-events:auto;' : ''"
+                :title="billing.status === 'pago' ? 'Cobrança já está paga' : ''">
                 Efetuar recebimento
             </button>
         </form>
