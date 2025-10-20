@@ -80,8 +80,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="service_order of service_orders"
-                        v-if="!currentStatus[0] || currentStatus.includes(service_order.status)">
+                    <tr v-for="service_order of service_orders">
                         <th scope="row">{{service_order.id}}</th>
                         <td>{{service_order.subject}}</td>
                         <td>{{service_order.status}}</td>

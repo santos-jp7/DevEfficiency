@@ -8,7 +8,7 @@ const service_orders = new Vue({
         q: null,
         currentSort: 'name',
         currentSortDir: 'asc',
-        currentStatus: [''],
+        currentStatus: [],
         page: 1,
         limit: 10,
         total: 0,
@@ -19,16 +19,14 @@ const service_orders = new Vue({
             let url = `/api/os?page=${this.page}&limit=${this.limit}`
 
             if (this.currentStatus.length > 0) {
-                this.currentStatus.forEach((status, index) => {
-                    url += `&status[${index}]=${status}`
-                })
+                url += `&status=${this.currentStatus.join(',')}`
             }
 
             __api__
                 .get(url)
                 .then(({ data }) => {
-                    this.$data.service_ordersOrigin = data.data
-                    this.$data.service_orders = data.data
+                    this.service_ordersOrigin = data.data
+                    this.service_orders = data.data
                     this.total = data.total
                     this.totalPages = Math.ceil(this.total / this.limit)
                 })

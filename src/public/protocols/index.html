@@ -45,8 +45,16 @@
                 <h5>Protocolos</h5>
             </div>
             <div class="w-15 d-flex" style="gap: 5px">
-                <input type="search" class="form-control" placeholder="Pesquisar" v-model="q"
-                    v-on:keyup="handlerSearch" />
+                <select class="form-select" v-model="currentStatus" id="currentStatus" size="4" multiple
+                    v-on:change="fetchProtocols">
+                    <option value="">Todos</option>
+                    <option value="Em aberto">Em aberto</option>
+                    <option value="Liberado para pagamento">Liberado para pagamento</option>
+                    <option value="Fechado">Fechado</option>
+                    <option value="Cancelado">Cancelado</option>
+                </select>
+                <!-- <input type="search" class="form-control" placeholder="Pesquisar" v-model="q"
+                    v-on:keyup="handlerSearch" /> -->
             </div>
         </div>
 
@@ -68,8 +76,15 @@
                         <td>{{ protocol.Service_order ? protocol.Service_order.Client.name :
                             protocol.Subscription.Client.name }}</td>
                         <td><span :class="'badge bg-' + statusColor(protocol.status)">{{protocol.status}}</span></td>
-                        <td>{{ protocol.ServiceOrderId ? 'OS #' + protocol.ServiceOrderId : 'Assinatura #' +
-                            protocol.SubscriptionId }}</td>
+                        <td>
+                            <a
+                                :href="
+                                protocol.ServiceOrderId ? 
+                                '../service_orders/i.html?id=' + protocol.ServiceOrderId : '../subscriptions/i.html?id=' + protocol.SubscriptionId ">{{
+                                protocol.ServiceOrderId ?
+                                'OS #' + protocol.ServiceOrderId :
+                                'Assinatura #' + protocol.SubscriptionId }}</a>
+                        </td>
                         <td>{{formatDate(protocol.createdAt)}}</td>
                         <td>
                             <a :href="'../protocols/i.html?id='+protocol.id"><i class="fa-solid fa-arrow-right"></i></a>

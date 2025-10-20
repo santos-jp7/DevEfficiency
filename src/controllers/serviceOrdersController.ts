@@ -36,9 +36,9 @@ class serviceOrdersController {
             where.ClientId = ClientId
         }
 
-        if (status && status.length > 0) {
+        if (status) {
             where.status = {
-                [Op.in]: status,
+                [Op.in]: status.split(','),
             }
         }
 

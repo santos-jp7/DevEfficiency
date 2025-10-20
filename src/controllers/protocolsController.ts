@@ -24,7 +24,7 @@ type protocolsRequest = FastifyRequest<{
 
 class protocolsController {
     static async index(req: protocolsRequest, res: FastifyReply): Promise<FastifyReply> {
-        const { ClientId, page = 1, limit = 10 } = req.query as any
+        const { ClientId, page = 1, limit = 10, status } = req.query as any
 
         let opts: any = {
             include: [
@@ -52,6 +52,15 @@ class protocolsController {
                 [Op.or]: {
                     SubscriptionId: subscription_ids,
                     ServiceOrderId: os_ids,
+                },
+            }
+        }
+
+        if (status) {
+            opts.where = {
+                ...opts.where,
+                status: {
+                    [Op.in]: status.split(','),
                 },
             }
         }

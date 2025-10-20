@@ -8,14 +8,21 @@ const app = new Vue({
         limit: 10,
         total: 0,
         totalPages: 1,
+        currentStatus: [],
     },
     mounted() {
         this.fetchProtocols()
     },
     methods: {
         fetchProtocols() {
+            let url = `/api/protocols?page=${this.page}&limit=${this.limit}`
+
+            if (this.currentStatus.length > 0) {
+                url += `&status=${this.currentStatus.join(',')}`
+            }
+
             axios
-                .get(`/api/protocols?page=${this.page}&limit=${this.limit}`, {
+                .get(url, {
                     headers: {
                         Authorization: `Bearer ${localStorage.getItem('token')}`,
                     },
