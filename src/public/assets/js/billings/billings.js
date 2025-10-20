@@ -6,6 +6,8 @@ const app = new Vue({
         billings: [],
         allBillings: [],
         q: '',
+        startDate: '',
+        endDate: '',
     },
     mounted() {
         const token = localStorage.getItem('token')
@@ -29,16 +31,35 @@ const app = new Vue({
             location.href = '/'
         })
 
-        __api__.get('/api/billings').then((res) => {
-            this.billings = res.data
+        const today = new Date()
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1)
+        const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0)
+
+        this.startDate = moment(firstDay).format('YYYY-MM-DD')
+        this.endDate = moment(lastDay).format('YYYY-MM-DD')
+
+        __api__.get(`/api/billings?startDate=${this.startDate}&endDate=${this.endDate}`).then((res) => {
             this.allBillings = res.data
+            this.handlerSearch()
         })
     },
     methods: {
+
         handlerSearch() {
-            this.billings = this.allBillings.filter((billing) => {
-                return billing.Client.name.toLowerCase().includes(this.q.toLowerCase())
-            })
+            if (this.startDate && this.endDate) {
+                __api__.get(`/api/billings?startDate=${this.startDate}&endDate=${this.endDate}`).then((res) => {
+                    this.allBillings = res.data
+                    let filteredBillings = this.allBillings.filter((billing) => {
+                        return billing.Client.name.toLowerCase().includes(this.q.toLowerCase())
+                    })
+                    this.billings = filteredBillings
+                })
+            } else {
+                let filteredBillings = this.allBillings.filter((billing) => {
+                    return billing.Client.name.toLowerCase().includes(this.q.toLowerCase())
+                })
+                this.billings = filteredBillings
+            }
         },
         formatCurrency(value) {
             return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)

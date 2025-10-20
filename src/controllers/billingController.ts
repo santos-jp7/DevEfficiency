@@ -1,4 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
+import { Op } from 'sequelize'
 import Billing from '../models/Billing'
 import BillingProtocol from '../models/BillingProtocol'
 import Client from '../models/Client'
@@ -11,13 +12,31 @@ type billingRequest = FastifyRequest<{
     Body: Billing
     Params: Billing
     Headers: any
+    Querystring: {
+        startDate: string
+        endDate: string
+    }
 }>
 
 class billingController {
-    static async index(req: FastifyRequest, res: FastifyReply): Promise<FastifyReply> {
+    static async index(req: billingRequest, res: FastifyReply): Promise<FastifyReply> {
+        const { startDate, endDate } = req.query
+
+        const where: any = {}
+
+        if (startDate && endDate) {
+            where.due_date = {
+                [Op.or]: {
+                    [Op.between]: [startDate, endDate],
+                    [Op.is]: null,
+                },
+            }
+        }
+
         const billings = await Billing.findAll({
             include: [Client],
             order: [['createdAt', 'DESC']],
+            where,
         })
         return res.send(billings)
     }
