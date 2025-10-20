@@ -127,7 +127,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="service_order of Service_orders">
+                            <tr v-for="service_order of Service_orders.data">
                                 <th scope="row">{{service_order.id}}</th>
                                 <td>{{service_order.subject}}</td>
                                 <td>{{service_order.Project?.name || "-"}}</td>
@@ -142,6 +142,43 @@
                 </div>
             </div>
 
+            <div class="col border rounded p-2">
+                <div class="d-flex justify-content-between mb-2">
+                    <h5>Cobranças</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-striped border">
+                        <thead>
+                            <tr>
+                                <th scope="col">#</th>
+                                <th scope="col">Valor</th>
+                                <th scope="col">Status</th>
+                                <th scope="col">Vencimento</th>
+                                <th scope="col">Abrir</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="billing of Billings">
+                                <th scope="row">{{billing.id}}</th>
+                                <td>{{formatCurrency(billing.total_value)}}</td>
+                                <td><span :class="'badge bg-' + statusColor(billing.status)">{{billing.status}}</span>
+                                </td>
+                                <td>{{moment(billing.due_date).format('DD/MM/YYYY')}}</td>
+                                <td>
+                                    <a :href="'/billings/i?id='+billing.id"><i class="fa-solid fa-arrow-right"></i></a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+
+        </div>
+
+        <br />
+
+        <div class="row" style="gap: 10px">
             <div class="col border rounded p-2">
                 <div class="d-flex justify-content-between mb-2">
                     <h5>Assinaturas</h5>
@@ -172,11 +209,7 @@
                     </table>
                 </div>
             </div>
-        </div>
 
-        <br />
-
-        <div class="row" style="gap: 10px">
             <div class="col border rounded p-2">
                 <div class="d-flex justify-content-between mb-2">
                     <h5>Contatos</h5>

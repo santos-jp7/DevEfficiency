@@ -10,6 +10,7 @@ const client = new Vue({
         email: null,
         due_day: 20,
         Credentials: [],
+        Billings: [],
         Subscriptions: [],
         Projects: [],
         Servers: [],
@@ -272,7 +273,7 @@ const client = new Vue({
             //         }
             //     }
 
-            const groups = Object.groupBy(this.$data.Protocols, ({ status }) => status)
+            const groups = Object.groupBy(this.$data.Protocols.data, ({ status }) => status)
             const keys = Object.keys(groups)
 
             let receiptTotal = 0
@@ -350,6 +351,24 @@ const client = new Vue({
                     return acc
                 }, {})
         },
+        formatCurrency(value) {
+            return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
+        },
+        formatDate(date) {
+            return moment(date).format('DD/MM/YYYY')
+        },
+        statusColor(status) {
+            switch (status) {
+                case 'pendente':
+                    return 'warning'
+                case 'pago':
+                    return 'success'
+                case 'cancelado':
+                    return 'danger'
+                default:
+                    return 'secondary'
+            }
+        },
     },
     mounted: function () {
         const token = localStorage.getItem('token')
@@ -382,9 +401,10 @@ const client = new Vue({
             .then(async ({ data }) => {
                 Object.keys(data).forEach((key) => (this.$data[key] = data[key]))
 
-                this.$data.Service_orders = (await __api__.get('/api/os?ClientId=' + data.id)).data
+                this.$data.Service_orders = (await __api__.get('/api/os?limit=5&ClientId=' + data.id)).data
                 this.$data.Subscriptions = (await __api__.get('/api/subscriptions?ClientId=' + data.id)).data
                 this.$data.Protocols = (await __api__.get('/api/protocols?ClientId=' + data.id)).data
+                this.$data.Billings = (await __api__.get('/api/billings?limit=5&ClientId=' + data.id)).data
 
                 this.maskDocument()
                 this.calcProtocols()

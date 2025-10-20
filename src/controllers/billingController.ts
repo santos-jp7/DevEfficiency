@@ -12,17 +12,22 @@ type billingRequest = FastifyRequest<{
     Body: Billing
     Params: Billing
     Headers: any
-    Querystring: {
+    Querystring: Billing & {
         startDate: string
         endDate: string
+        limit: string
     }
 }>
 
 class billingController {
     static async index(req: billingRequest, res: FastifyReply): Promise<FastifyReply> {
-        const { startDate, endDate } = req.query
+        const { startDate, endDate, ClientId, limit } = req.query
 
         const where: any = {}
+
+        if (ClientId) {
+            where.ClientId = ClientId
+        }
 
         if (startDate && endDate) {
             where.due_date = {
@@ -37,7 +42,9 @@ class billingController {
             include: [Client],
             order: [['createdAt', 'DESC']],
             where,
+            ...{ ...(limit ? { limit: parseInt(limit) } : {}) },
         })
+
         return res.send(billings)
     }
 

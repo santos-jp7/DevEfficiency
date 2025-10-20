@@ -18,6 +18,8 @@ type clientRequest = FastifyRequest<{
     Params: Client
     Headers: any
 }>
+import Billing from '../models/Billing'
+
 class clientController {
     static async index(req: FastifyRequest, res: FastifyReply): Promise<FastifyReply> {
         return res.send(await Client.findAll())
