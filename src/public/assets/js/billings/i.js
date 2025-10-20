@@ -7,7 +7,8 @@ const app = new Vue({
         id: null,
         currentProtocolId: null,
         currentValue: 0,
-        method: 'Boleto',
+
+        bankAccounts: [],
     },
     mounted() {
         const token = localStorage.getItem('token')
@@ -37,6 +38,17 @@ const app = new Vue({
                     this.billing.payment_date = moment(this.billing.payment_date).format('YYYY-MM-DD')
             })
         }
+
+        __api__
+            .get('/api/bank-accounts')
+            .then((res) => {
+                this.bankAccounts = res.data
+            })
+            .catch((err) => {
+                console.error(err)
+
+                alert('Erro ao carregar contas bancárias.')
+            })
     },
     methods: {
         updateBilling() {
@@ -92,8 +104,13 @@ const app = new Vue({
             this.currentValue = ((this.currentValue / 100) * x).toFixed(2)
         },
         handlerBillingReceipt() {
-            if (!this.method) {
+            if (!this.billing.method) {
                 alert('Selecione o método de pagamento.')
+                return
+            }
+
+            if (!this.billing.BankAccountId) {
+                alert('Selecione a conta bancária.')
                 return
             }
 
@@ -106,7 +123,8 @@ const app = new Vue({
 
             __api__
                 .post(`/api/billing-receipt`, {
-                    method: this.method,
+                    method: this.billing.method,
+                    BankAccountId: this.billing.BankAccountId,
                     id: this.billing.id,
                 })
                 .then((res) => {

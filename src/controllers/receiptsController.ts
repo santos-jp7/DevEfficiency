@@ -19,10 +19,10 @@ class receiptsController {
     }
 
     static async store(req: receiptsRequest, res: FastifyReply): Promise<FastifyReply> {
-        const { method, value, ProtocolId, note } = req.body
+        const { method, value, ProtocolId, note, BankAccountId } = req.body
 
         const protocol = await Protocol.findByPk(ProtocolId)
-        const receipt = await protocol?.createReceipt({ method, value, note })
+        const receipt = await protocol?.createReceipt({ method, value, note, BankAccountId })
 
         if (protocol?.status === 'Liberado para pagamento') {
             await protocol.update({ status: 'Em aberto' })
@@ -34,12 +34,19 @@ class receiptsController {
 
     static async update(req: receiptsRequest, res: FastifyReply): Promise<FastifyReply> {
         const { id } = req.params
-        const { value, method, note } = req.body
+        const { value, method, note, BankAccountId } = req.body
 
         const receipt = await Receipts.findByPk(id)
 
-        await receipt?.update({ value, method, note })
+        await receipt?.update({ value, method, note, BankAccountId })
         await receipt?.save()
+
+        const protocol = await Protocol.findByPk(receipt?.ProtocolId)
+
+        if (protocol?.status === 'Liberado para pagamento') {
+            await protocol.update({ status: 'Em aberto' })
+            await protocol.update({ status: 'Liberado para pagamento' })
+        }
 
         return res.send(receipt)
     }

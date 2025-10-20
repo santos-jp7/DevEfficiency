@@ -10,9 +10,14 @@ import {
     HasManyCreateAssociationMixin,
     Association,
 } from 'sequelize'
+
 import db from '../db'
+
 import Client from './Client'
 import BillingProtocol from './BillingProtocol'
+import BankAccount from './BankAccount'
+
+import billingHooks from '../hooks/billingHooks'
 
 class Billing extends Model<InferAttributes<Billing>, InferCreationAttributes<Billing>> {
     declare id: CreationOptional<number>
@@ -23,6 +28,7 @@ class Billing extends Model<InferAttributes<Billing>, InferCreationAttributes<Bi
     declare method: CreationOptional<'Pix' | 'Boleto' | 'Cartão' | 'Transferência' | 'Espécie'>
 
     declare ClientId: ForeignKey<Client['id']>
+    declare BankAccountId: ForeignKey<BankAccount['id']>
 
     declare createdAt: CreationOptional<Date>
     declare updatedAt: CreationOptional<Date>
@@ -78,7 +84,9 @@ Billing.hasMany(BillingProtocol, {
 })
 BillingProtocol.belongsTo(Billing)
 
-import billingHooks from '../hooks/billingHooks'
+Billing.belongsTo(BankAccount, {
+    foreignKey: 'BankAccountId',
+})
 
 Billing.afterUpdate(billingHooks.afterUpdate)
 

@@ -16,6 +16,10 @@ import License from './models/License'
 import Subscription from './models/Subscription'
 import Billing from './models/Billing'
 import BillingProtocol from './models/BillingProtocol'
+import BankAccount from './models/BankAccount'
+import CostCenter from './models/CostCenter'
+import Supplier from './models/Supplier'
+import Payable from './models/Payable'
 
 async function syncModels(): Promise<true> {
     await User.sync()
@@ -44,7 +48,12 @@ async function syncModels(): Promise<true> {
     await Billing.sync({ alter: { drop: false } })
     await BillingProtocol.sync({ alter: { drop: false } })
 
-    await Receipts.sync()
+    await BankAccount.sync()
+    await CostCenter.sync()
+    await Supplier.sync()
+
+    await Receipts.sync({ alter: { drop: false } })
+    await Payable.sync()
 
     return true
 }

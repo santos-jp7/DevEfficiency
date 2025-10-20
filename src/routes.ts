@@ -22,6 +22,11 @@ import subscriptionController from './controllers/subscriptionsController'
 import billingController from './controllers/billingController'
 import billingProtocolController from './controllers/billingProtocolController'
 import billingReceipt from './utils/billingReceipt'
+import costCenterController from './controllers/costCenterController'
+import supplierController from './controllers/supplierController'
+import bankAccountController from './controllers/bankAccountController'
+import payablesController from './controllers/payablesController'
+import financialsController from './controllers/financialsController'
 
 const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.get('/', helloController.handler)
@@ -29,6 +34,32 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.post('/auth', authController.auth)
     instance.post('/auth/refresh', authController.auth)
     instance.get('/auth/verify', { preHandler: [isAuthed] }, authController.verify)
+
+    instance.get('/financial-history', { preHandler: [isAuthed] }, financialsController.index)
+
+    instance.get('/cost-centers', { preHandler: [isAuthed] }, costCenterController.index)
+    instance.get('/cost-centers/:id', { preHandler: [isAuthed] }, costCenterController.show)
+    instance.post('/cost-centers', { preHandler: [isAuthed] }, costCenterController.store)
+    instance.put('/cost-centers/:id', { preHandler: [isAuthed] }, costCenterController.update)
+    instance.delete('/cost-centers/:id', { preHandler: [isAuthed] }, costCenterController.destroy)
+
+    instance.get('/suppliers', { preHandler: [isAuthed] }, supplierController.index)
+    instance.get('/suppliers/:id', { preHandler: [isAuthed] }, supplierController.show)
+    instance.post('/suppliers', { preHandler: [isAuthed] }, supplierController.store)
+    instance.put('/suppliers/:id', { preHandler: [isAuthed] }, supplierController.update)
+    instance.delete('/suppliers/:id', { preHandler: [isAuthed] }, supplierController.destroy)
+
+    instance.get('/bank-accounts', { preHandler: [isAuthed] }, bankAccountController.index)
+    instance.get('/bank-accounts/:id', { preHandler: [isAuthed] }, bankAccountController.show)
+    instance.post('/bank-accounts', { preHandler: [isAuthed] }, bankAccountController.store)
+    instance.put('/bank-accounts/:id', { preHandler: [isAuthed] }, bankAccountController.update)
+    instance.delete('/bank-accounts/:id', { preHandler: [isAuthed] }, bankAccountController.destroy)
+
+    instance.get('/payables', { preHandler: [isAuthed] }, payablesController.index)
+    instance.get('/payables/:id', { preHandler: [isAuthed] }, payablesController.show)
+    instance.post('/payables', { preHandler: [isAuthed] }, payablesController.store)
+    instance.put('/payables/:id', { preHandler: [isAuthed] }, payablesController.update)
+    instance.delete('/payables/:id', { preHandler: [isAuthed] }, payablesController.destroy)
 
     instance.get('/clients', { preHandler: [isAuthed] }, clientController.index)
     instance.get('/clients/:id', { preHandler: [isAuthed] }, clientController.show)

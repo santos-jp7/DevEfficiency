@@ -7,6 +7,7 @@ import Protocol from '../models/Protocol'
 import Service_order from '../models/Service_order'
 import Subscription from '../models/Subscription'
 import Project from '../models/Project'
+import moment from 'moment'
 
 type billingRequest = FastifyRequest<{
     Body: Billing
@@ -75,14 +76,14 @@ class billingController {
     // A criação de cobranças é automática via hooks.
     // Este método pode ser usado para uma criação manual excepcional.
     static async store(req: billingRequest, res: FastifyReply): Promise<FastifyReply> {
-        const { ClientId, due_date, total_value, status, method } = req.body
-        const billing = await Billing.create({ ClientId, due_date, total_value, status, method })
+        const { ClientId, due_date, total_value, status, method, BankAccountId } = req.body
+        const billing = await Billing.create({ ClientId, due_date, total_value, status, method, BankAccountId })
         return res.status(201).send(billing)
     }
 
     static async update(req: billingRequest, res: FastifyReply): Promise<FastifyReply> {
         const { id } = req.params
-        const data = req.body
+        const { due_date, method, BankAccountId } = req.body
 
         const billing = await Billing.findByPk(id)
 
@@ -90,7 +91,7 @@ class billingController {
             return res.status(404).send({ message: 'Cobrança não encontrada' })
         }
 
-        await billing.update(data)
+        await billing.update({ due_date: moment(due_date).toDate(), method, BankAccountId })
 
         return res.send(billing)
     }

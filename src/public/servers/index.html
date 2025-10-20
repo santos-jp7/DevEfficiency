@@ -12,6 +12,7 @@
 
     <script src="../assets/js/vue.min.js"></script>
     <script src="../assets/js/jquery-3.6.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2/dist/umd/popper.min.js"></script>
     <script src="../assets/js/bootstrap.min.js"></script>
     <script src="../assets/js/axios.min.js"></script>
     <script src="../assets/js/moment.min.js"></script>
@@ -28,15 +29,66 @@
 
     <div class="container p-4" id="servers">
         <div class="col">
-            <a href="../clients" class="btn btn-dark btn-sm my-2">Clientes</a>
-            <a href="../projects" class="btn btn-dark btn-sm my-2">Projetos</a>
-            <a href="../service_orders" class="btn btn-dark btn-sm my-2">Os</a>
-            <a href="../subscriptions" class="btn btn-dark btn-sm my-2">Assinaturas</a>
-            <a href="../servers/" class="btn btn-dark btn-sm my-2">Servidores</a>
-            <a href="../products" class="btn btn-dark btn-sm my-2">Produtos</a>
-            <a href="../billings" class="btn btn-dark btn-sm my-2">Cobranças</a>
-            <a href="../protocols" class="btn btn-dark btn-sm my-2">Protocolos</a>
+            <div class="d-flex flex-wrap" style="gap:.5rem">
+                <div class="btn-group">
+                    <button type="button" class="btn btn-dark btn-sm dropdown-toggle" data-bs-toggle="dropdown"
+                        aria-expanded="false">
+                        Gestão
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-dark">
+                        <li><a class="dropdown-item" href="../clients">Clientes</a></li>
+                        <li><a class="dropdown-item" href="../projects">Projetos</a></li>
+                        <li><a class="dropdown-item" href="../products">Produtos</a></li>
+                        <li><a class="dropdown-item" href="../suppliers">Fornecedores</a></li>
+                    </ul>
+                </div>
 
+                <div class="btn-group">
+                    <button type="button" class="btn btn-dark btn-sm dropdown-toggle" data-bs-toggle="dropdown"
+                        aria-expanded="false">
+                        Operações
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-dark">
+                        <li><a class="dropdown-item" href="../service_orders">Ordens de serviço</a></li>
+                    </ul>
+                </div>
+
+                <div class="btn-group">
+                    <button type="button" class="btn btn-dark btn-sm dropdown-toggle" data-bs-toggle="dropdown"
+                        aria-expanded="false">
+                        Financeiro
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-dark">
+                        <li><a class="dropdown-item" href="../billings">Cobranças</a></li>
+                        <li><a class="dropdown-item" href="../payables">Contas a Pagar</a></li>
+                        <li><a class="dropdown-item" href="../subscriptions">Assinaturas</a></li>
+                        <li><a class="dropdown-item" href="../protocols">Protocolos</a></li>
+                        <li><a class="dropdown-item" href="../bank-accounts">Contas Bancárias</a></li>
+                        <li><a class="dropdown-item" href="../cost-centers">Centros de Custo</a></li>
+
+                    </ul>
+                </div>
+
+                <div class="btn-group">
+                    <button type="button" class="btn btn-dark btn-sm dropdown-toggle" data-bs-toggle="dropdown"
+                        aria-expanded="false">
+                        Infraestrutura
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-dark">
+                        <li><a class="dropdown-item" href="../servers/">Servidores</a></li>
+                    </ul>
+                </div>
+
+                <div class="btn-group">
+                    <button type="button" class="btn btn-dark btn-sm dropdown-toggle" data-bs-toggle="dropdown"
+                        aria-expanded="false">
+                        Relatórios
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-dark">
+                        <li><a class="dropdown-item" href="../financial-history/">Fluxo de caixa</a></li>
+                    </ul>
+                </div>
+            </div>
         </div>
 
         <hr />

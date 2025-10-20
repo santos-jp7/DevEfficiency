@@ -35,7 +35,11 @@ const service_order = new Vue({
                 value: null,
                 method: null,
                 note: null,
+                BankAccountId: null,
             },
+        },
+        references: {
+            bankAccounts: [],
         },
     },
     methods: {
@@ -95,6 +99,7 @@ const service_order = new Vue({
                 value: null,
                 method: null,
                 note: null,
+                BankAccountId: null,
             }
 
             $('#receiptModal').modal('toggle')
@@ -134,6 +139,7 @@ const service_order = new Vue({
                 method: this.$data.payloads.receipt.method,
                 note: this.$data.payloads.receipt.note,
                 ProtocolId: this.$data.payloads.protocol.id,
+                BankAccountId: this.$data.payloads.receipt.BankAccountId,
             })
                 .then(() => {
                     __api__
@@ -206,6 +212,17 @@ const service_order = new Vue({
 
                         alert(error.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.')
                     })
+            })
+            .catch((error) => {
+                console.log(error)
+
+                alert(error.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.')
+            })
+
+        __api__
+            .get('/api/bank-accounts')
+            .then(({ data }) => {
+                this.$data.references.bankAccounts = data
             })
             .catch((error) => {
                 console.log(error)
