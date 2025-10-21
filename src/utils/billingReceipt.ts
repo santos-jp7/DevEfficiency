@@ -9,7 +9,11 @@ import Protocol_register from '../models/Protocol_register'
 import Protocol_product from '../models/Protocol_product'
 
 export default async function billingReceipt(req: FastifyRequest, res: FastifyReply): Promise<FastifyReply> {
-    const { id } = req.body as { id: string }
+    const { id, method, BankAccountId } = req.body as {
+        id: string
+        method: 'Pix' | 'Boleto' | 'Cartão' | 'Transferência' | 'Espécie'
+        BankAccountId: number
+    }
 
     let trx = await db.transaction()
 
@@ -46,15 +50,16 @@ export default async function billingReceipt(req: FastifyRequest, res: FastifyRe
 
             await billingProtocol.Protocol.createReceipt(
                 {
-                    method: billing.method,
+                    method: method,
                     value: billingProtocol.value,
                     note: `Recebido via cobrança #${billing.id}`,
+                    BankAccountId: BankAccountId,
                 },
                 { transaction: trx },
             )
         }
 
-        await billing.update({ status: 'pago', payment_date: new Date() }, { transaction: trx })
+        await billing.update({ status: 'pago', payment_date: new Date(), BankAccountId, method }, { transaction: trx })
 
         await trx.commit()
 

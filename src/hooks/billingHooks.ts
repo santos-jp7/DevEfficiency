@@ -7,6 +7,7 @@ import Subscription from '../models/Subscription'
 import BillingProtocol from '../models/BillingProtocol'
 import { InstanceUpdateOptions } from 'sequelize/types/model'
 import Client from '../models/Client'
+import Receipts from '../models/Receipts'
 
 class billingHooks {
     static async afterUpdate(billing: Billing, options: InstanceUpdateOptions) {
@@ -89,6 +90,22 @@ class billingHooks {
                     await currentBilling.update({ total_value: total_value }, { transaction: options.transaction })
                 }
             }
+        }
+
+        if (billing.BankAccountId && billing.previous('BankAccountId') !== billing.BankAccountId) {
+            const billingProtocols = await billing.getBillingProtocols({ transaction: options.transaction })
+            const mapBillingProtocols = billingProtocols.map((bp) => bp.ProtocolId)
+
+            await Receipts.update(
+                { BankAccountId: billing.BankAccountId },
+                {
+                    where: {
+                        ProtocolId: mapBillingProtocols,
+                    },
+                    individualHooks: true,
+                    transaction: options.transaction,
+                },
+            )
         }
     }
 }

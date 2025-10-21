@@ -104,6 +104,8 @@ Protocol.hasMany(Receipts, {
     onDelete: 'RESTRICT',
 })
 
+Receipts.belongsTo(Protocol)
+
 Protocol.hasMany(BillingProtocol, {
     onDelete: 'RESTRICT',
 })

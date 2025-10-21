@@ -1,8 +1,17 @@
-import { Model, InferAttributes, InferCreationAttributes, CreationOptional, ForeignKey, DataTypes } from 'sequelize'
+import {
+    Model,
+    InferAttributes,
+    InferCreationAttributes,
+    CreationOptional,
+    ForeignKey,
+    DataTypes,
+    Association,
+} from 'sequelize'
 
 import db from '../db'
 
 import Protocol from './Protocol'
+import BankAccount from './BankAccount'
 
 class Receipts extends Model<InferAttributes<Receipts>, InferCreationAttributes<Receipts>> {
     declare id: CreationOptional<number>
@@ -11,9 +20,15 @@ class Receipts extends Model<InferAttributes<Receipts>, InferCreationAttributes<
     declare note: string
 
     declare ProtocolId: ForeignKey<Protocol['id']>
+    declare BankAccountId: ForeignKey<BankAccount['id']>
 
     declare createdAt: CreationOptional<Date>
     declare updatedAt: CreationOptional<Date>
+
+    declare static associations: {
+        Protocol?: Association<Receipts, Protocol>
+        BankAccount?: Association<Receipts, BankAccount>
+    }
 }
 
 Receipts.init(
@@ -43,5 +58,16 @@ Receipts.init(
         sequelize: db,
     },
 )
+
+import receiptHooks from '../hooks/receiptHooks'
+
+Receipts.belongsTo(BankAccount)
+
+BankAccount.hasMany(Receipts)
+
+// Hooks
+Receipts.afterCreate(receiptHooks.afterCreate)
+Receipts.afterUpdate(receiptHooks.afterUpdate)
+Receipts.afterDestroy(receiptHooks.afterDestroy)
 
 export default Receipts
