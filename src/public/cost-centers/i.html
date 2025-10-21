@@ -114,7 +114,7 @@
                     <select v-model="ParentId" class="form-control">
                         <option :value="null">-- Nenhum --</option>
                         <option v-for="cc in allCostCenters" :value="cc.id" :disabled="cc.id === id">
-                            {{ cc.name }}
+                            {{cc.indentation}}{{ cc.name }}
                         </option>
                     </select>
                 </div>

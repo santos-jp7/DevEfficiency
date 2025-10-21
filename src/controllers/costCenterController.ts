@@ -12,7 +12,36 @@ class CostCenterController {
     static async index(req: FastifyRequest, res: FastifyReply): Promise<FastifyReply> {
         try {
             const costCenters = await CostCenter.findAll({
-                include: [{ model: CostCenter, as: 'children' }],
+                include: [
+                    {
+                        model: CostCenter,
+                        as: 'children',
+                        include: [
+                            {
+                                model: CostCenter,
+                                as: 'children',
+                                include: [
+                                    {
+                                        model: CostCenter,
+                                        as: 'children',
+                                        include: [
+                                            {
+                                                model: CostCenter,
+                                                as: 'children',
+                                                include: [
+                                                    {
+                                                        model: CostCenter,
+                                                        as: 'children',
+                                                    },
+                                                ],
+                                            },
+                                        ],
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                ],
                 where: { ParentId: null }, // Start from root nodes
             })
             return res.send(costCenters)

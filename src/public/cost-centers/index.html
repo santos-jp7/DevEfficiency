@@ -111,7 +111,7 @@
                 </thead>
                 <tbody>
                     <tr v-for="cc in costCenters">
-                        <td>{{ cc.name }}</td>
+                        <td>{{cc.indentation}}{{ cc.name }}</td>
                         <td>{{ cc.description }}</td>
                         <td>{{ getParentName(cc.ParentId) }}</td>
                         <td>

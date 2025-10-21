@@ -7,12 +7,26 @@ const app = new Vue({
     },
     methods: {
         // Helper to convert hierarchical data to a flat list for rendering
-        flatten(costCenters, level = 0) {
+        flatten(items, level = 0) {
             let result = []
-            for (const cc of costCenters) {
-                result.push({ ...cc, level: level })
-                if (cc.children && cc.children.length > 0) {
-                    result = result.concat(this.flatten(cc.children, level + 1))
+
+            for (const item of items) {
+                // 1. Adiciona a propriedade 'level' ao item atual
+                // e a propriedade 'indentation' com o &nbsp; para o <select>
+                const indentation = '—'.repeat(level) + (level > 0 ? ' ' : '')
+
+                result.push({
+                    ...item,
+                    level: level,
+                    indentation: indentation, // Ex: "— " para filhos, "—— " para netos, etc.
+                })
+
+                // 2. Chamada recursiva para os filhos, incrementando o nível
+                if (item.children && item.children.length > 0) {
+                    // Se você estiver em uma classe, use `this.flatten`
+                    // Se for uma função pura, use apenas `flatten`
+                    const subItems = this.flatten(item.children, level + 1)
+                    result = result.concat(subItems)
                 }
             }
             return result

@@ -110,7 +110,7 @@
                 <div class="col-md-6 form-group mb-3">
                     <label>Centro de Custo</label>
                     <select v-model="CostCenterId" class="form-control" required>
-                        <option v-for="cc in costCenters" :value="cc.id">{{ cc.name }}</option>
+                        <option v-for="cc in costCenters" :value="cc.id">{{cc.indentation}}{{ cc.name }}</option>
                     </select>
                 </div>
             </div>
