@@ -45,10 +45,11 @@ async function syncModels(): Promise<true> {
     await Protocol_register.sync()
     await Protocol_product.sync({ alter: { drop: false } })
 
+    await BankAccount.sync({ alter: { drop: false } })
+
     await Billing.sync({ alter: { drop: false } })
     await BillingProtocol.sync({ alter: { drop: false } })
 
-    await BankAccount.sync()
     await CostCenter.sync()
     await Supplier.sync()
 
