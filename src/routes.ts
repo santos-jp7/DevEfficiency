@@ -27,6 +27,7 @@ import supplierController from './controllers/supplierController'
 import bankAccountController from './controllers/bankAccountController'
 import payablesController from './controllers/payablesController'
 import financialsController from './controllers/financialsController'
+import expenseReportController from './controllers/expenseReportController'
 
 const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.get('/', helloController.handler)
@@ -36,6 +37,7 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.get('/auth/verify', { preHandler: [isAuthed] }, authController.verify)
 
     instance.get('/financial-history', { preHandler: [isAuthed] }, financialsController.index)
+    instance.get('/expense-report', { preHandler: [isAuthed] }, expenseReportController.index)
 
     instance.get('/cost-centers', { preHandler: [isAuthed] }, costCenterController.index)
     instance.get('/cost-centers/:id', { preHandler: [isAuthed] }, costCenterController.show)
