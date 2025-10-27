@@ -1,11 +1,7 @@
-import {
-    Model,
-    InferAttributes,
-    InferCreationAttributes,
-    CreationOptional,
-    DataTypes,
-} from 'sequelize'
+import { Model, InferAttributes, InferCreationAttributes, CreationOptional, DataTypes } from 'sequelize'
 import db from '../db'
+
+import BankTransfer from './BankTransfer'
 
 class BankAccount extends Model<InferAttributes<BankAccount>, InferCreationAttributes<BankAccount>> {
     declare id: CreationOptional<number>
@@ -55,5 +51,11 @@ BankAccount.init(
         sequelize: db,
     },
 )
+
+BankAccount.hasMany(BankTransfer, { as: 'SentTransfers', foreignKey: 'sourceAccountId' })
+BankAccount.hasMany(BankTransfer, { as: 'ReceivedTransfers', foreignKey: 'destinationAccountId' })
+
+BankTransfer.belongsTo(BankAccount, { as: 'SourceAccount', foreignKey: 'sourceAccountId' })
+BankTransfer.belongsTo(BankAccount, { as: 'DestinationAccount', foreignKey: 'destinationAccountId' })
 
 export default BankAccount

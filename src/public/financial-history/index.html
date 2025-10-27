@@ -75,6 +75,7 @@
                         <li><a class="dropdown-item" href="../protocols">Protocolos</a></li>
                         <li><a class="dropdown-item" href="../bank-accounts">Contas Bancárias</a></li>
                         <li><a class="dropdown-item" href="../cost-centers">Centros de Custo</a></li>
+                        <li><a class="dropdown-item" href="../bank-transfers">Transferências entre contas</a></li>
 
                     </ul>
                 </div>
@@ -171,7 +172,7 @@
                         <td>{{ tx.description }}</td>
                         <td>{{ tx.relatedTo }}</td>
                         <td class="text-right font-weight-bold"
-                            :class="tx.type === 'inflow' ? 'text-inflow' : 'text-outflow'">
+                            :class="tx.type === 'inflow' ? 'text-inflow' : tx.type === 'outflow' ? 'text-outflow' : tx.type === 'bankTransfer' ? 'text-bankTransfer' : ''">
                             {{ formatCurrency(tx.value) }}
                         </td>
                         <td class="text-right">{{ formatCurrency(tx.runningBalance) }}</td>

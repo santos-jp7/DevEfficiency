@@ -37,9 +37,11 @@ const app = new Vue({
                 runningBalance += tx.value
                 tx.runningBalance = runningBalance
 
-                if (tx.type === 'inflow') {
+                if (tx.type === 'inflow' && tx.showInSummary !== false) {
                     totalInflows += tx.value
-                } else {
+                }
+
+                if (tx.type === 'outflow' && tx.showInSummary !== false) {
                     totalOutflows += tx.value // value is already negative
                 }
             }

@@ -20,6 +20,7 @@ import BankAccount from './models/BankAccount'
 import CostCenter from './models/CostCenter'
 import Supplier from './models/Supplier'
 import Payable from './models/Payable'
+import BankTransfer from './models/BankTransfer'
 
 async function syncModels(): Promise<true> {
     await User.sync()
@@ -46,6 +47,7 @@ async function syncModels(): Promise<true> {
     await Protocol_product.sync({ alter: { drop: false } })
 
     await BankAccount.sync({ alter: { drop: false } })
+    await BankTransfer.sync({ alter: { drop: false } })
 
     await Billing.sync({ alter: { drop: false } })
     await BillingProtocol.sync({ alter: { drop: false } })

@@ -5,6 +5,8 @@ import Receipt from '../models/Receipts'
 import Protocol from '../models/Protocol'
 import Subscription from '../models/Subscription'
 import Service_order from '../models/Service_order'
+import BankTransfer from '../models/BankTransfer'
+import moment from 'moment'
 
 interface Transaction {
     date: Date
@@ -12,6 +14,8 @@ interface Transaction {
     value: number
     type: 'inflow' | 'outflow'
     relatedTo: string
+    bankAccountId?: number
+    showInSummary?: boolean
 }
 
 type HistoryRequest = FastifyRequest<{
@@ -56,6 +60,7 @@ class FinancialsController {
                 value: -Math.abs(p.value), // Ensure value is negative
                 type: 'outflow',
                 relatedTo: (p as any).Supplier?.name || 'N/A',
+                showInSummary: true,
             }))
 
             // Standardize inflows
@@ -66,10 +71,43 @@ class FinancialsController {
                 type: 'inflow',
                 relatedTo:
                     (r as any).Protocol?.Service_order?.subject || (r as any).Protocol?.Subscription?.name || 'N/A',
+                showInSummary: true,
             }))
 
+            // Get all bank transfers
+            const bankTransfers = await BankTransfer.findAll({
+                where: {
+                    ...(startDate && endDate && { date: whereClause }),
+                },
+                include: [{ all: true }],
+            })
+
+            // Standardize bank transfers
+            const formattedBankTransfers: Transaction[] = bankTransfers.flatMap((t) => [
+                {
+                    date: moment(t.date).subtract(1, `minute`).toDate(),
+                    description: `${(t as any).SourceAccount?.name}: Transferência para ${
+                        (t as any).DestinationAccount?.name
+                    }`,
+                    value: -Math.abs(t.amount),
+                    type: 'outflow',
+                    relatedTo: 'Transferência entre contas',
+                    showInSummary: false,
+                },
+                {
+                    date: t.date,
+                    description: `${(t as any).DestinationAccount?.name}: Recebimento de ${
+                        (t as any).SourceAccount?.name
+                    }`,
+                    value: Math.abs(t.amount),
+                    type: 'inflow',
+                    relatedTo: 'Transferência entre contas',
+                    showInSummary: false,
+                },
+            ])
+
             // Combine and sort
-            const history = [...formattedOutflows, ...formattedInflows].sort(
+            const history = [...formattedOutflows, ...formattedInflows, ...formattedBankTransfers].sort(
                 (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
             )
 
