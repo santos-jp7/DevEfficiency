@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Codlinx - Transferência entre Contas</title>
+    <link href="../assets/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css">
+
+    <script src="../assets/js/vue.min.js"></script>
+    <script src="../assets/js/jquery-3.6.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2/dist/umd/popper.min.js"></script>
+    <script src="../assets/js/bootstrap.min.js"></script>
+    <script src="../assets/js/axios.min.js"></script>
+    <script src="../assets/js/moment.min.js"></script>
+</head>
+
+<body>
+    <nav class="navbar bg-light">
+        <div class="container">
+            <a class="navbar-brand" href="/dashboard">
+                <img src="../assets/img/logo_cabecalho.png" alt="Codlinx" width="40" height="40">
+            </a>
+        </div>
+    </nav>
+
+    <div class="container p-4" id="app">
+        <div class="col">
+            <div class="d-flex flex-wrap" style="gap:.5rem">
+                <div class="btn-group">
+                    <button type="button" class="btn btn-dark btn-sm dropdown-toggle" data-bs-toggle="dropdown"
+                        aria-expanded="false">
+                        Gestão
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-dark">
+                        <li><a class="dropdown-item" href="../clients">Clientes</a></li>
+                        <li><a class="dropdown-item" href="../projects">Projetos</a></li>
+                        <li><a class="dropdown-item" href="../products">Produtos</a></li>
+                        <li><a class="dropdown-item" href="../suppliers">Fornecedores</a></li>
+                    </ul>
+                </div>
+
+                <div class="btn-group">
+                    <button type="button" class="btn btn-dark btn-sm dropdown-toggle" data-bs-toggle="dropdown"
+                        aria-expanded="false">
+                        Operações
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-dark">
+                        <li><a class="dropdown-item" href="../service_orders">Ordens de serviço</a></li>
+                    </ul>
+                </div>
+
+                <div class="btn-group">
+                    <button type="button" class="btn btn-dark btn-sm dropdown-toggle" data-bs-toggle="dropdown"
+                        aria-expanded="false">
+                        Financeiro
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-dark">
+                        <li><a class="dropdown-item" href="../billings">Cobranças</a></li>
+                        <li><a class="dropdown-item" href="../payables">Contas a Pagar</a></li>
+                        <li><a class="dropdown-item" href="../subscriptions">Assinaturas</a></li>
+                        <li><a class="dropdown-item" href="../protocols">Protocolos</a></li>
+                        <li><a class="dropdown-item" href="../bank-accounts">Contas Bancárias</a></li>
+                        <li><a class="dropdown-item" href="../cost-centers">Centros de Custo</a></li>
+
+                    </ul>
+                </div>
+
+                <div class="btn-group">
+                    <button type="button" class="btn btn-dark btn-sm dropdown-toggle" data-bs-toggle="dropdown"
+                        aria-expanded="false">
+                        Infraestrutura
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-dark">
+                        <li><a class="dropdown-item" href="../servers/">Servidores</a></li>
+                    </ul>
+                </div>
+
+                <div class="btn-group">
+                    <button type="button" class="btn btn-dark btn-sm dropdown-toggle" data-bs-toggle="dropdown"
+                        aria-expanded="false">
+                        Relatórios
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-dark">
+                        <li><a class="dropdown-item" href="../financial-history/">Fluxo de caixa</a></li>
+                        <li><a class="dropdown-item" href="../expense-report/">Relatório de Despesas</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <hr />
+
+        <h5>Transferência entre Contas</h5>
+        <hr>
+        <form @submit.prevent="saveTransfer">
+            <div class="row">
+                <div class="mb-3 col-md-6">
+                    <label class="form-label">Conta de Origem</label>
+                    <select class="form-control" v-model="sourceAccountId" required :disabled="id">
+                        <option v-for="account in accounts" :value="account.id">{{ account.name }}</option>
+                    </select>
+                </div>
+                <div class="mb-3 col-md-6">
+                    <label class="form-label">Conta de Destino</label>
+                    <select class="form-control" v-model="destinationAccountId" required :disabled="id">
+                        <option v-for="account in accounts" :value="account.id">{{ account.name }}</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row">
+                <div class="mb-3 col-md-6">
+                    <label class="form-label">Valor</label>
+                    <input type="number" step="0.01" class="form-control" v-model="amount" required :disabled="id">
+                </div>
+                <div class="mb-3 col-md-6">
+                    <label class="form-label">Data</label>
+                    <input type="date" class="form-control" v-model="date" required :disabled="id">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-dark" :disabled="id">Salvar</button>
+            <a href="./index.html" class="btn btn-secondary">Voltar</a>
+        </form>
+    </div>
+
+    <script src="../assets/js/bank-transfers/i.js"></script>
+</body>
+
+</html>
