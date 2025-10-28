@@ -39,7 +39,7 @@ BankAccount.init(
             allowNull: true,
         },
         balance: {
-            type: DataTypes.DECIMAL(10, 2),
+            type: DataTypes.FLOAT,
             defaultValue: 0.0,
             allowNull: false,
         },
