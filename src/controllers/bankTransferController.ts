@@ -38,8 +38,8 @@ class bankTransferController {
                 return reply.status(400).send({ message: 'Saldo insuficiente' })
             }
 
-            sourceAccount.balance -= amount
-            destinationAccount.balance += amount
+            sourceAccount.balance = parseFloat((sourceAccount.balance - amount).toFixed(2))
+            destinationAccount.balance = parseFloat((destinationAccount.balance + amount).toFixed(2))
 
             await sourceAccount.save({ transaction: t })
             await destinationAccount.save({ transaction: t })

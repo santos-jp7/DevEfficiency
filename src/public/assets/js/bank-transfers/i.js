@@ -16,7 +16,7 @@ const app = new Vue({
                 await __api__.post('/api/bank-transfers', {
                     sourceAccountId: this.sourceAccountId,
                     destinationAccountId: this.destinationAccountId,
-                    amount: this.amount,
+                    amount: parseFloat(this.amount),
                     date: this.date,
                 })
                 alert('Transferência salva com sucesso!')
