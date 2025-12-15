@@ -17,6 +17,7 @@ class PayablesController {
         try {
             const payables = await Payable.findAll({
                 include: [Supplier, BankAccount, CostCenter],
+                order: [['dueDate', 'DESC']],
             })
             return res.send(payables)
         } catch (error) {
