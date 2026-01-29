@@ -1,239 +1,291 @@
 <head>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
         body {
-            margin: 1px;
-            padding: 25px;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: #333;
+            line-height: 1.5;
+            margin: 0;
+            padding: 40px;
+            background-color: #fff;
         }
 
-        .between {
+        /* Topo e Cabeçalho */
+        .header-nav {
             display: flex;
-
-            flex-direction: row;
             justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
         }
 
-        .columns {
-            display: flex;
-            flex-direction: column;
-            gap: 0;
+        h1 {
+            margin: 0;
+            font-size: 28px;
+            color: #1a1a1a;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
+        .company-info b {
+            font-size: 18px;
+            color: #000;
+            display: block;
+        }
+
+        /* Estrutura de Colunas */
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: #888;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 4px;
+        }
+
+        .info-box span {
+            display: block;
+            font-size: 14px;
+        }
+
+        /* Tabelas */
         table {
             width: 100%;
-        }
-
-        table,
-        th,
-        td {
-            border: solid 1px #000;
-            padding: 3px;
-        }
-
-        table {
             border-collapse: collapse;
-            caption-side: bottom;
+            margin: 20px 0;
         }
 
-        caption {
+        th {
+            text-align: left;
+            background-color: #f8f9fa;
+            color: #666;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 12px 10px;
+            text-transform: uppercase;
+        }
+
+        td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        h2 {
             font-size: 16px;
-            font-weight: bold;
-            padding-top: 5px;
+            margin-top: 30px;
+            color: #444;
         }
 
-        th.low {
-            width: 5%;
-        }
-
-        .total {
+        /* Resumo de Valores */
+        .summary-container {
             display: flex;
-            flex-direction: column;
-            justify-content: end;
-
-            gap: 2px;
-
-            width: 280px;
-            margin-left: auto;
+            justify-content: flex-end;
+            margin-top: 30px;
         }
 
-        .total>.line {
+        .summary-box {
+            width: 300px;
+        }
+
+        .summary-line {
             display: flex;
-            flex-direction: row;
-            justify-content: end;
-
-            gap: 10px;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 14px;
         }
 
-        .total>.line.border {
-            border-top: #666 1px solid;
+        .summary-line.total-main {
+            border-top: 2px solid #333;
+            margin-top: 10px;
+            padding-top: 15px;
+            font-weight: 700;
+            font-size: 18px;
+            color: #000;
         }
 
-        .total>.line>.left {
-            margin-right: auto;
+        .text-right {
+            text-align: right;
         }
 
-        .total>.line>.bold {
-            font-weight: bolder;
-        }
-
-        .total>.line>.big {
-            font-size: 22px;
+        hr {
+            border: 0;
+            border-top: 1px solid #eee;
+            margin: 20px 0;
         }
     </style>
 </head>
 
 <body>
-    <nav class="between">
+    <header class="header-nav">
         <img src="data:image/png;base64,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"
-            alt="" width="60" />
+            alt="Logo" width="80" />
         <h1>
             <%= ( os.Protocol?.status=="Em aberto" ? "Orçamento" : (os.Protocol?.status=="Liberado para pagamento"
-                ? "Fatura" : (os.Protocol?.status=="Fechado" ? "Recibo" : "" ) ) ) %>
+                ? "Fatura" : (os.Protocol?.status=="Fechado" ? "Recibo" : "Documento" ) ) ) %>
         </h1>
-    </nav>
+    </header>
 
-    <br />
-    <hr />
-
-    <section class="details between">
-        <div class="columns">
+    <div class="grid-container">
+        <div class="info-box">
+            <div class="section-title">Emissor</div>
             <b>Codlinx</b>
             <span>Soluções inteligentes para um mundo conectado.</span>
             <span>(31) 3191-0305</span>
         </div>
-        <div class="columns">
-            <span>Os: <%= os.id %></span>
-            <span>Data: <%= ` ${String(new Date().getDate()).padStart(2, "0" )}/${String(new Date().getMonth()
-                    +1).padStart(2, "0" )}/${new Date().getFullYear()}`%></span>
-        </div>
-    </section>
 
-    <hr />
-
-    <section class="client between">
-        <div class="columns">
-            <b>Cliente:</b>
-            <span>
-                <%= os.Client?.name || os.Project?.Client?.name %>
+        <div class="info-box text-right">
+            <div class="section-title">Identificação</div>
+            <span><strong>Nº OS:</strong>
+                <%= os.id %>
             </span>
+            <span><strong>Data:</strong>
+                <%= ` ${String(new Date().getDate()).padStart(2, "0" )}/${String(new
+                    Date().getMonth()+1).padStart(2, "0" )}/${new Date().getFullYear()}`%>
+            </span>
+        </div>
+    </div>
+
+    <div class="grid-container">
+        <div class="info-box">
+            <div class="section-title">Cliente</div>
+            <b>
+                <%= os.Client?.name || os.Project?.Client?.name %>
+            </b>
             <span>
                 <%= os.Client?.email || os.Project?.Client?.email %>
             </span>
         </div>
-    </section>
 
-    <hr />
-
-    <section class="os between">
-        <div class="columns">
-            <b>
-                <%= os.ProjectId ? `[${os.Project?.name}]` : "" %>
-                    <%= os.subject %>
-            </b>
+        <div class="info-box text-right">
+            <div class="section-title">Referência</div>
             <span>
-                <%= os.description %>
+                <%= os.ProjectId ? `Projeto: ${os.Project?.name}` : "" %>
+            </span>
+            <span><strong>Assunto:</strong>
+                <%= os.subject %>
             </span>
         </div>
+    </div>
+
+    <section style="margin-bottom: 40px;">
+        <div class="section-title">Descrição dos Serviços</div>
+        <p style="font-size: 14px; color: #555;">
+            <%= os.description %>
+        </p>
     </section>
 
-    <hr />
-
     <% if(os.Protocol?.Protocol_registers?.length> 0){ %>
-        <section class="services">
-            <h2>Serviços e despesas</h2>
-
+        <section>
+            <h2>Serviços e Despesas</h2>
             <table>
-                <tr>
-                    <th>Descrição</th>
-                    <th>Valor</th>
-                    <th>Tipo</th>
-                </tr>
-                <% for(let register of os.Protocol?.Protocol_registers){ %>
+                <thead>
                     <tr>
-                        <td>
-                            <%= register.description %>
-                        </td>
-                        <td>
-                            <%= (register.value).toLocaleString('pt-br',{style: 'currency' , currency: 'BRL' }) %>
-                        </td>
-                        <td>
-                            <%= register.type %>
-                        </td>
+                        <th>Descrição</th>
+                        <th>Tipo</th>
+                        <th class="text-right">Valor</th>
                     </tr>
-                    <% } %>
+                </thead>
+                <tbody>
+                    <% for(let register of os.Protocol?.Protocol_registers){ %>
+                        <tr>
+                            <td>
+                                <%= register.description %>
+                            </td>
+                            <td><small>
+                                    <%= register.type %>
+                                </small></td>
+                            <td class="text-right">
+                                <%= (register.value).toLocaleString('pt-br',{style: 'currency' , currency: 'BRL' }) %>
+                            </td>
+                        </tr>
+                        <% } %>
+                </tbody>
             </table>
         </section>
         <% } %>
 
             <% if(os.Protocol?.Protocol_products?.length> 0){ %>
-                <section class="products">
+                <section>
                     <h2>Produtos</h2>
-
                     <table>
-                        <tr>
-                            <th class="low">#</th>
-                            <th>Descrição</th>
-                            <th>Tipo de cobrança</th>
-                            <th>Valor</th>
-                        </tr>
-                        <% for(let product of os.Protocol?.Protocol_products){ %>
+                        <thead>
                             <tr>
-                                <td>
-                                    <%= product.ProductId %>
-                                </td>
-                                <td>
-                                    <%= product.Product?.description %>
-                                </td>
-                                <td>
-                                    <%= product.charge_type %>
-                                </td>
-                                <td>
-                                    <%= (product.value).toLocaleString('pt-br',{style: 'currency' , currency: 'BRL' })
-                                        %>
-                                </td>
+                                <th style="width: 50px;">Cod.</th>
+                                <th>Descrição</th>
+                                <th>Cobrança</th>
+                                <th class="text-right">Valor</th>
                             </tr>
-                            <% } %>
+                        </thead>
+                        <tbody>
+                            <% for(let product of os.Protocol?.Protocol_products){ %>
+                                <tr>
+                                    <td>#<%= product.ProductId %>
+                                    </td>
+                                    <td>
+                                        <%= product.Product?.description %>
+                                    </td>
+                                    <td>
+                                        <%= product.charge_type %>
+                                    </td>
+                                    <td class="text-right">
+                                        <%= (product.value).toLocaleString('pt-br',{style: 'currency' , currency: 'BRL'
+                                            }) %>
+                                    </td>
+                                </tr>
+                                <% } %>
+                        </tbody>
                     </table>
                 </section>
                 <% } %>
 
-                    <hr>
-
-                    <section class="total">
-                        <div class="line">
-                            <span class="left">Valor total:</span>
-                            <span class="bold">
-                                <%= ((os.Protocol?.Protocol_registers?.reduce((sum, v)=> sum + v.value, 0)) +
-                                    (os.Protocol?.Protocol_products?.reduce((sum, v) => sum + v.value,
-                                    0))).toLocaleString('pt-br',{style:
-                                    'currency', currency: 'BRL'}) %>
-                            </span>
-                        </div>
-
-                        <% if(os.Protocol?.Receipts?.length> 0){ %>
-                            <div class="line">
-                                <span class="left">Valor pago:</span>
-                                <span class="bold">
-                                    <%= ((os.Protocol?.Receipts?.reduce((sum, v)=> sum + v.value,
-                                        0))).toLocaleString('pt-br',{style:
-                                        'currency', currency: 'BRL'}) %>
+                    <div class="summary-container">
+                        <div class="summary-box">
+                            <div class="summary-line">
+                                <span>Subtotal:</span>
+                                <span>
+                                    <%= ((os.Protocol?.Protocol_registers?.reduce((sum, v)=> sum + v.value, 0) || 0) +
+                                        (os.Protocol?.Protocol_products?.reduce((sum, v) => sum + v.value, 0) ||
+                                        0)).toLocaleString('pt-br',{style: 'currency', currency: 'BRL'}) %>
                                 </span>
                             </div>
-                            <% } %>
 
-                                <% if(os.Protocol?.status=="Liberado para pagamento" ){ %>
-                                    <div class="line border">
-                                        <span class="left big">Valor devedor:</span>
-                                        <span class="bold big">
+                            <% if(os.Protocol?.Receipts?.length> 0){ %>
+                                <div class="summary-line" style="color: #27ae60;">
+                                    <span>Total Pago:</span>
+                                    <span>
+                                        - <%= ((os.Protocol?.Receipts?.reduce((sum, v)=> sum + v.value,
+                                            0))).toLocaleString('pt-br',{style: 'currency', currency: 'BRL'}) %>
+                                    </span>
+                                </div>
+                                <% } %>
+
+                                    <div class="summary-line total-main">
+                                        <span>
+                                            <%= os.Protocol?.status=="Liberado para pagamento" ? "Total a Pagar"
+                                                : "Total Geral" %>:
+                                        </span>
+                                        <span>
                                             <%= ( (os?.Protocol?.Protocol_registers?.reduce((sum, v)=> sum + v.value, 0)
-                                                ||
-                                                0) +
+                                                || 0) +
                                                 (os?.Protocol?.Protocol_products?.reduce((sum, v) => sum + v.value, 0)
-                                                || 0)
-                                                -
+                                                || 0) -
                                                 (os?.Protocol?.Receipts?.reduce((sum, v) => sum + v.value, 0) || 0)
                                                 ).toLocaleString('pt-br', { style: 'currency', currency: 'BRL' }) %>
                                         </span>
                                     </div>
-                                    <% } %>
-                    </section>
+                        </div>
+                    </div>
 </body>

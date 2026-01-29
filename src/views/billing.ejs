@@ -1,0 +1,321 @@
+<head>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            color: #333;
+            line-height: 1.5;
+            margin: 0;
+            padding: 40px;
+            background-color: #fff;
+        }
+
+        /* Topo da Fatura */
+        .header-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 30px;
+        }
+
+        .billing-title {
+            text-align: right;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 26px;
+            color: #1a1a1a;
+            font-weight: 700;
+        }
+
+        .invoice-number {
+            color: #666;
+            font-size: 14px;
+            font-weight: 400;
+        }
+
+        /* Grid de Informações */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 40px;
+            margin-bottom: 30px;
+            padding: 20px 0;
+            border-top: 1px solid #eee;
+            border-bottom: 1px solid #eee;
+        }
+
+        .section-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+
+        .detail-item {
+            margin-bottom: 15px;
+        }
+
+        .company-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: #000;
+        }
+
+        .client-name {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .text-muted {
+            font-size: 13px;
+            color: #666;
+            display: block;
+        }
+
+        /* Estilo da Listagem de Protocolos */
+        .protocol-row {
+            padding: 15px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .protocol-row:last-child {
+            border-bottom: none;
+        }
+
+        .protocol-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .protocol-subject {
+            font-weight: 600;
+            font-size: 14px;
+            color: #2c3e50;
+        }
+
+        .protocol-id {
+            font-size: 11px;
+            background: #f1f1f1;
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: #777;
+        }
+
+        /* Tabelas Internas */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        th {
+            text-align: left;
+            color: #999;
+            font-weight: 600;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        td {
+            padding: 8px 0;
+            border-bottom: 1px solid #fafafa;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        /* Rodapé de Fechamento */
+        .summary-container {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 40px;
+        }
+
+        .summary-box {
+            width: 300px;
+            background: #fdfdfd;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #eee;
+        }
+
+        .summary-line {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .total-line {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 2px solid #1a1a1a;
+            font-weight: 700;
+            font-size: 20px;
+        }
+
+        .due-date-alert {
+            margin-top: 20px;
+            padding: 10px;
+            background: #fff8e1;
+            border-left: 4px solid #ffc107;
+            font-size: 12px;
+            color: #856404;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="header-nav">
+        <img src="data:image/png;base64,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"
+            alt="Logo" width="80" />
+        <div class="billing-title">
+            <h1>Fatura Mensal</h1>
+            <span class="invoice-number">Referência: <%= billing.id %></span>
+        </div>
+    </header>
+
+    <div class="info-grid">
+        <div>
+            <div class="section-label">Cliente</div>
+            <span class="client-name">
+                <%= client.name %>
+            </span>
+            <span class="text-muted">
+                <%= client.email %>
+            </span>
+            <span class="text-muted">ID Cliente: #<%= client.id %></span>
+        </div>
+        <div class="text-right">
+            <div class="section-label">Dados de Pagamento</div>
+            <span class="text-muted">Data de Emissão: <%= new Date().toLocaleDateString('pt-BR') %></span>
+            <span class="company-name" style="color: #d32f2f;">Vencimento: <%= `
+                    ${String(billing.due_date.getDate()).padStart(2, "0"
+                    )}/${String(billing.due_date.getMonth()+1).padStart(2, "0" )}/${billing.due_date.getFullYear()}`%>
+                    %></span>
+        </div>
+    </div>
+
+    <div class="section-label">Detalhamento dos Serviços</div>
+
+    <% for(let item of billing.BillingProtocols){ %>
+        <% let p=item.Protocol; %>
+            <div class="protocol-row">
+                <div class="protocol-header">
+                    <span class="protocol-subject">
+                        <%= p.Service_order?.subject || p.Subscription?.name || 'Serviços Diversos' %>
+                    </span>
+                    <span class="protocol-id">Protocolo #<%= p.id %> &bull;
+                            <% if(p.Service_order?.id){ %>
+                                Ordem de Serviço #<%= p.Service_order.id %>
+                                    <% } else if(p.Subscription?.id){ %>
+                                        Assinatura #<%= p.Subscription.id %>
+                                            <% } %>
+                    </span>
+                </div>
+
+                <% if(p.Service_order?.Project?.id){ %>
+                    <small>Projeto #<%= p.Service_order.Project.id %> - <%= p.Service_order.Project.name %></small>
+                    <% } %>
+
+                        <% if(p.Protocol_registers?.length> 0 || p.Protocol_products?.length > 0){ %>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Descrição</th>
+                                        <th class="text-right">Qtd/Tipo</th>
+                                        <th class="text-right">Valor total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% for(let reg of p.Protocol_registers || []){ %>
+                                        <tr>
+                                            <td>
+                                                <%= reg.description %>
+                                            </td>
+                                            <td class="text-right">
+                                                <%= reg.type %>
+                                            </td>
+                                            <td class="text-right">
+                                                <%= reg.value.toLocaleString('pt-br',{style: 'currency' ,
+                                                    currency: 'BRL' }) %>
+                                            </td>
+                                        </tr>
+                                        <% } %>
+
+                                            <% for(let prod of p.Protocol_products || []){ %>
+                                                <tr>
+                                                    <td>
+                                                        <%= prod.Product?.description || 'Produto' %>
+                                                    </td>
+                                                    <td class="text-right">
+                                                        <%= prod.charge_type %>
+                                                    </td>
+                                                    <td class="text-right">
+                                                        <%= prod.value.toLocaleString('pt-br',{style: 'currency' ,
+                                                            currency: 'BRL' }) %>
+                                                    </td>
+                                                </tr>
+                                                <% } %>
+                                </tbody>
+                            </table>
+                            <% } %>
+
+                                <div class="protocol-header">
+                                    <span class="protocol-subject">
+                                        Valor: <%= item.value.toLocaleString('pt-br',{style: 'currency' ,
+                                            currency: 'BRL' })%>
+                                    </span>
+                                    <% if(p.notes?.length> 0){ %>
+                                        <span class="protocol-id">Observação: <%= p.notes %></span>
+                                        <% } %>
+                                </div>
+            </div>
+            <% } %>
+
+                <div class="summary-container">
+                    <div class="summary-box">
+                        <div class="section-label">Resumo Financeiro</div>
+
+                        <% let totalBruto=billing.total_value; let totalDescontos=0; %>
+
+                            <div class="summary-line">
+                                <span>Total Bruto:</span>
+                                <span>
+                                    <%= totalBruto.toLocaleString('pt-br',{style: 'currency' , currency: 'BRL' }) %>
+                                </span>
+                            </div>
+
+                            <% if(totalDescontos> 0) { %>
+                                <div class="summary-line" style="color: #27ae60;">
+                                    <span>Créditos/Pagos:</span>
+                                    <span>- <%= totalDescontos.toLocaleString('pt-br',{style: 'currency' ,
+                                            currency: 'BRL' }) %></span>
+                                </div>
+                                <% } %>
+
+                                    <div class="summary-line total-line">
+                                        <span>Total Fatura:</span>
+                                        <span>
+                                            <%= (totalBruto - totalDescontos).toLocaleString('pt-br', {
+                                                style: 'currency' , currency: 'BRL' }) %>
+                                        </span>
+                                    </div>
+                    </div>
+                </div>
+
+                <footer style="margin-top: 50px; text-align: center; border-top: 1px solid #eee; padding-top: 20px;">
+                    <span class="text-muted">Codlinx Tecnologia LTDA</span>
+                    <span class="text-muted" style="font-size: 10px;">CNPJ: 58.942.500/0001-22 | São Paulo -
+                        SP</span>
+                </footer>
+</body>

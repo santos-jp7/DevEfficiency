@@ -1,253 +1,383 @@
 <head>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
         body {
-            margin: 1px;
-            padding: 25px;
+            font-family: 'Inter', sans-serif;
+            color: #333;
+            line-height: 1.6;
+            margin: 0;
+            padding: 40px;
+            background-color: #fff;
         }
 
-        .between {
+        /* Topo */
+        .header-nav {
             display: flex;
-
-            flex-direction: row;
             justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
         }
 
-        .columns {
-            display: flex;
-            flex-direction: column;
-            gap: 0;
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            color: #1a1a1a;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
+        /* Infos Iniciais */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        .section-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: #999;
+            text-transform: uppercase;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 8px;
+            padding-bottom: 4px;
+        }
+
+        .company-name {
+            font-size: 18px;
+            font-weight: 700;
+            display: block;
+        }
+
+        .client-name {
+            font-size: 16px;
+            font-weight: 600;
+            display: block;
+        }
+
+        .text-muted {
+            font-size: 13px;
+            color: #666;
+        }
+
+        /* Card de Cada OS */
+        .os-card {
+            border: 1px solid #f0f0f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            background-color: #fafafa;
+        }
+
+        .os-header {
+            margin-bottom: 15px;
+        }
+
+        .os-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #2c3e50;
+            display: block;
+        }
+
+        /* Tabelas */
         table {
             width: 100%;
-        }
-
-        table,
-        th,
-        td {
-            border: solid 1px #000;
-            padding: 3px;
-        }
-
-        table {
             border-collapse: collapse;
-            caption-side: bottom;
+            margin: 10px 0;
+            background: #fff;
+            border-radius: 4px;
+            overflow: hidden;
         }
 
-        caption {
-            font-size: 16px;
-            font-weight: bold;
-            padding-top: 5px;
+        th {
+            background-color: #f1f1f1;
+            color: #666;
+            font-size: 12px;
+            padding: 10px;
+            text-align: left;
+            text-transform: uppercase;
         }
 
-        th.low {
-            width: 5%;
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            font-size: 13px;
         }
 
-        .total {
+        .text-right {
+            text-align: right;
+        }
+
+        h2 {
+            font-size: 14px;
+            margin: 20px 0 10px 0;
+            color: #555;
+            text-transform: uppercase;
+        }
+
+        /* Rodapé de Totais */
+        .total-container {
             display: flex;
-            flex-direction: column;
-            justify-content: end;
-
-            gap: 2px;
-
-            width: 280px;
-            margin-left: auto;
+            justify-content: flex-end;
+            margin-top: 50px;
+            border-top: 2px solid #eee;
+            padding-top: 20px;
         }
 
-        .total>.line {
+        .total-box {
+            width: 320px;
+        }
+
+        .total-line {
             display: flex;
-            flex-direction: row;
-            justify-content: end;
-
-            gap: 10px;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 14px;
         }
 
-        .total>.line.border {
-            border-top: #666 1px solid;
+        .total-line.grand-total {
+            margin-top: 10px;
+            padding: 15px 0;
+            font-weight: 700;
+            font-size: 20px;
+            color: #000;
+            border-top: 1px solid #333;
         }
 
-        .total>.line>.left {
-            margin-right: auto;
-        }
-
-        .total>.line>.bold {
-            font-weight: bolder;
-        }
-
-        .total>.line>.big {
-            font-size: 22px;
+        .status-badge {
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            background: #eee;
+            margin-left: 10px;
+            vertical-align: middle;
         }
     </style>
 </head>
 
 <body>
-    <nav class="between">
-        <img src="data:image/png;base64,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"
-            alt="" width="60" />
+    <header class="header-nav">
+        <img src="data:image/png;base64,..." alt="Logo" width="70" />
         <h1>
-            <%= ( type=="Em aberto" ? "Orçamento" : (type=="Liberado para pagamento" ? "Fatura" : (type=="Fechado"
-                ? "Recibo" : "" ) ) ) %>
+            <%= ( type=="Em aberto" ? "Orçamento Coletivo" : (type=="Liberado para pagamento" ? "Fatura Consolidada"
+                : "Recibo" ) ) %>
         </h1>
-    </nav>
+    </header>
 
-    <br />
-    <hr />
-
-    <section class="details between">
-        <div class="columns">
-            <b>Codlinx</b>
-            <span>Soluções inteligentes para um mundo conectado.</span>
-            <span>(31) 3191-0305</span>
+    <div class="info-grid">
+        <div>
+            <div class="section-label">Emissor</div>
+            <span class="company-name">Codlinx</span>
+            <span class="text-muted">Soluções inteligentes para um mundo conectado.</span>
+            <span class="text-muted">(31) 3191-0305</span>
         </div>
-        <div class="columns">
-            <span>Data: <%= ` ${String(new Date().getDate()).padStart(2, "0" )}/${String(new Date().getMonth()
-                    +1).padStart(2, "0" )}/${new Date().getFullYear()}`%></span>
-        </div>
-    </section>
-
-    <hr />
-
-    <section class="client between">
-        <div class="columns">
-            <b>Cliente:</b>
-            <span>
+        <div class="text-right">
+            <div class="section-label">Cliente</div>
+            <span class="client-name">
                 <%= client.name %>
             </span>
-            <span>
+            <span class="text-muted">
                 <%= client.email %>
             </span>
         </div>
-    </section>
+    </div>
 
-    <hr />
+    <span class="text-muted">Data de Emissão: <%= new Date().toLocaleDateString('pt-BR') %></span>
 
     <% for(let os of oss){ %>
-
-        <section class="os between">
-            <div class="columns">
-                <b>
-                    <%= os.ProjectId ? `[${os.Project?.name}]` : "" %>
+        <div class="os-card">
+            <div class="os-header">
+                <div class="section-label">Referência: OS #<%= os.id %>
+                </div>
+                <span class="os-title">
+                    <%= os.ProjectId ? `[${os.Project?.name}] ` : "" %>
                         <%= os.subject %>
-                </b>
-                <span>
-                    <%= os.description %>
                 </span>
+                <p class="text-muted" style="margin: 5px 0;">
+                    <%= os.description %>
+                </p>
             </div>
-        </section>
 
-        <hr />
-
-        <% if(os.Protocol?.Protocol_registers?.length> 0){ %>
-            <section class="services">
-                <h2>Serviços e despesas</h2>
-
+            <% if(os.Protocol?.Protocol_registers?.length> 0){ %>
                 <table>
-                    <tr>
-                        <th>Descrição</th>
-                        <th>Valor</th>
-                        <th>Tipo</th>
-                    </tr>
-                    <% for(let register of os.Protocol?.Protocol_registers){ %>
+                    <thead>
                         <tr>
-                            <td>
-                                <%= register.description %>
-                            </td>
-                            <td>
-                                <%= (register.value).toLocaleString('pt-br',{style: 'currency' , currency: 'BRL' }) %>
-                            </td>
-                            <td>
-                                <%= register.type %>
-                            </td>
+                            <th>Serviços e Despesas</th>
+                            <th>Tipo</th>
+                            <th class="text-right">Valor</th>
                         </tr>
-                        <% } %>
-                </table>
-            </section>
-            <% } %>
-
-                <% if(os.Protocol?.Protocol_products?.length> 0){ %>
-                    <section class="products">
-                        <h2>Produtos</h2>
-
-                        <table>
+                    </thead>
+                    <tbody>
+                        <% for(let register of os.Protocol?.Protocol_registers){ %>
                             <tr>
-                                <th class="low">#</th>
-                                <th>Descrição</th>
-                                <th>Tipo de cobrança</th>
-                                <th>Valor</th>
+                                <td>
+                                    <%= register.description %>
+                                </td>
+                                <td><small>
+                                        <%= register.type %>
+                                    </small></td>
+                                <td class="text-right">
+                                    <%= register.value.toLocaleString('pt-br',{style: 'currency' , currency: 'BRL' }) %>
+                                </td>
                             </tr>
-                            <% for(let product of os.Protocol?.Protocol_products){ %>
-                                <tr>
-                                    <td>
-                                        <%= product.ProductId %>
-                                    </td>
-                                    <td>
-                                        <%= product.Product?.description %>
-                                    </td>
-                                    <td>
-                                        <%= product.charge_type %>
-                                    </td>
-                                    <td>
-                                        <%= (product.value).toLocaleString('pt-br',{style: 'currency' , currency: 'BRL'
-                                            }) %>
-                                    </td>
-                                </tr>
-                                <% } %>
-                        </table>
-                    </section>
-                    <% } %>
+                            <% } %>
+                    </tbody>
+                </table>
+                <% } %>
 
-                        <hr>
+                    <% if(os.Protocol?.Protocol_products?.length> 0){ %>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 40px;">#</th>
+                                    <th>Produto</th>
+                                    <th>Cobrança</th>
+                                    <th class="text-right">Valor</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% for(let product of os.Protocol?.Protocol_products){ %>
+                                    <tr>
+                                        <td>
+                                            <%= product.ProductId %>
+                                        </td>
+                                        <td>
+                                            <%= product.Product?.description %>
+                                        </td>
+                                        <td>
+                                            <%= product.charge_type %>
+                                        </td>
+                                        <td class="text-right">
+                                            <%= product.value.toLocaleString('pt-br',{style: 'currency' ,
+                                                currency: 'BRL' }) %>
+                                        </td>
+                                    </tr>
+                                    <% } %>
+                            </tbody>
+                        </table>
                         <% } %>
-                            <section class="total">
-                                <div class="line">
-                                    <span class="left">Valor total:</span>
-                                    <span class="bold">
-                                        <%= ((oss.map(os=> os.Protocol?.Protocol_registers?.reduce((sum, v) => sum +
-                                            v.value, 0)).reduce((sum, v) => sum + v, 0))
-                                            +
-                                            (oss.map(os => os.Protocol?.Protocol_products?.reduce((sum, v) => sum +
-                                            v.value,
-                                            0)).reduce((sum, v) => sum + v, 0)))
-                                            .toLocaleString('pt-br',{style: 'currency', currency: 'BRL'}) %>
+        </div>
+        <% } %>
+
+            <% for(let subscription of subscriptions){ %>
+                <div class="os-card">
+                    <div class="os-header">
+                        <div class="section-label">Referência: Assinatura #<%= subscription.id %>
+                        </div>
+                        <span class="os-title">
+                            <%= subscription.name %>
+                        </span>
+                        <p class="text-muted" style="margin: 5px 0;">Projeto: #<%= subscription.Project?.id %> - <%=
+                                    subscription.Project?.name %>
+                        </p>
+                    </div>
+
+
+                    <% if(subscription.Protocols?.length> 0){ %>
+                        <% for(let protocol of subscription.Protocols){ %>
+                            <% if(protocol.Protocol_products?.length> 0){ %>
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 40px;">#</th>
+                                            <th>Produto</th>
+                                            <th>Cobrança</th>
+                                            <th class="text-right">Valor</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <% for(let product of protocol.Protocol_products){ %>
+                                            <tr>
+                                                <td>
+                                                    <%= product.ProductId %>
+                                                </td>
+                                                <td>
+                                                    <%= product.Product?.description %>
+                                                </td>
+                                                <td>
+                                                    <%= product.charge_type %>
+                                                </td>
+                                                <td class="text-right">
+                                                    <%= product.value.toLocaleString('pt-br',{style: 'currency' ,
+                                                        currency: 'BRL' }) %>
+                                                </td>
+                                            </tr>
+                                            <% } %>
+                                    </tbody>
+                                </table>
+                                <% } %>
+                                    <% } %>
+                                        <% } %>
+                </div>
+                <% } %>
+                    <div class="total-container">
+                        <div class="total-box">
+                            <div class="total-line">
+                                <span>Subtotal Consolidado:</span>
+                                <span>
+                                    <% let total=oss.map( os=> os.Protocol?.Protocol_registers?.reduce((
+                                        sum, v) => sum + v.value, 0) || 0).reduce((
+                                        sum, v) => sum + v, 0)
+                                        +
+                                        oss.map(
+                                        os=> os.Protocol?.Protocol_products?.reduce((
+                                        sum, v) => sum + v.value, 0) || 0).reduce((
+                                        sum, v) => sum + v, 0)
+                                        +
+                                        subscriptions.map(
+                                        subscription=>
+                                        subscription.Protocols?.map(
+                                        protocol=>
+                                        protocol.Protocol_registers?.reduce((
+                                        sum, v) => sum + v.value, 0) || 0).reduce((
+                                        sum, v) => sum + v, 0)
+                                        ).reduce((
+                                        sum, v) => sum + v, 0)
+                                        +
+                                        subscriptions.map(
+                                        subscription=>
+                                        subscription.Protocols?.map(
+                                        protocol=>
+                                        protocol.Protocol_products?.reduce((
+                                        sum, v) => sum + v.value, 0) || 0).reduce((
+                                        sum, v) => sum + v, 0)
+                                        ).reduce((
+                                        sum, v) => sum + v, 0)
+                                        %>
+
+                                        <%= total.toLocaleString('pt-br',{style: 'currency' , currency: 'BRL' }) %>
+                                </span>
+                            </div>
+
+                            <% let totalPago=oss.map( os=> os.Protocol?.Receipts?.reduce((
+                                sum, v) => sum + v.value, 0) || 0).reduce((
+                                sum, v) => sum + v, 0)
+                                +
+                                subscriptions.map(
+                                subscription=>subscription.Protocol?.Receipts?.reduce((
+                                sum, v) => sum + v.value, 0) || 0).reduce((
+                                sum, v) => sum + v, 0);
+
+                                if(totalPago > 0){
+                                %>
+                                <div class="total-line" style="color: #27ae60;">
+                                    <span>Total já Pago:</span>
+                                    <span>- <%= totalPago.toLocaleString('pt-br',{style: 'currency' , currency: 'BRL' })
+                                            %>
                                     </span>
                                 </div>
+                                <% } %>
 
-                                <% if(oss.map(os=> os.Protocol?.Receipts?.reduce((sum, v) => sum + v.value,
-                                    0)).reduce((sum, v) => sum + v, 0) > 0){ %>
-                                    <div class="line">
-                                        <span class="left">Valor pago:</span>
-                                        <span class="bold">
-                                            <%= (oss.map(os=> os.Protocol?.Receipts?.reduce((sum, v) => sum + v.value,
-                                                0)).reduce((sum, v) => sum + v, 0)).toLocaleString('pt-br',{style:
-                                                'currency', currency: 'BRL'}) %>
+                                    <div class="total-line grand-total">
+                                        <span>Total a Pagar:</span>
+                                        <span>
+                                            <%= ( total - totalPago ).toLocaleString('pt-br', { style: 'currency' ,
+                                                currency: 'BRL' }) %>
                                         </span>
                                     </div>
-                                    <% } %>
-
-                                        <% if(type=="Liberado para pagamento" ){ %>
-                                            <div class="line border">
-                                                <span class="left big">Valor devedor:</span>
-                                                <span class="bold big">
-                                                    <%= ((oss.map( os=>
-                                                        os.Protocol?.Protocol_registers?.reduce((sum, v) => sum +
-                                                        v.value,
-                                                        0)).reduce((sum, v) => sum + v, 0)
-                                                        ||
-                                                        0) +
-                                                        (oss.map(os=> os.Protocol?.Protocol_products?.reduce((sum, v) =>
-                                                        sum + v.value,
-                                                        0)).reduce((sum, v) => sum + v, 0)
-                                                        || 0)
-                                                        -
-                                                        (oss.map(os=> os.Protocol?.Receipts?.reduce((sum, v) => sum +
-                                                        v.value,
-                                                        0)).reduce((sum, v) => sum + v, 0) ||
-                                                        0)
-                                                        ).toLocaleString('pt-br', { style: 'currency', currency: 'BRL'
-                                                        }) %>
-                                                </span>
-                                            </div>
-                                            <% } %>
-                            </section>
+                        </div>
+                    </div>
 </body>

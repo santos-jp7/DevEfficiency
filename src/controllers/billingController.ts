@@ -1,5 +1,10 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
 import { Op } from 'sequelize'
+import moment from 'moment'
+import path from 'path'
+import fs from 'fs'
+import ejs from 'ejs'
+
 import Billing from '../models/Billing'
 import BillingProtocol from '../models/BillingProtocol'
 import Client from '../models/Client'
@@ -7,7 +12,11 @@ import Protocol from '../models/Protocol'
 import Service_order from '../models/Service_order'
 import Subscription from '../models/Subscription'
 import Project from '../models/Project'
-import moment from 'moment'
+import Protocol_product from '../models/Protocol_product'
+import Protocol_register from '../models/Protocol_register'
+import Product from '../models/Product'
+import Receipts from '../models/Receipts'
+import puppeteer from 'puppeteer'
 
 type billingRequest = FastifyRequest<{
     Body: Billing
@@ -113,6 +122,62 @@ class billingController {
         await billing.destroy()
 
         return res.status(204).send()
+    }
+
+    static async pdf(req: billingRequest, res: FastifyReply) {
+        const { id } = req.params
+
+        const billing = await Billing.findByPk(id, {
+            include: [
+                Client,
+                {
+                    model: BillingProtocol,
+                    include: [
+                        {
+                            model: Protocol,
+                            include: [
+                                { model: Protocol_product, include: [Product] },
+                                Protocol_register,
+                                Receipts,
+                                {
+                                    model: Service_order,
+                                    include: [Project],
+                                },
+                                Subscription,
+                            ],
+                        },
+                    ],
+                },
+            ],
+        })
+
+        // return res.send(billing)
+
+        const client = await Client.findByPk(billing?.ClientId)
+
+        const template = fs.readFileSync(path.resolve('src', 'views', 'billing.ejs'), 'utf-8')
+        const html = ejs.render(template, { billing, client })
+
+        const browser = await puppeteer.launch({
+            headless: 'new',
+            executablePath: '/usr/bin/google-chrome',
+            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu'],
+        })
+
+        const page = await browser.newPage()
+        await page.setContent(html, { waitUntil: 'networkidle0' })
+        await page.emulateMediaType('screen')
+        const pdf = await page.pdf()
+        await page.close()
+        await browser.close()
+
+        res.header('Content-Type', 'application/pdf')
+        res.header(
+            'Content-Disposition',
+            `attachment; filename=charge_${client?.name.toLowerCase().split(' ').join('_')}_${Date.now()}.pdf`,
+        )
+
+        return res.send(pdf)
     }
 }
 

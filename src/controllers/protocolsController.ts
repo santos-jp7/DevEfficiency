@@ -113,8 +113,21 @@ class protocolsController {
             ],
         })
 
+        const subscriptions = await client?.getSubscriptions({
+            include: [
+                {
+                    model: Protocol,
+                    include: [{ model: Protocol_product, include: [Product] }, Protocol_register, Receipts],
+                    where: {
+                        status: type,
+                    },
+                },
+                Project,
+            ],
+        })
+
         const template = fs.readFileSync(path.resolve('src', 'views', 'budget_multi.ejs'), 'utf-8')
-        const html = ejs.render(template, { oss, client, type })
+        const html = ejs.render(template, { oss, subscriptions, client, type })
 
         const browser = await puppeteer.launch({
             headless: 'new',

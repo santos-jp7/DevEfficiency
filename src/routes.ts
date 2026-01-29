@@ -152,6 +152,7 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.post('/billings', { preHandler: [isAuthed] }, billingController.store)
     instance.put('/billings/:id', { preHandler: [isAuthed] }, billingController.update)
     instance.delete('/billings/:id', { preHandler: [isAuthed] }, billingController.destroy)
+    instance.get('/billings/:id/pdf', billingController.pdf)
 
     instance.post('/billing-receipt', { preHandler: [isAuthed] }, billingReceipt)
 

@@ -158,6 +158,8 @@
                 :title="billing.status === 'pago' ? 'Cobrança já está paga' : ''">
                 Efetuar recebimento
             </button>
+            &bull;
+            <a class="btn btn-dark" :href="'/api/billings/'+id+'/pdf'" download><i class="fa-solid fa-download"></i></a>
         </form>
 
         <hr />

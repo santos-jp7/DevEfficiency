@@ -49,7 +49,7 @@ class Client extends Model<InferAttributes<Client>, InferCreationAttributes<Clie
     declare getContacts: HasManyGetAssociationsMixin<Contact>
     declare createContact: HasManyCreateAssociationMixin<Contact, 'ClientId'>
 
-    declare getSubscription: HasManyGetAssociationsMixin<Subscription>
+    declare getSubscriptions: HasManyGetAssociationsMixin<Subscription>
 
     declare getBillings: HasManyGetAssociationsMixin<Billing>
     declare createBilling: HasManyCreateAssociationMixin<Billing, 'ClientId'>
