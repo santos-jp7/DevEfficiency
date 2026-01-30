@@ -211,7 +211,10 @@
                 <div class="modal-content">
                     <div class="modal-header">
                         <h1 class="modal-title fs-5" id="protocolModalLabel">Protocolo</h1>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                        <div>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                aria-label="Fechar"></button>
+                        </div>
                     </div>
                     <div class="modal-body">
                         <form v-on:submit="handlerProtocolSubmit">
@@ -228,7 +231,9 @@
                                 </div>
                             </div>
 
-                            <button type="submit" class="btn btn-dark">Enviar</button>
+                            <button type="submit" class="btn btn-dark">Enviar</button> &bull; <a class="btn btn-dark"
+                                :href="'../protocols/i.html?id=' + payloads.protocol.id"><i class=" fa-solid
+                                fa-maximize"></i> Abir em tela cheia</a>
 
                             <div v-if="payloads.protocol.ServiceOrderId">
                                 <hr>
@@ -287,6 +292,8 @@
                                     </div>
                                 </div>
                             </div>
+
+
                         </form>
                     </div>
                 </div>
