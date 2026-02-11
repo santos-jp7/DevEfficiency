@@ -2,14 +2,14 @@ version: '3.8'
 
 services:
     mysqldb:
-        image: mysql:5.7
+        image: mysql:8.4.8
         restart: unless-stopped
         env_file: ./.env
         environment:
             - MYSQL_ROOT_PASSWORD=$DB_PASS
             - MYSQL_DATABASE=$DB_NAME
         volumes:
-            - db:/var/lib/mysql
+            - db8:/var/lib/mysql
         networks:
             - devefficiency
     app:
@@ -31,7 +31,7 @@ services:
             - devefficiency
 
 volumes:
-    db:
+    db8:
 
 networks:
     devefficiency:
