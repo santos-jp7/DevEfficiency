@@ -10,6 +10,8 @@ services:
             - MYSQL_DATABASE=$DB_NAME
         volumes:
             - db:/var/lib/mysql
+        networks:
+            - devefficiency
     app:
         depends_on:
             - mysqldb
@@ -25,6 +27,12 @@ services:
             - DB_NAME=$DB_NAME
         stdin_open: true
         tty: true
+        networks:
+            - devefficiency
 
 volumes:
     db:
+
+networks:
+    devefficiency:
+        external: true
