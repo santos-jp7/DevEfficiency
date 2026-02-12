@@ -21,6 +21,7 @@ import Protocol from './Protocol'
 import License from './License'
 import Subscription from './Subscription'
 import Billing from './Billing'
+import Address from './Address'
 
 class Client extends Model<InferAttributes<Client>, InferCreationAttributes<Client>> {
     declare id: CreationOptional<number>
@@ -49,6 +50,9 @@ class Client extends Model<InferAttributes<Client>, InferCreationAttributes<Clie
     declare getContacts: HasManyGetAssociationsMixin<Contact>
     declare createContact: HasManyCreateAssociationMixin<Contact, 'ClientId'>
 
+    declare getAddresses: HasManyGetAssociationsMixin<Address>
+    declare createAddress: HasManyCreateAssociationMixin<Address, 'ClientId'>
+
     declare getSubscriptions: HasManyGetAssociationsMixin<Subscription>
 
     declare getBillings: HasManyGetAssociationsMixin<Billing>
@@ -59,6 +63,7 @@ class Client extends Model<InferAttributes<Client>, InferCreationAttributes<Clie
     declare projects: NonAttribute<Project[]>
     declare service_orders: NonAttribute<Service_order[]>
     declare contacts: NonAttribute<Contact[]>
+    declare addresses: NonAttribute<Address[]>
     declare protocols: NonAttribute<Protocol[]>
     declare licenses: NonAttribute<License[]>
     declare subscriptions: NonAttribute<Subscription[]>
@@ -69,6 +74,7 @@ class Client extends Model<InferAttributes<Client>, InferCreationAttributes<Clie
         projects: Association<Client, Project>
         service_orders: Association<Client, Service_order>
         contacts: Association<Client, Contact>
+        addresses: Association<Client, Address>
         protocols: Association<Client, Protocol>
         licenses: Association<Client, License>
         subscriptions: Association<Client, Subscription>
@@ -137,11 +143,16 @@ Client.hasMany(Billing, {
     onDelete: 'RESTRICT',
 })
 
+Client.hasMany(Address, {
+    onDelete: 'RESTRICT',
+})
+
 Project.belongsTo(Client)
 Server.belongsTo(Client)
 Service_order.belongsTo(Client)
 Contact.belongsTo(Client)
 Subscription.belongsTo(Client)
 Billing.belongsTo(Client)
+Address.belongsTo(Client)
 
 export default Client

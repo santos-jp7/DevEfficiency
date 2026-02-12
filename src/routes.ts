@@ -29,6 +29,7 @@ import payablesController from './controllers/payablesController'
 import financialsController from './controllers/financialsController'
 import expenseReportController from './controllers/expenseReportController'
 import bankTransferController from './controllers/bankTransferController'
+import addressController from './controllers/addressController'
 
 const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.get('/', helloController.handler)
@@ -77,6 +78,13 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.get('/contacts/:id', { preHandler: [isAuthed] }, contactsController.show)
     instance.post('/contacts', { preHandler: [isAuthed] }, contactsController.store)
     instance.put('/contacts/:id', { preHandler: [isAuthed] }, contactsController.update)
+    instance.delete('/contacts/:id', { preHandler: [isAuthed] }, contactsController.destroy)
+
+    instance.get('/addresses', { preHandler: [isAuthed] }, addressController.index)
+    instance.get('/addresses/:id', { preHandler: [isAuthed] }, addressController.show)
+    instance.post('/addresses', { preHandler: [isAuthed] }, addressController.store)
+    instance.put('/addresses/:id', { preHandler: [isAuthed] }, addressController.update)
+    instance.delete('/addresses/:id', { preHandler: [isAuthed] }, addressController.delete)
 
     instance.get('/credentials', { preHandler: [isAuthed] }, credentialsController.index)
     instance.get('/credentials/:id', { preHandler: [isAuthed] }, credentialsController.show)

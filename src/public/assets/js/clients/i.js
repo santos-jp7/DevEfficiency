@@ -17,6 +17,7 @@ const client = new Vue({
         Service_orders: [],
         Contacts: [],
         Protocols: [],
+        Addresses: [],
         calcs: {
             protocols: {},
         },
@@ -52,6 +53,18 @@ const client = new Vue({
                 number: null,
                 email: null,
                 whatsapp: null,
+            },
+            address: {
+                id: null,
+                type: null,
+                street_name: null,
+                number: null,
+                complement: null,
+                district: null,
+                city: null,
+                state: null,
+                zip: null,
+                ibge: null,
             },
         },
     },
@@ -183,6 +196,63 @@ const client = new Vue({
                 email: this.$data.payloads.contact.email,
                 number: this.$data.payloads.contact.number,
                 whatsapp: this.$data.payloads.contact.whatsapp,
+                ClientId: this.$data.id,
+            })
+                .then(() => {
+                    window.location.reload()
+                })
+                .catch((e) => {
+                    alert(e.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.')
+                    window.location.reload()
+                })
+        },
+        handlerNewAddress() {
+            this.$data.payloads.address = {
+                id: null,
+                type: null,
+                street_name: null,
+                number: null,
+                complement: null,
+                district: null,
+                city: null,
+                state: null,
+                zip: null,
+                ibge: null,
+            }
+
+            $('#addressModal').modal('toggle')
+        },
+        handlerEditAddress(addressId) {
+            this.$data.payloads.address = this.Addresses.find((v) => v.id == addressId)
+
+            $('#addressModal').modal('toggle')
+        },
+        handlerDeleteAddress(addressId) {
+            if (!confirm('Confirma exclusão?')) return
+
+            __api__.delete('/api/addresses/' + addressId)
+            window.location.reload()
+        },
+        handlerAddressSubmit(e) {
+            e.preventDefault()
+
+            let method = this.$data.payloads.address.id ? __api__.put : __api__.post
+            let url = this.$data.payloads.address.id
+                ? '/api/addresses/' + this.$data.payloads.address.id
+                : '/api/addresses'
+
+            method(url, {
+                type: this.$data.payloads.address.type,
+                street_name:
+                    this.$data.payloads.address.street_name == '' ? null : this.$data.payloads.address.street_name,
+                number: this.$data.payloads.address.number == '' ? null : this.$data.payloads.address.number,
+                complement:
+                    this.$data.payloads.address.complement == '' ? null : this.$data.payloads.address.complement,
+                district: this.$data.payloads.address.district == '' ? null : this.$data.payloads.address.district,
+                city: this.$data.payloads.address.city == '' ? null : this.$data.payloads.address.city,
+                state: this.$data.payloads.address.state,
+                zip: this.$data.payloads.address.zip.replace(/[^0-9]/g, ''),
+                ibge: this.$data.payloads.address.ibge,
                 ClientId: this.$data.id,
             })
                 .then(() => {

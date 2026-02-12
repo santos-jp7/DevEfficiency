@@ -11,6 +11,7 @@ import Product from './models/Product'
 import Protocol_product from './models/Protocol_product'
 import Server from './models/Server'
 import Contact from './models/Contact'
+import Address from './models/Address'
 import Check from './models/Check'
 import License from './models/License'
 import Subscription from './models/Subscription'
@@ -30,6 +31,7 @@ async function syncModels(): Promise<true> {
     await Product.sync({ alter: { drop: false } })
 
     await Contact.sync()
+    await Address.sync()
     await Credential.sync()
     await Server.sync()
 

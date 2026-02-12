@@ -304,7 +304,61 @@
                     </table>
                 </div>
             </div>
+            <div class="col border rounded p-2">
+                <div class="d-flex justify-content-between mb-2">
+                    <h5>Endereços</h5>
+                    <button class="btn" v-on:click="handlerNewAddress">
+                        <i class="fa-solid fa-plus"></i> Adicionar endereço
+                    </button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-striped border">
+                        <thead>
+                            <tr>
+                                <th scope="col">#</th>
+                                <th scope="col">Tipo</th>
+                                <th scope="col">Logradouro</th>
+                                <th scope="col">Número</th>
+                                <th scope="col">Complemento</th>
+                                <th scope="col">Bairro</th>
+                                <th scope="col">Cidade</th>
+                                <th scope="col">Estado</th>
+                                <th scope="col">CEP</th>
+                                <th scope="col">IBGE</th>
+                                <th scope="col">Editar</th>
+                                <th scope="col">Excluir</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="address of Addresses">
+                                <th scope="row">{{address.id}}</th>
+                                <td>{{address.type}}</td>
+                                <td>{{address.street_name}}</td>
+                                <td>{{address.number}}</td>
+                                <td>{{address.complement}}</td>
+                                <td>{{address.district}}</td>
+                                <td>{{address.city}}</td>
+                                <td>{{address.state}}</td>
+                                <td>{{address.zip}}</td>
+                                <td>{{address.ibge_code}}</td>
+                                <td>
+                                    <i class="fa-solid fa-pen-to-square" v-on:click="handlerEditAddress(address.id)"
+                                        style="cursor: pointer"></i>
+                                </td>
+                                <td>
+                                    <i class="fa-solid fa-trash" v-on:click="handlerDeleteAddress(address.id)"
+                                        style="cursor: pointer"></i>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
 
+        <br>
+
+        <div class="row" style="gap: 10px">
             <div class="col border rounded p-2">
                 <div class="d-flex justify-content-between mb-2">
                     <h5>Credenciais</h5>
@@ -618,13 +672,114 @@
 
                             <div class="row mb-3">
                                 <label class="form-label" for="number">Telefone</label>
-                                <input type="text" class="form-control" id="number" v-model="payloads.contact.number" />
+                                <input type="number" class="form-control" id="number"
+                                    v-model="payloads.contact.number" />
                             </div>
 
                             <div class="row mb-3">
                                 <label class="form-label" for="whatsapp">WhatsApp</label>
                                 <input type="text" class="form-control" id="whatsapp"
                                     v-model="payloads.contact.whatsapp" />
+                            </div>
+
+                            <div class="row mb-3">
+                                <input type="submit" class="form-control btn btn-dark btn-block" value="Enviar" />
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Address -->
+        <div class="modal fade" id="addressModal" tabindex="-1" aria-labelledby="addressModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h1 class="modal-title fs-5" id="addressModalLabel">Endereço</h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form @submit="handlerAddressSubmit">
+                            <div class="row mb-3">
+                                <label class="form-label" for="type">Tipo</label>
+                                <select class="form-control" id="type" v-model="payloads.address.type" required>
+                                    <option disabled value="">Selecione uma opção</option>
+                                    <option value="Entrega">Entrega</option>
+                                    <option value="Cobrança">Cobrança</option>
+                                </select>
+                            </div>
+
+                            <div class="row mb-3">
+                                <label class="form-label" for="street_name">Logradouro</label>
+                                <input type="text" class="form-control" id="street_name"
+                                    v-model="payloads.address.street_name" required />
+                            </div>
+
+                            <div class="row mb-3">
+                                <label class="form-label" for="number">Número</label>
+                                <input type="text" class="form-control" id="number" v-model="payloads.address.number" />
+                            </div>
+
+                            <div class="row mb-3">
+                                <label class="form-label" for="complement">Complemento</label>
+                                <input type="text" class="form-control" id="complement"
+                                    v-model="payloads.address.complement" />
+                            </div>
+
+                            <div class="row mb-3">
+                                <label class="form-label" for="district">Bairro</label>
+                                <input type="text" class="form-control" id="district"
+                                    v-model="payloads.address.district" />
+                            </div>
+
+                            <div class="row mb-3">
+                                <label class="form-label" for="city">Cidade</label>
+                                <input type="text" class="form-control" id="city" v-model="payloads.address.city" />
+                            </div>
+
+                            <div class="row mb-3">
+                                <label class="form-label" for="state">Estado</label>
+                                <select class="form-control" id="state" v-model="payloads.address.state">
+                                    <option disabled value="">Selecione uma opção</option>
+                                    <option value="AC">Acre</option>
+                                    <option value="AL">Alagoas</option>
+                                    <option value="AP">Amapá</option>
+                                    <option value="AM">Amazonas</option>
+                                    <option value="BA">Bahia</option>
+                                    <option value="CE">Ceará</option>
+                                    <option value="DF">Distrito Federal</option>
+                                    <option value="ES">Espírito Santo</option>
+                                    <option value="GO">Goiás</option>
+                                    <option value="MA">Maranhão</option>
+                                    <option value="MT">Mato Grosso</option>
+                                    <option value="MS">Mato Grosso do Sul</option>
+                                    <option value="MG">Minas Gerais</option>
+                                    <option value="PA">Pará</option>
+                                    <option value="PB">Paraíba</option>
+                                    <option value="PR">Paraná</option>
+                                    <option value="PE">Pernambuco</option>
+                                    <option value="PI">Piauí</option>
+                                    <option value="RJ">Rio de Janeiro</option>
+                                    <option value="RN">Rio Grande do Norte</option>
+                                    <option value="RS">Rio Grande do Sul</option>
+                                    <option value="RO">Rondônia</option>
+                                    <option value="RR">Roraima</option>
+                                    <option value="SC">Santa Catarina</option>
+                                    <option value="SP">São Paulo</option>
+                                    <option value="SE">Sergipe</option>
+                                    <option value="TO">Tocantins</option>
+                                </select>
+                            </div>
+
+                            <div class="row mb-3">
+                                <label class="form-label" for="zip">CEP</label>
+                                <input type="text" class="form-control" id="zip" v-model="payloads.address.zip" />
+                            </div>
+
+                            <div class="row mb-3">
+                                <label class="form-label" for="ibge">IBGE</label>
+                                <input type="text" class="form-control" id="ibge" v-model="payloads.address.ibge" />
                             </div>
 
                             <div class="row mb-3">

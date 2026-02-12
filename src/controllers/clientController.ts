@@ -5,13 +5,6 @@ import Contact from '../models/Contact'
 import Credential from '../models/Credential'
 import Project from '../models/Project'
 import Server from '../models/Server'
-import Service_order from '../models/Service_order'
-import Protocol from '../models/Protocol'
-import Protocol_register from '../models/Protocol_register'
-import Receipts from '../models/Receipts'
-import Protocol_product from '../models/Protocol_product'
-import Product from '../models/Product'
-import Subscription from '../models/Subscription'
 
 type clientRequest = FastifyRequest<{
     Body: Client
@@ -19,6 +12,7 @@ type clientRequest = FastifyRequest<{
     Headers: any
 }>
 import Billing from '../models/Billing'
+import Address from '../models/Address'
 
 class clientController {
     static async index(req: FastifyRequest, res: FastifyReply): Promise<FastifyReply> {
@@ -28,7 +22,7 @@ class clientController {
     static async show(req: clientRequest, res: FastifyReply): Promise<FastifyReply> {
         return res.send(
             await Client.findByPk(req.params.id, {
-                include: [Credential, Project, Server, Contact],
+                include: [Credential, Project, Server, Contact, Address],
             }),
         )
     }
