@@ -160,7 +160,7 @@
 
 <body>
     <header class="header-nav">
-        <img src="data:image/png;base64,..." alt="Logo" width="70" />
+        <img src="<%= configMap['logo'] || 'https://placehold.co/80x40?text=Logo' %>" alt="Logo" width="70" />
         <h1>
             <%= ( type=="Em aberto" ? "Orçamento Coletivo" : (type=="Liberado para pagamento" ? "Fatura Consolidada"
                 : "Recibo" ) ) %>
@@ -170,9 +170,15 @@
     <div class="info-grid">
         <div>
             <div class="section-label">Emissor</div>
-            <span class="company-name">Codlinx</span>
-            <span class="text-muted">Soluções inteligentes para um mundo conectado.</span>
-            <span class="text-muted">(31) 3191-0305</span>
+            <span class="company-name">
+                <%= configMap['name'] || 'Empresa' %>
+            </span>
+            <span class="text-muted">
+                <%= configMap['company_description'] || 'Descrição da empresa' %>
+            </span>
+            <span class="text-muted">
+                <%= configMap['contact'] || 'Contato da empresa' %>
+            </span>
         </div>
         <div class="text-right">
             <div class="section-label">Cliente</div>

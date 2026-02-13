@@ -22,6 +22,8 @@ import CostCenter from './models/CostCenter'
 import Supplier from './models/Supplier'
 import Payable from './models/Payable'
 import BankTransfer from './models/BankTransfer'
+import Config from './models/Config' // Import Config model
+import seedConfigs from './seeds/configSeed' // Import seedConfigs
 
 async function syncModels(): Promise<true> {
     await User.sync()
@@ -59,6 +61,9 @@ async function syncModels(): Promise<true> {
 
     await Receipts.sync({ alter: { drop: false } })
     await Payable.sync()
+
+    await Config.sync({ alter: { drop: false } }) // Sync Config model
+    await seedConfigs() // Seed default configurations
 
     return true
 }

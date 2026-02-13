@@ -5,7 +5,7 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Codlinx - Servidor</title>
+    <title>Codlinx - Configuração</title>
 
     <link href="../assets/css/bootstrap.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css" />
@@ -27,7 +27,7 @@
         </div>
     </nav>
 
-    <div class="container p-4" id="server">
+    <div class="container p-4" id="config-form">
         <div class="col">
             <div class="d-flex flex-wrap" style="gap:.5rem">
                 <div class="btn-group">
@@ -94,57 +94,43 @@
             </div>
         </div>
 
-        <hr />
+        <hr>
 
-        <div class="d-flex justify-content-between">
-            <h5>Servidor #{{id}}</h5>
-            <div class="text-end" v-if="ClientId">
-                <h6>Cliente proprietário: <a :href="'../clients/i?id='+ClientId">{{Client.name}}</a></h6>
+        <div class="d-flex flex-wrap justify-content-between">
+            <div class="w-80">
+                <h5>{{ isEditing ? 'Editar Configuração: ' + config.type : 'Nova Configuração' }}</h5>
+            </div>
+            <div class="w-15 d-flex" style="gap: 5px">
+                <a class="btn btn-dark" href="../config/index.html"><i class="fa-solid fa-arrow-left"></i> Voltar</a>
             </div>
         </div>
 
-        <form v-on:submit="handlerSubmit">
-            <div class="row">
-                <div class="mb-3 col-lg-6">
-                    <label for="description" class="form-label">Descrição:</label>
-                    <input type="text" class="form-control" v-model="description" id="description" required />
-                </div>
+        <hr />
 
-                <div class="mb-3 col-lg">
-                    <label for="provider" class="form-label">Provedor:</label>
-                    <input type="text" class="form-control" v-model="provider" id="provider" required />
-                </div>
+        <form @submit.prevent="saveConfig">
+            <div class="mb-3">
+                <label for="configType" class="form-label">Tipo da Configuração</label>
+                <input type="text" class="form-control" id="configType" v-model="config.type" :disabled="isEditing"
+                    required>
             </div>
 
-            <div class="row">
-                <div class="mb-3 col-lg">
-                    <label for="host" class="form-label">Host:</label>
-                    <input type="text" class="form-control" v-model="host" id="host" required />
-                </div>
-
-                <div class="mb-3 col-lg">
-                    <label for="username" class="form-label">Usuário:</label>
-                    <input type="text" class="form-control" v-model="username" id="username" />
-                </div>
-
-                <div class="mb-3 col-lg">
-                    <label for="password" class="form-label">Senha:</label>
-                    <input type="text" class="form-control" v-model="password" id="password" />
-                </div>
+            <div class="mb-3 form-check">
+                <input type="checkbox" class="form-check-input" id="isUpload" v-model="config.upload">
+                <label class="form-check-label" for="isUpload">É um arquivo (upload)?</label>
             </div>
 
-            <div class="row">
-                <div class="mb-3 col-lg">
-                    <label for="rsa" class="form-label">RSA:</label>
-                    <textarea class="form-control" v-model="rsa" id="rsa" rows="15"></textarea>
-                </div>
+            <div class="mb-3">
+                <label for="configValue" class="form-label">Valor</label>
+                <textarea v-if="!config.upload" class="form-control" id="configValue" rows="5"
+                    v-model="config.value"></textarea>
+                <input v-else type="file" class="form-control" id="configValueFile" @change="handleFileUpload">
             </div>
 
-            <button type="submit" class="btn btn-dark">Enviar</button>
+            <button type="submit" class="btn btn-primary">Salvar</button>
         </form>
     </div>
 
-    <script src="../assets/js/servers/i.js"></script>
+    <script src="../assets/js/config/i.js"></script>
 </body>
 
 </html>

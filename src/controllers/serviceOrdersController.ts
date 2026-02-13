@@ -13,6 +13,8 @@ import Protocol_register from '../models/Protocol_register'
 import Receipts from '../models/Receipts'
 import Service_order from '../models/Service_order'
 import Product from '../models/Product'
+import Config from '../models/Config'
+
 import db from '../db'
 
 type serviceOrdersRequest = FastifyRequest<{
@@ -119,9 +121,25 @@ class serviceOrdersController {
             ],
         })
 
-        const template = fs.readFileSync(path.resolve('src', 'views', 'budget.ejs'), 'utf-8')
+        const config = await Config.findAll({})
+        const configMap: { [key: string]: string | null } = {}
+        config.forEach((cfg) => {
+            if (cfg.upload) {
+                const file = fs.readFileSync(path.join(process.cwd(), 'tmp', cfg.value))
+                const extension = path.extname(cfg.value).substring(1)
 
-        const html = ejs.render(template, { os })
+                //is image?
+                if (['png', 'jpg', 'jpeg', 'gif'].includes(extension.toLowerCase())) {
+                    const fileBase64 = Buffer.from(file).toString('base64')
+                    configMap[cfg.type] = `data:image/${extension};base64,${fileBase64}`
+                } else {
+                    configMap[cfg.type] = null
+                }
+            } else configMap[cfg.type] = cfg.value
+        })
+
+        const template = fs.readFileSync(path.resolve('src', 'views', 'budget.ejs'), 'utf-8')
+        const html = ejs.render(template, { os, configMap })
 
         const browser = await puppeteer.launch({
             headless: 'new',

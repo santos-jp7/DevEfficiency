@@ -29,9 +29,12 @@ services:
         tty: true
         networks:
             - devefficiency
+        volumes:
+            - tmp:/opt/app/tmp
 
 volumes:
     db8:
+    tmp:
 
 networks:
     devefficiency:

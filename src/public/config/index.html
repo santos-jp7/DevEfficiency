@@ -5,7 +5,7 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Codlinx - Servidor</title>
+    <title>Codlinx - Configurações</title>
 
     <link href="../assets/css/bootstrap.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css" />
@@ -27,7 +27,8 @@
         </div>
     </nav>
 
-    <div class="container p-4" id="server">
+    <div class="container p-4" id="configs">
+
         <div class="col">
             <div class="d-flex flex-wrap" style="gap:.5rem">
                 <div class="btn-group">
@@ -94,57 +95,42 @@
             </div>
         </div>
 
-        <hr />
+        <hr>
 
-        <div class="d-flex justify-content-between">
-            <h5>Servidor #{{id}}</h5>
-            <div class="text-end" v-if="ClientId">
-                <h6>Cliente proprietário: <a :href="'../clients/i?id='+ClientId">{{Client.name}}</a></h6>
+        <div class="d-flex flex-wrap justify-content-between">
+            <div class="w-80">
+                <h5>Configurações da Empresa</h5>
+            </div>
+            <div class="w-15 d-flex" style="gap: 5px">
+                <!-- Search functionality, if needed, can be added later -->
+                <a class="btn btn-dark" href="../config/i.html"><i class="fa-solid fa-plus"></i></a>
             </div>
         </div>
 
-        <form v-on:submit="handlerSubmit">
-            <div class="row">
-                <div class="mb-3 col-lg-6">
-                    <label for="description" class="form-label">Descrição:</label>
-                    <input type="text" class="form-control" v-model="description" id="description" required />
-                </div>
-
-                <div class="mb-3 col-lg">
-                    <label for="provider" class="form-label">Provedor:</label>
-                    <input type="text" class="form-control" v-model="provider" id="provider" required />
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="mb-3 col-lg">
-                    <label for="host" class="form-label">Host:</label>
-                    <input type="text" class="form-control" v-model="host" id="host" required />
-                </div>
-
-                <div class="mb-3 col-lg">
-                    <label for="username" class="form-label">Usuário:</label>
-                    <input type="text" class="form-control" v-model="username" id="username" />
-                </div>
-
-                <div class="mb-3 col-lg">
-                    <label for="password" class="form-label">Senha:</label>
-                    <input type="text" class="form-control" v-model="password" id="password" />
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="mb-3 col-lg">
-                    <label for="rsa" class="form-label">RSA:</label>
-                    <textarea class="form-control" v-model="rsa" id="rsa" rows="15"></textarea>
-                </div>
-            </div>
-
-            <button type="submit" class="btn btn-dark">Enviar</button>
-        </form>
+        <div class="table-responsive m-2">
+            <table class="table table-striped border">
+                <thead>
+                    <tr>
+                        <th scope="col">Tipo</th>
+                        <th scope="col">Valor (Amostra)</th>
+                        <th scope="col">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="config of configs">
+                        <td>{{ config.type }}</td>
+                        <td>{{ config.value.substring(0, 100) }}<span v-if="config.value.length > 100">...</span></td>
+                        <td>
+                            <a :href="'../config/i.html?type=' + config.type"><i class="fa-solid fa-edit"></i></a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <p v-if="configs.length === 0">Nenhuma configuração encontrada.</p>
+        </div>
     </div>
 
-    <script src="../assets/js/servers/i.js"></script>
+    <script src="../assets/js/config/index.js"></script>
 </body>
 
 </html>

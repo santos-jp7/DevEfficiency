@@ -105,3 +105,7 @@ dist
 
 # Build Files
 dist/
+
+# Tmp
+tmp/*
+!/tmp/default_*
