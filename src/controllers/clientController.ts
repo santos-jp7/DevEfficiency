@@ -5,6 +5,7 @@ import Contact from '../models/Contact'
 import Credential from '../models/Credential'
 import Project from '../models/Project'
 import Server from '../models/Server'
+import Config from '../models/Config'
 
 type clientRequest = FastifyRequest<{
     Body: Client
@@ -29,6 +30,10 @@ class clientController {
 
     static async store(req: clientRequest, res: FastifyReply): Promise<FastifyReply> {
         let { name, corporate_name, document, email, due_day } = req.body
+
+        let default_day_due = await Config.findOne({ where: { type: 'default_day_due' } })
+
+        due_day = due_day || parseInt(default_day_due?.value || '20')
 
         if (document) document = document.replace(/[^a-zA-Z0-9 ]/g, '')
 

@@ -10,6 +10,8 @@ async function seedConfigs(): Promise<void> {
         { type: 'address', value: 'Rua Exemplo, 123, Cidade - Estado, CEP 12345-678', upload: false },
         { type: 'cnpj', value: '12.345.678/0001-90', upload: false },
         { type: 'contact', value: '(XX) XXXX-XXXX', upload: false },
+        { type: 'email', value: 'contato@minhaempresa.com.br', upload: false },
+        { type: 'default_day_due', value: '20', upload: false },
     ]
 
     for (const configData of defaultConfigs) {
