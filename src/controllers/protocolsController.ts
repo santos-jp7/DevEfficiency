@@ -41,8 +41,8 @@ class protocolsController {
                     include: [Client],
                 },
             ],
-            limit: parseInt(limit),
-            offset: (page - 1) * limit,
+            ...(limit != -1 && { limit: parseInt(limit) }),
+            ...(limit != -1 && { offset: (page - 1) * limit }),
         }
 
         if (ClientId) {

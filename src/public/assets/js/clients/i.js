@@ -473,7 +473,7 @@ const client = new Vue({
 
                 this.$data.Service_orders = (await __api__.get('/api/os?limit=5&ClientId=' + data.id)).data
                 this.$data.Subscriptions = (await __api__.get('/api/subscriptions?ClientId=' + data.id)).data
-                this.$data.Protocols = (await __api__.get('/api/protocols?ClientId=' + data.id)).data
+                this.$data.Protocols = (await __api__.get('/api/protocols?limit=-1&ClientId=' + data.id)).data
                 this.$data.Billings = (await __api__.get('/api/billings?limit=5&ClientId=' + data.id)).data
 
                 this.maskDocument()
