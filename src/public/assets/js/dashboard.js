@@ -70,11 +70,10 @@ const dashboard = new Vue({
                 // MRR calculation (Sum of last protocol value for each subscription)
                 let totalMrr = 0
                 for (const sub of activeSubs) {
-                    const { data: subDetail } = await __api__.get(`/api/subscriptions/${sub.id}`)
+                    const { data: subDetail } = await __api__.get(`/api/subscriptions/${sub.id}?complete=true`)
                     if (subDetail.Protocols && subDetail.Protocols.length > 0) {
                         const lastProtocol = subDetail.Protocols[0]
-                        const { data: protocolDetail } = await __api__.get(`/api/protocols/${lastProtocol.id}`)
-                        const value = (protocolDetail.Protocol_products || []).reduce((sum, r) => sum + parseFloat(r.value), 0)
+                        const value = (lastProtocol.Protocol_products || []).reduce((sum, r) => sum + parseFloat(r.value), 0)
                         totalMrr += value
                     }
                 }

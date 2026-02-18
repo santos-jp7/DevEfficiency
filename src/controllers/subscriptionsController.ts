@@ -5,20 +5,29 @@ import Protocol from '../models/Protocol'
 import License from '../models/License'
 import Project from '../models/Project'
 import Client from '../models/Client'
+import Protocol_product from '../models/Protocol_product'
 
 type subscriptionsRequest = FastifyRequest<{
     Body: Subscription
     Params: Subscription
-    Querystring: Subscription
+    Querystring: Subscription & { complete?: boolean }
     Headers: any
 }>
 
 class subscriptionController {
     static async index(req: subscriptionsRequest, res: FastifyReply): Promise<FastifyReply> {
-        const { ClientId } = req.query
+        const { ClientId, complete } = req.query
 
-        if (ClientId) return res.send(await Subscription.findAll({ include: [Project, Client], where: { ClientId } }))
-        else return res.send(await Subscription.findAll({ include: [Project, Client] }))
+        if (ClientId) return res.send(await Subscription.findAll({ 
+            include: [Project, Client,
+                ...(complete ? [{
+                    model: Protocol,
+                    include: [Protocol_product]
+                }] : [])
+            ],
+            where: { ClientId } 
+        }))
+        else return res.send(await Subscription.findAll({ include: [Project, Client, ...(complete ? [{model: Protocol, include: [Protocol_product]}] : [])] }))
     }
 
     static async show(req: subscriptionsRequest, res: FastifyReply): Promise<FastifyReply> {
