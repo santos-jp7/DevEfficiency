@@ -74,7 +74,7 @@ const dashboard = new Vue({
                     if (subDetail.Protocols && subDetail.Protocols.length > 0) {
                         const lastProtocol = subDetail.Protocols[0]
                         const { data: protocolDetail } = await __api__.get(`/api/protocols/${lastProtocol.id}`)
-                        const value = (protocolDetail.Protocol_registers || []).reduce((sum, r) => sum + r.value, 0)
+                        const value = (protocolDetail.Protocol_products || []).reduce((sum, r) => sum + parseFloat(r.value), 0)
                         totalMrr += value
                     }
                 }
