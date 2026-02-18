@@ -63,16 +63,15 @@ const dashboard = new Vue({
                 this.metrics.billings.pending_value = pendingBillings.reduce((sum, b) => sum + parseFloat(b.total_value), 0)
 
                 // Subscriptions Metrics
-                const { data: subscriptions } = await __api__.get('/api/subscriptions')
+                const { data: subscriptions } = await __api__.get('/api/subscriptions?complete=true')
                 const activeSubs = subscriptions.filter((s) => s.status === 'Pago') // Assuming 'Pago' means active/active monthly
                 this.metrics.subscriptions.total_active = activeSubs.length
                 
                 // MRR calculation (Sum of last protocol value for each subscription)
                 let totalMrr = 0
                 for (const sub of activeSubs) {
-                    const { data: subDetail } = await __api__.get(`/api/subscriptions/${sub.id}?complete=true`)
-                    if (subDetail.Protocols && subDetail.Protocols.length > 0) {
-                        const lastProtocol = subDetail.Protocols[0]
+                    if (sub.Protocols && sub.Protocols.length > 0) {
+                        const lastProtocol = sub.Protocols[0]
                         const value = (lastProtocol.Protocol_products || []).reduce((sum, r) => sum + parseFloat(r.value), 0)
                         totalMrr += value
                     }
