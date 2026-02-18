@@ -16,6 +16,7 @@
     <script src="../assets/js/bootstrap.min.js"></script>
     <script src="../assets/js/axios.min.js"></script>
     <script src="../assets/js/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
@@ -95,6 +96,100 @@
         </div>
 
         <hr />
+
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card bg-dark text-white border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title text-secondary mb-1">Ordens de Serviço</h6>
+                                <h3 class="mb-0">{{ metrics.os.total_open }}</h3>
+                            </div>
+                            <div class="rounded-circle bg-secondary p-3">
+                                <i class="fa-solid fa-file-invoice fa-xl"></i>
+                            </div>
+                        </div>
+                        <p class="card-text mt-2 small">
+                            <span class="text-info">{{ metrics.os.in_progress }}</span> em progresso
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-dark text-white border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title text-secondary mb-1">Faturas Pendentes</h6>
+                                <h3 class="mb-0">{{ metrics.billings.pending_value | currency }}</h3>
+                            </div>
+                            <div class="rounded-circle bg-danger p-3">
+                                <i class="fa-solid fa-money-bill-wave fa-xl"></i>
+                            </div>
+                        </div>
+                        <p class="card-text mt-2 small">
+                            Total: {{ metrics.billings.total_pending }} faturas
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-dark text-white border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title text-secondary mb-1">Recorrência Mensal</h6>
+                                <h3 class="mb-0">{{ metrics.subscriptions.mrr | currency }}</h3>
+                            </div>
+                            <div class="rounded-circle bg-primary p-3">
+                                <i class="fa-solid fa-arrows-rotate fa-xl"></i>
+                            </div>
+                        </div>
+                        <p class="card-text mt-2 small">
+                            {{ metrics.subscriptions.total_active }} assinaturas ativas
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-dark text-white border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title text-secondary mb-1">Fluxo de Caixa (Mês)</h6>
+                                <h3 class="mb-0"
+                                    :class="metrics.cashFlow.balance >= 0 ? 'text-success' : 'text-danger'">
+                                    {{ metrics.cashFlow.balance | currency }}
+                                </h3>
+                            </div>
+                            <div class="rounded-circle bg-success p-3">
+                                <i class="fa-solid fa-chart-line fa-xl"></i>
+                            </div>
+                        </div>
+                        <p class="card-text mt-2 small">
+                            <span class="text-success">+{{ metrics.cashFlow.inflow | currency }}</span> /
+                            <span class="text-danger">-{{ metrics.cashFlow.outflow | currency }}</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4" v-if="hasChartData">
+            <div class="col-md-8">
+                <div class="card border-0 shadow-sm p-3">
+                    <h5 class="card-title mb-3">Fluxo de Caixa Mensal</h5>
+                    <canvas id="cashFlowChart" height="100"></canvas>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm p-3">
+                    <h5 class="card-title mb-3">Status das OS</h5>
+                    <canvas id="osStatusChart"></canvas>
+                </div>
+            </div>
+        </div>
 
         <div class="row" style="gap: 10px">
             <div class="col border rounded p-2" v-if="currentOs || recentsOs.length > 0">
