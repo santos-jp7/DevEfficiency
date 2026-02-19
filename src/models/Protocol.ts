@@ -96,9 +96,13 @@ Protocol.hasMany(Protocol_register, {
     onDelete: 'RESTRICT',
 })
 
+Protocol_register.belongsTo(Protocol)
+
 Protocol.hasMany(Protocol_product, {
     onDelete: 'RESTRICT',
 })
+
+Protocol_product.belongsTo(Protocol)
 
 Protocol.hasMany(Receipts, {
     onDelete: 'RESTRICT',

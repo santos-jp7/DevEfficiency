@@ -31,6 +31,7 @@ import expenseReportController from './controllers/expenseReportController'
 import bankTransferController from './controllers/bankTransferController'
 import addressController from './controllers/addressController'
 import configController from './controllers/configController' // Import the new controller
+import dreReportController from './controllers/dreReportController'
 
 const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.get('/', helloController.handler)
@@ -44,6 +45,7 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.post('/config/:type', { preHandler: [isAuthed] }, configController.store)
 
     instance.get('/financial-history', { preHandler: [isAuthed] }, financialsController.index)
+    instance.get('/dre-report', { preHandler: [isAuthed] }, dreReportController.index)
     instance.get('/expense-report', { preHandler: [isAuthed] }, expenseReportController.index)
 
     instance.get('/bank-transfers', { preHandler: [isAuthed] }, bankTransferController.index)
