@@ -46,8 +46,10 @@ class serviceOrdersController {
 
         const { count, rows } = await Service_order.findAndCountAll({
             order: [['createdAt', 'DESC']],
-            limit: parseInt(limit),
-            offset: (page - 1) * limit,
+            ...(limit != -1 && {
+                limit: parseInt(limit),
+                offset: (page - 1) * limit,
+            }),
             where,
             include: [{ model: Project, include: [Client] }, Client],
         })
