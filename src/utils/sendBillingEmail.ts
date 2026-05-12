@@ -46,7 +46,7 @@ export async function sendBillingEmail(billingId: number): Promise<void> {
 
     if (!billing) throw new Error('Cobrança não encontrada')
 
-    const client = billing.Client as any
+    const client = (billing as any).Client as any
     const contacts: any[] = (client?.Contacts || []).filter((c: any) => c.email)
     if (contacts.length === 0) throw new Error('Nenhum contato com email cadastrado')
 

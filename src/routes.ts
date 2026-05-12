@@ -171,7 +171,7 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.put('/billings/:id', { preHandler: [isAuthed] }, billingController.update)
     instance.delete('/billings/:id', { preHandler: [isAuthed] }, billingController.destroy)
     instance.get('/billings/:id/pdf', billingController.pdf)
-    instance.post('/billings/:id/upload', { preHandler: [isAuthed] }, billingController.upload)
+    instance.post('/billings/:id/upload', { preHandler: [isAuthed] }, billingController.upload as any)
     instance.post('/billings/:id/send-email', { preHandler: [isAuthed] }, async (req: any, res) => {
         try {
             await sendBillingEmail(parseInt(req.params.id))
@@ -185,11 +185,11 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
 
     instance.put('/billing-protocols/:id', { preHandler: [isAuthed] }, billingProtocolController.update)
 
-    instance.get('/os-entries', { preHandler: [isAuthed] }, osEntriesController.index)
-    instance.get('/os-entries/:id', { preHandler: [isAuthed] }, osEntriesController.show)
-    instance.post('/os-entries', { preHandler: [isAuthed] }, osEntriesController.create)
-    instance.put('/os-entries/:id', { preHandler: [isAuthed] }, osEntriesController.update)
-    instance.delete('/os-entries/:id', { preHandler: [isAuthed] }, osEntriesController.destroy)
+    instance.get('/os-entries', { preHandler: [isAuthed] }, osEntriesController.index as any)
+    instance.get('/os-entries/:id', { preHandler: [isAuthed] }, osEntriesController.show as any)
+    instance.post('/os-entries', { preHandler: [isAuthed] }, osEntriesController.create as any)
+    instance.put('/os-entries/:id', { preHandler: [isAuthed] }, osEntriesController.update as any)
+    instance.delete('/os-entries/:id', { preHandler: [isAuthed] }, osEntriesController.destroy as any)
 
     instance.get('/utils/currentOs', { preHandler: [isAuthed] }, currentOs)
 
