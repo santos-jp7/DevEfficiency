@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-br">
 
 <head>
@@ -51,6 +51,7 @@
                     </button>
                     <ul class="dropdown-menu dropdown-menu-dark">
                         <li><a class="dropdown-item" href="../service_orders">Ordens de serviço</a></li>
+                        <li><a class="dropdown-item" href="../subscriptions">Assinaturas</a></li>
                     </ul>
                 </div>
 
@@ -62,7 +63,6 @@
                     <ul class="dropdown-menu dropdown-menu-dark">
                         <li><a class="dropdown-item" href="../billings">Cobranças</a></li>
                         <li><a class="dropdown-item" href="../payables">Contas a Pagar</a></li>
-                        <li><a class="dropdown-item" href="../subscriptions">Assinaturas</a></li>
                         <li><a class="dropdown-item" href="../protocols">Protocolos</a></li>
                         <li><a class="dropdown-item" href="../bank-accounts">Contas Bancárias</a></li>
                         <li><a class="dropdown-item" href="../cost-centers">Centros de Custo</a></li>
@@ -161,10 +161,9 @@
                 </tbody>
             </table>
         </div>
-    </div>
 
-    <!-- Modal Nova Assinatura -->
-    <div class="modal fade" id="newSubscriptionModal" tabindex="-1" aria-labelledby="newSubscriptionModalLabel" aria-hidden="true">
+        <!-- Modal Nova Assinatura -->
+        <div class="modal fade" id="newSubscriptionModal" tabindex="-1" aria-labelledby="newSubscriptionModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
@@ -249,8 +248,10 @@
             </div>
         </div>
     </div>
+    </div>
 
     <script src="../assets/js/subscriptions/subscriptions.js"></script>
+
 </body>
 
 </html>
