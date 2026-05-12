@@ -25,7 +25,7 @@ class osEntriesController {
     }
 
     static async create(req: OsEntryRequest, res: FastifyReply): Promise<FastifyReply> {
-        const { description, public: isPublic, date, status, ServiceOrderId } = req.body
+        const { description, public: isPublic, date, status, ServiceOrderId } = req.body as any
 
         const os = await Service_order.findByPk(ServiceOrderId)
         if (!os) return res.status(404).send({ message: 'Ordem de serviço não encontrada' })
@@ -38,7 +38,7 @@ class osEntriesController {
         const entry = await Os_entry.findByPk(req.params.id)
         if (!entry) return res.status(404).send({ message: 'Apontamento não encontrado' })
 
-        const { description, public: isPublic, date, status } = req.body
+        const { description, public: isPublic, date, status } = req.body as any
         await entry.update({ description, public: isPublic, date, status })
         return res.send(entry)
     }
