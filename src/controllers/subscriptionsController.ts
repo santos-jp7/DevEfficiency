@@ -1,4 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
+import db from '../db'
 
 import Subscription from '../models/Subscription'
 import Protocol from '../models/Protocol'
@@ -37,6 +38,37 @@ class subscriptionController {
                 order: [[Protocol, 'createdAt', 'desc']],
             }),
         )
+    }
+
+    static async store(req: subscriptionsRequest, res: FastifyReply): Promise<FastifyReply> {
+        const { name, dueAt, ClientId, ProjectId, products } = req.body as any
+        const t = await db.transaction()
+        try {
+            const subscription = await Subscription.create(
+                { name, dueAt, ClientId, ProjectId, status: 'Pendente' },
+                { transaction: t },
+            )
+
+            const protocol = await Protocol.create(
+                { status: 'Em aberto', SubscriptionId: subscription.id },
+                { transaction: t },
+            )
+
+            if (Array.isArray(products) && products.length > 0) {
+                for (const p of products) {
+                    await Protocol_product.create(
+                        { ProductId: p.ProductId, charge_type: p.charge_type, value: p.value, ProtocolId: protocol.id },
+                        { transaction: t },
+                    )
+                }
+            }
+
+            await t.commit()
+            return res.status(201).send(subscription)
+        } catch (err) {
+            await t.rollback()
+            throw err
+        }
     }
 
     static async update(req: subscriptionsRequest, res: FastifyReply): Promise<FastifyReply> {

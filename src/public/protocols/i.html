@@ -119,6 +119,25 @@
                 </div>
             </div>
 
+            <div class="row mt-2">
+                <div class="mb-3 col-md-3">
+                    <label class="form-label">Parcela atual</label>
+                    <input type="number" min="1" class="form-control" v-model.number="protocol.current_installment"
+                        placeholder="Ex: 1" />
+                </div>
+                <div class="mb-3 col-md-3">
+                    <label class="form-label">Total de parcelas</label>
+                    <input type="number" min="1" class="form-control" v-model.number="protocol.total_installments"
+                        placeholder="Ex: 3" />
+                </div>
+                <div class="mb-3 col-md-3 d-flex align-items-end">
+                    <div class="text-muted small pb-2" v-if="protocol.total_installments > 1 && installmentValue > 0">
+                        Valor por parcela:
+                        <strong>{{ installmentValue.toLocaleString('pt-br', {style:'currency', currency:'BRL'}) }}</strong>
+                    </div>
+                </div>
+            </div>
+
             <button type="submit" class="btn btn-dark">Salvar Alterações</button>
 
             <div v-if="protocol.SubscriptionId">

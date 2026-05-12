@@ -148,6 +148,42 @@
                 <label>Data de Pagamento</label>
                 <input type="date" v-model="paymentDate" class="form-control">
             </div>
+            <hr>
+            <h6>Recorrência e Parcelamento</h6>
+            <div class="row">
+                <div class="col-md-4 form-group mb-3">
+                    <label>Recorrência</label>
+                    <select v-model="recurrence" class="form-control">
+                        <option :value="null">Sem recorrência</option>
+                        <option value="quinzenal">Quinzenal</option>
+                        <option value="mensal">Mensal</option>
+                        <option value="trimestral">Trimestral</option>
+                        <option value="semestral">Semestral</option>
+                        <option value="anual">Anual</option>
+                        <option value="bianual">Bianual</option>
+                        <option value="trianual">Trianual</option>
+                    </select>
+                </div>
+                <div class="col-md-4 form-group mb-3">
+                    <label>Parcela Atual</label>
+                    <input type="number" min="1" v-model.number="current_installment" class="form-control"
+                        placeholder="Ex: 1" />
+                </div>
+                <div class="col-md-4 form-group mb-3">
+                    <label>Total de Parcelas</label>
+                    <input type="number" min="1" v-model.number="total_installments" class="form-control"
+                        placeholder="Deixe vazio para sem limite" />
+                </div>
+            </div>
+            <div class="alert alert-info py-1 px-2 small" v-if="recurrence">
+                <i class="fa-solid fa-rotate"></i>
+                Ao marcar como pago, uma nova conta será gerada automaticamente com vencimento
+                <strong>{{ recurrenceLabel }}</strong>.
+                <span v-if="total_installments && current_installment">
+                    (Parcela {{current_installment}} de {{total_installments}})
+                </span>
+            </div>
+
             <button type="submit" class="btn btn-dark">Salvar</button>
             <a href="./index.html" class="btn btn-secondary">Voltar</a>
         </form>

@@ -2,6 +2,7 @@ import fastify, { FastifyInstance } from 'fastify'
 import helmet from '@fastify/helmet'
 import rateLimit from '@fastify/rate-limit'
 import fileStatic from '@fastify/static'
+import multipart from '@fastify/multipart'
 import path from 'path'
 
 import routes from './routes'
@@ -29,6 +30,8 @@ app.register(fileStatic, {
     root: path.join(__dirname, 'public'),
     extensions: ['html'],
 })
+
+app.register(multipart, { limits: { fileSize: 20 * 1024 * 1024 } }) // 20MB
 
 app.register(rateLimit, {
     max: 100,

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sua fatura já está disponível</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f7fc; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden; }
+        .header { background-color: #0056b3; color: #ffffff; text-align: center; padding: 20px; font-size: 20px; font-weight: bold; }
+        .content { padding: 20px; color: #333; }
+        .content p { font-size: 16px; line-height: 1.6; }
+        .highlight { font-size: 18px; font-weight: bold; color: #0056b3; }
+        .services-table { width: 100%; border-collapse: collapse; background-color: #f9f9f9; border-radius: 5px; overflow: hidden; }
+        .services-table thead tr { background-color: #eaeaea; }
+        .services-table thead tr th { padding: 8px; border-bottom: 1px solid #ddd; text-align: left; }
+        .services-table tbody tr:nth-child(even) { background-color: #f1f1f1; }
+        .services-table tbody tr:nth-child(odd) { background-color: #f9f9f9; }
+        .services-table tbody tr td { padding: 8px; border-bottom: 1px solid #eee; }
+        .footer { background-color: #0056b3; color: #ffffff; text-align: center; padding: 15px; font-size: 14px; border-top: 1px solid #003d80; }
+        .footer a { color: #ffffff; text-decoration: none; font-weight: bold; }
+        .button { display: inline-block; background-color: #0056b3; color: #ffffff; padding: 10px 20px; text-decoration: none; font-size: 16px; border-radius: 5px; margin-top: 15px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">Fatura Disponível</div>
+        <div class="content">
+            <p>Prezado(a) <strong><%= clientName %></strong>,</p>
+            <p>Informamos que sua fatura já está disponível.<% if (hasAttachments) { %> Em anexo, seguem a <strong>nota fiscal</strong> e o <strong>boleto</strong> para pagamento.<% } %></p>
+
+            <br>
+
+            <p class="highlight">
+                &bull; Valor: <strong><%= totalValue %></strong><br>
+                &bull; Vencimento: <strong><%= dueDate %></strong>
+            </p>
+
+            <br>
+
+            <table class="services-table">
+                <thead>
+                    <tr>
+                        <th>Serviço</th>
+                        <th>Parcela</th>
+                        <th>Valor</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% for (const item of items) { %>
+                    <tr>
+                        <td><%= item.description %></td>
+                        <td><%= item.installment || '-' %></td>
+                        <td><%= item.value %></td>
+                    </tr>
+                    <% } %>
+                </tbody>
+            </table>
+
+            <p>Para qualquer dúvida ou necessidade de suporte, estamos à disposição.</p>
+
+            <a href="https://codlinx.com.br" class="button">Acesse nosso site</a>
+        </div>
+        <div class="footer">
+            <p>Contato: (31) 3191-0305</p>
+            <p><a href="https://codlinx.com.br">codlinx.com.br</a></p>
+            <p><a href="https://www.instagram.com/studiocodlinx">@studiocodlinx</a></p>
+        </div>
+    </div>
+</body>
+</html>

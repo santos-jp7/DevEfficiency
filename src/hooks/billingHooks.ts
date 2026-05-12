@@ -27,10 +27,54 @@ class billingHooks {
 
                 const receipts = await protocol.getReceipts({ transaction: options.transaction })
 
-                const protocolValue =
-                    (protocol_products.reduce((sum, v) => sum + v.value, 0) || 0) +
-                    (protocol_registers.reduce((sum, v) => sum + v.value, 0) || 0) -
-                    (receipts.reduce((sum, v) => sum + v.value, 0) || 0)
+                const productsTotal = protocol_products.reduce((sum, v) => sum + v.value, 0) || 0
+                const registersTotal = protocol_registers.reduce((sum, v) => sum + v.value, 0) || 0
+                const receiptsTotal = receipts.reduce((sum, v) => sum + v.value, 0) || 0
+                const protocolTotal = productsTotal + registersTotal
+
+                // Installment-based logic
+                if (protocol.total_installments && protocol.total_installments > 1) {
+                    const currentInstallment = protocol.current_installment || 1
+                    const installmentValue = parseFloat((protocolTotal / protocol.total_installments).toFixed(2))
+
+                    if (currentInstallment >= protocol.total_installments) {
+                        await protocol.update({ status: 'Fechado' }, { transaction: options.transaction })
+
+                        if (protocol.ServiceOrderId) {
+                            const serviceOrder = await Service_order.findByPk(protocol.ServiceOrderId)
+                            if (serviceOrder)
+                                await serviceOrder.update({ status: 'Finalizado' }, { transaction: options.transaction })
+                        }
+                        if (protocol.SubscriptionId) {
+                            const subscription = await Subscription.findByPk(protocol.SubscriptionId)
+                            if (subscription)
+                                await subscription.update({ status: 'Pago' }, { transaction: options.transaction })
+                        }
+                    } else {
+                        await protocol.update(
+                            { current_installment: currentInstallment + 1 },
+                            { transaction: options.transaction },
+                        )
+
+                        const client = await Client.findByPk(billing.ClientId, { transaction: options.transaction })
+                        const nextDueDate = moment().set('date', client?.due_day || 1)
+                        if (nextDueDate.isBefore(moment(), 'day')) nextDueDate.add(1, 'month')
+
+                        const nextBilling = await Billing.create(
+                            { ClientId: billing.ClientId, status: 'pendente', due_date: nextDueDate.toDate(), total_value: installmentValue },
+                            { transaction: options.transaction },
+                        )
+
+                        await BillingProtocol.create(
+                            { BillingId: nextBilling.id, ProtocolId: protocol.id, value: installmentValue },
+                            { transaction: options.transaction },
+                        )
+                    }
+                    continue
+                }
+
+                // Original remaining-value logic
+                const protocolValue = protocolTotal - receiptsTotal
 
                 console.log('Protocol Value:', protocolValue)
 

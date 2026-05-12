@@ -13,11 +13,28 @@ const app = new Vue({
         SupplierId: null,
         BankAccountId: null,
         CostCenterId: null,
+        recurrence: null,
+        total_installments: null,
+        current_installment: null,
 
         // Data for selectors
         suppliers: [],
         costCenters: [],
         bankAccounts: [],
+    },
+    computed: {
+        recurrenceLabel() {
+            const labels = {
+                quinzenal: 'quinzenal (+15 dias)',
+                mensal: 'mensal (+1 mês)',
+                trimestral: 'trimestral (+3 meses)',
+                semestral: 'semestral (+6 meses)',
+                anual: 'anual (+1 ano)',
+                bianual: 'bianual (+2 anos)',
+                trianual: 'trianual (+3 anos)',
+            }
+            return labels[this.recurrence] || ''
+        },
     },
     methods: {
         async savePayable() {
@@ -34,6 +51,9 @@ const app = new Vue({
                 SupplierId: this.SupplierId,
                 BankAccountId: this.BankAccountId,
                 CostCenterId: this.CostCenterId,
+                recurrence: this.recurrence || null,
+                total_installments: this.total_installments || null,
+                current_installment: this.current_installment || null,
             }
 
             try {
@@ -63,12 +83,15 @@ const app = new Vue({
                 const { data } = await __api__.get(`/api/payables/${this.id}`)
                 this.description = data.description
                 this.value = data.value
-                this.dueDate = moment(data.dueDate).format('YYYY-MM-DD')
-                this.paymentDate = data.paymentDate ? moment(data.paymentDate).format('YYYY-MM-DD') : null
+                this.dueDate = moment.utc(data.dueDate).format('YYYY-MM-DD')
+                this.paymentDate = data.paymentDate ? moment.utc(data.paymentDate).format('YYYY-MM-DD') : null
                 this.status = data.status
                 this.SupplierId = data.SupplierId
                 this.BankAccountId = data.BankAccountId
                 this.CostCenterId = data.CostCenterId
+                this.recurrence = data.recurrence || null
+                this.total_installments = data.total_installments || null
+                this.current_installment = data.current_installment || null
             } catch (error) {
                 console.error(error)
                 alert('Erro ao carregar os dados da conta.')

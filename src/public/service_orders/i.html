@@ -171,6 +171,25 @@
                         </div>
 
 
+                        <div class="row mt-2">
+                            <div class="mb-3 col-md-3">
+                                <label class="form-label">Parcela atual</label>
+                                <input type="number" min="1" class="form-control"
+                                    v-model.number="Protocol.current_installment" placeholder="Ex: 1" />
+                            </div>
+                            <div class="mb-3 col-md-3">
+                                <label class="form-label">Total de parcelas</label>
+                                <input type="number" min="1" class="form-control"
+                                    v-model.number="Protocol.total_installments" placeholder="Ex: 3" />
+                            </div>
+                            <div class="mb-3 col-md-3 d-flex align-items-end" v-if="Protocol.total_installments > 1">
+                                <div class="text-muted small pb-2">
+                                    Valor por parcela:
+                                    <strong>{{ protocolInstallmentValue.toLocaleString('pt-br', {style:'currency', currency:'BRL'}) }}</strong>
+                                </div>
+                            </div>
+                        </div>
+
                         <button type="submit" class="btn btn-dark">Enviar</button>
 
                         <div v-if="Protocol.SubscriptionId">
@@ -360,6 +379,98 @@
         </section>
 
         <br />
+
+        <section id="apontamentos">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5>Apontamentos</h5>
+                <button class="btn btn-sm btn-dark" @click="handlerNewApontamento">
+                    <i class="fa-solid fa-plus"></i> Novo apontamento
+                </button>
+            </div>
+
+            <div v-if="apontamentos.length === 0" class="text-muted small mb-3">Nenhum apontamento registrado.</div>
+
+            <div class="table-responsive mb-3" v-if="apontamentos.length > 0">
+                <table class="table table-striped border">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Status</th>
+                            <th>Descrição</th>
+                            <th>Público</th>
+                            <th></th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="a in apontamentos" :key="a.id">
+                            <td style="white-space:nowrap">{{ moment(a.date).format('DD/MM/YYYY') }}</td>
+                            <td>
+                                <span class="badge" :class="a.status === 'Finalizado' ? 'bg-success' : 'bg-warning text-dark'">
+                                    {{ a.status }}
+                                </span>
+                            </td>
+                            <td>{{ a.description }}</td>
+                            <td>
+                                <i class="fa-solid" :class="a.public ? 'fa-eye text-primary' : 'fa-eye-slash text-muted'"></i>
+                            </td>
+                            <td>
+                                <i class="fa-solid fa-pen-to-square" style="cursor:pointer"
+                                    @click="handlerEditApontamento(a)"></i>
+                            </td>
+                            <td>
+                                <i class="fa-solid fa-trash" style="cursor:pointer"
+                                    @click="handlerDeleteApontamento(a.id)"></i>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <br />
+
+        <!-- Modal Apontamento -->
+        <div class="modal fade" id="apontamentoModal" tabindex="-1" aria-labelledby="apontamentoModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h1 class="modal-title fs-5" id="apontamentoModalLabel">Apontamento</h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form @submit.prevent="handlerApontamentoSubmit">
+                            <div class="mb-3">
+                                <label class="form-label">Descrição</label>
+                                <textarea class="form-control" v-model="payloads.apontamento.description" rows="3" required></textarea>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col">
+                                    <label class="form-label">Data</label>
+                                    <input type="date" class="form-control" v-model="payloads.apontamento.date" required />
+                                </div>
+                                <div class="col">
+                                    <label class="form-label">Status</label>
+                                    <select class="form-control" v-model="payloads.apontamento.status" required>
+                                        <option disabled value="">Selecione</option>
+                                        <option value="Em andamento">Em andamento</option>
+                                        <option value="Finalizado">Finalizado</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="apontamentoPublico"
+                                    v-model="payloads.apontamento.public" />
+                                <label class="form-check-label" for="apontamentoPublico">
+                                    Público (visível no painel do cliente)
+                                </label>
+                            </div>
+                            <button type="submit" class="btn btn-dark w-100">Salvar</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Modal Protocol Register -->
         <div class="modal fade" id="protocolRegisterModal" tabindex="-1" aria-labelledby="protocolRegisterModalLabel"

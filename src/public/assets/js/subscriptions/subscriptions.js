@@ -9,6 +9,20 @@ const subscriptions = new Vue({
         currentSort: 'name',
         currentSortDir: 'asc',
         currentStatus: [''],
+
+        refs: {
+            clients: [],
+            projects: [],
+            products: [],
+        },
+        newSub: {
+            name: '',
+            dueAt: '',
+            ClientId: null,
+            ProjectId: null,
+            products: [],
+        },
+        saving: false,
     },
     methods: {
         handlerSearch() {
@@ -16,8 +30,6 @@ const subscriptions = new Vue({
         },
 
         sort: function (s) {
-            console.log(s)
-
             if (s === this.currentSort) {
                 this.currentSortDir = this.currentSortDir === 'asc' ? 'desc' : 'asc'
             }
@@ -51,6 +63,62 @@ const subscriptions = new Vue({
 
             window.open('data:application/vnd.ms-excel,' + encodeURIComponent(tab_text))
         },
+
+        openNewModal() {
+            this.newSub = { name: '', dueAt: '', ClientId: null, ProjectId: null, products: [] }
+            this.refs.projects = []
+            const modal = new bootstrap.Modal(document.getElementById('newSubscriptionModal'))
+            modal.show()
+        },
+
+        async loadProjects() {
+            if (!this.newSub.ClientId) {
+                this.refs.projects = []
+                this.newSub.ProjectId = null
+                return
+            }
+            try {
+                const { data } = await __api__.get(`/api/projects?ClientId=${this.newSub.ClientId}`)
+                this.refs.projects = data
+                this.newSub.ProjectId = null
+            } catch (err) {
+                console.error(err)
+            }
+        },
+
+        addProduct() {
+            this.newSub.products.push({ ProductId: null, charge_type: 'Mensal', value: 0 })
+        },
+
+        removeProduct(idx) {
+            this.newSub.products.splice(idx, 1)
+        },
+
+        fillProductValue(p) {
+            const prod = this.refs.products.find((x) => x.id === p.ProductId)
+            if (prod) p.value = prod.value
+        },
+
+        async createSubscription() {
+            this.saving = true
+            try {
+                const { data } = await __api__.post('/api/subscriptions', {
+                    name: this.newSub.name,
+                    dueAt: this.newSub.dueAt,
+                    ClientId: this.newSub.ClientId,
+                    ProjectId: this.newSub.ProjectId || null,
+                    products: this.newSub.products.filter((p) => p.ProductId),
+                })
+                bootstrap.Modal.getInstance(document.getElementById('newSubscriptionModal')).hide()
+                this.subscriptionsOrigin.unshift(data)
+                this.subscriptions = [...this.subscriptionsOrigin]
+            } catch (err) {
+                console.error(err)
+                alert(err.response?.data?.message || 'Erro ao criar assinatura.')
+            } finally {
+                this.saving = false
+            }
+        },
     },
     mounted: function () {
         const token = localStorage.getItem('token')
@@ -68,9 +136,7 @@ const subscriptions = new Vue({
 
         __api__.get('/api/auth/verify').catch((error) => {
             console.log(error)
-
             localStorage.clear()
-
             location.href = '/'
         })
 
@@ -82,8 +148,15 @@ const subscriptions = new Vue({
             })
             .catch((error) => {
                 console.log(error)
-
                 alert(error.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.')
             })
+
+        Promise.all([
+            __api__.get('/api/clients'),
+            __api__.get('/api/products'),
+        ]).then(([clientsRes, productsRes]) => {
+            this.refs.clients = clientsRes.data
+            this.refs.products = productsRes.data
+        }).catch((err) => console.error('Erro ao carregar refs:', err))
     },
 })

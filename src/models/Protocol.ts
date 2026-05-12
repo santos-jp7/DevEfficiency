@@ -56,6 +56,9 @@ class Protocol extends Model<InferAttributes<Protocol>, InferCreationAttributes<
         Subscription: Association<Protocol, Subscription>
     }
 
+    declare current_installment: CreationOptional<number>
+    declare total_installments: CreationOptional<number>
+
     declare closedAt: CreationOptional<Date>
 
     declare createdAt: CreationOptional<Date>
@@ -76,6 +79,14 @@ Protocol.init(
         },
         notes: {
             type: DataTypes.TEXT,
+        },
+        current_installment: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+        },
+        total_installments: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
         },
         closedAt: DataTypes.DATE,
         createdAt: DataTypes.DATE,

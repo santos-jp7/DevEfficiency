@@ -86,13 +86,12 @@ class protocolsController {
 
     static async update(req: protocolsRequest, res: FastifyReply): Promise<FastifyReply> {
         const { id } = req.params
-        const { status, notes } = req.body
+        const { status, notes, current_installment, total_installments } = req.body as any
 
         const protocol = await Protocol.findByPk(id)
         if (!protocol) throw new Error('Protocolo não existe.')
 
-        await protocol?.update({ status, notes })
-        await protocol?.save()
+        await protocol.update({ status, notes, current_installment, total_installments })
 
         return res.send(protocol)
     }

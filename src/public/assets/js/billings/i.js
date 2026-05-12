@@ -7,8 +7,23 @@ const app = new Vue({
         id: null,
         currentProtocolId: null,
         currentValue: 0,
+        sendingEmail: false,
 
         bankAccounts: [],
+    },
+    computed: {
+        boletoFile() {
+            if (!this.billing.BillingFiles) return null
+            return [...this.billing.BillingFiles]
+                .filter(f => f.type === 'boleto')
+                .sort((a, b) => b.id - a.id)[0] || null
+        },
+        notaFiscalFile() {
+            if (!this.billing.BillingFiles) return null
+            return [...this.billing.BillingFiles]
+                .filter(f => f.type === 'nota_fiscal')
+                .sort((a, b) => b.id - a.id)[0] || null
+        },
     },
     mounted() {
         const token = localStorage.getItem('token')
@@ -33,9 +48,9 @@ const app = new Vue({
 
             __api__.get(`/api/billings/${params.id}`).then((res) => {
                 this.billing = res.data
-                if (this.billing.due_date) this.billing.due_date = moment(this.billing.due_date).format('YYYY-MM-DD')
+                if (this.billing.due_date) this.billing.due_date = moment.utc(this.billing.due_date).format('YYYY-MM-DD')
                 if (this.billing.payment_date)
-                    this.billing.payment_date = moment(this.billing.payment_date).format('YYYY-MM-DD')
+                    this.billing.payment_date = moment.utc(this.billing.payment_date).format('YYYY-MM-DD')
             })
         }
 
@@ -102,6 +117,40 @@ const app = new Vue({
         },
         reducePercentage(x) {
             this.currentValue = ((this.currentValue / 100) * x).toFixed(2)
+        },
+        async uploadFile(type, event) {
+            const file = event.target.files[0]
+            if (!file) return
+
+            const formData = new FormData()
+            formData.append('type', type)
+            formData.append('file', file)
+
+            try {
+                const res = await __api__.post(`/api/billings/${this.id}/upload`, formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                })
+                if (!this.billing.BillingFiles) this.billing.BillingFiles = []
+                this.billing.BillingFiles.push(res.data)
+                alert('Arquivo enviado com sucesso!')
+            } catch (err) {
+                alert(err.response?.data?.message || 'Erro ao enviar arquivo.')
+                console.error(err)
+            }
+            event.target.value = ''
+        },
+        async sendEmail() {
+            if (!confirm('Enviar email com a fatura para todos os contatos do cliente?')) return
+            this.sendingEmail = true
+            try {
+                await __api__.post(`/api/billings/${this.id}/send-email`)
+                alert('Email enviado com sucesso!')
+            } catch (err) {
+                alert(err.response?.data?.message || 'Erro ao enviar email.')
+                console.error(err)
+            } finally {
+                this.sendingEmail = false
+            }
         },
         handlerBillingReceipt() {
             if (!this.billing.method) {
