@@ -161,7 +161,70 @@
             &bull;
             <a class="btn btn-dark mt-2" :href="'/api/billings/'+id+'/pdf'" download><i
                     class="fa-solid fa-download"></i></a>
+            &bull;
+            <button type="button" class="btn btn-success mt-2" @click="sendEmail" :disabled="sendingEmail">
+                <i class="fa-solid fa-envelope"></i>
+                {{ sendingEmail ? 'Enviando...' : 'Enviar Email' }}
+            </button>
         </form>
+
+        <hr />
+
+        <h5>Documentos</h5>
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body d-flex align-items-center justify-content-between">
+                        <div>
+                            <h6 class="card-title mb-1">
+                                <i class="fa-solid fa-file-invoice-dollar me-2"></i>Boleto
+                            </h6>
+                            <small v-if="boletoFile" class="text-success">
+                                <i class="fa-solid fa-check-circle"></i> Disponível
+                            </small>
+                            <small v-else class="text-muted">Não enviado</small>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a v-if="boletoFile" :href="boletoFile.url" target="_blank"
+                                class="btn btn-sm btn-outline-primary" title="Visualizar / Imprimir">
+                                <i class="fa-solid fa-print"></i>
+                            </a>
+                            <label class="btn btn-sm btn-outline-dark mb-0" title="Enviar arquivo">
+                                <i class="fa-solid fa-upload"></i>
+                                <input type="file" class="d-none" accept=".pdf,.png,.jpg,.jpeg"
+                                    @change="uploadFile('boleto', $event)" />
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body d-flex align-items-center justify-content-between">
+                        <div>
+                            <h6 class="card-title mb-1">
+                                <i class="fa-solid fa-receipt me-2"></i>Nota Fiscal
+                            </h6>
+                            <small v-if="notaFiscalFile" class="text-success">
+                                <i class="fa-solid fa-check-circle"></i> Disponível
+                            </small>
+                            <small v-else class="text-muted">Não enviado</small>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a v-if="notaFiscalFile" :href="notaFiscalFile.url" target="_blank"
+                                class="btn btn-sm btn-outline-primary" title="Visualizar / Imprimir">
+                                <i class="fa-solid fa-print"></i>
+                            </a>
+                            <label class="btn btn-sm btn-outline-dark mb-0" title="Enviar arquivo">
+                                <i class="fa-solid fa-upload"></i>
+                                <input type="file" class="d-none" accept=".pdf,.png,.jpg,.jpeg"
+                                    @change="uploadFile('nota_fiscal', $event)" />
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <hr />
 
@@ -173,6 +236,7 @@
                         <th scope="col"># Protocolo</th>
                         <th scope="col">Detalhes</th>
                         <th scope="col">Status</th>
+                        <th scope="col">Parcela</th>
                         <th scope="col">Observações</th>
                         <th scope="col">Valor</th>
                         <th scope="col">Editar</th>
@@ -202,6 +266,12 @@
                                 {{item.Protocol?.Service_order?.subject}}
                         </td>
                         <td>{{item.Protocol.status}}</td>
+                        <td>
+                            <span v-if="item.Protocol.total_installments">
+                                {{item.Protocol.current_installment}} de {{item.Protocol.total_installments}}
+                            </span>
+                            <span v-else>-</span>
+                        </td>
                         <td>{{item.Protocol.notes || '-'}}</td>
                         <td>{{formatCurrency(item.value)}}</td>
                         <td>

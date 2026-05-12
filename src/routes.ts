@@ -22,6 +22,7 @@ import subscriptionController from './controllers/subscriptionsController'
 import billingController from './controllers/billingController'
 import billingProtocolController from './controllers/billingProtocolController'
 import billingReceipt from './utils/billingReceipt'
+import { sendBillingEmail } from './utils/sendBillingEmail'
 import costCenterController from './controllers/costCenterController'
 import supplierController from './controllers/supplierController'
 import bankAccountController from './controllers/bankAccountController'
@@ -32,6 +33,7 @@ import bankTransferController from './controllers/bankTransferController'
 import addressController from './controllers/addressController'
 import configController from './controllers/configController' // Import the new controller
 import dreReportController from './controllers/dreReportController'
+import osEntriesController from './controllers/osEntriesController'
 
 const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.get('/', helloController.handler)
@@ -160,6 +162,7 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
 
     instance.get('/subscriptions', { preHandler: [isAuthed] }, subscriptionController.index)
     instance.get('/subscriptions/:id', { preHandler: [isAuthed] }, subscriptionController.show)
+    instance.post('/subscriptions', { preHandler: [isAuthed] }, subscriptionController.store)
     instance.put('/subscriptions/:id', { preHandler: [isAuthed] }, subscriptionController.update)
 
     instance.get('/billings', { preHandler: [isAuthed] }, billingController.index)
@@ -168,10 +171,25 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.put('/billings/:id', { preHandler: [isAuthed] }, billingController.update)
     instance.delete('/billings/:id', { preHandler: [isAuthed] }, billingController.destroy)
     instance.get('/billings/:id/pdf', billingController.pdf)
+    instance.post('/billings/:id/upload', { preHandler: [isAuthed] }, billingController.upload)
+    instance.post('/billings/:id/send-email', { preHandler: [isAuthed] }, async (req: any, res) => {
+        try {
+            await sendBillingEmail(parseInt(req.params.id))
+            return res.send({ message: 'Email enviado com sucesso' })
+        } catch (err: any) {
+            return res.status(400).send({ message: err.message || 'Erro ao enviar email' })
+        }
+    })
 
     instance.post('/billing-receipt', { preHandler: [isAuthed] }, billingReceipt)
 
     instance.put('/billing-protocols/:id', { preHandler: [isAuthed] }, billingProtocolController.update)
+
+    instance.get('/os-entries', { preHandler: [isAuthed] }, osEntriesController.index)
+    instance.get('/os-entries/:id', { preHandler: [isAuthed] }, osEntriesController.show)
+    instance.post('/os-entries', { preHandler: [isAuthed] }, osEntriesController.create)
+    instance.put('/os-entries/:id', { preHandler: [isAuthed] }, osEntriesController.update)
+    instance.delete('/os-entries/:id', { preHandler: [isAuthed] }, osEntriesController.destroy)
 
     instance.get('/utils/currentOs', { preHandler: [isAuthed] }, currentOs)
 

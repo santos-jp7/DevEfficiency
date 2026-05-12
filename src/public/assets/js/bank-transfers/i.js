@@ -60,7 +60,7 @@ const app = new Vue({
                     this.sourceAccountId = transfer.sourceAccountId
                     this.destinationAccountId = transfer.destinationAccountId
                     this.amount = transfer.amount
-                    this.date = moment(transfer.date).format('YYYY-MM-DD')
+                    this.date = moment.utc(transfer.date).format('YYYY-MM-DD')
                 })
                 .catch((error) => {
                     console.error(error)

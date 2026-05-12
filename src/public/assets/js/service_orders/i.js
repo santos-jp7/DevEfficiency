@@ -26,6 +26,7 @@ const service_order = new Vue({
             },
         },
         Client: { name: null },
+        apontamentos: [],
         payloads: {
             protocolRegister: {
                 description: null,
@@ -43,10 +44,27 @@ const service_order = new Vue({
                 method: null,
                 note: null,
             },
+            apontamento: {
+                id: null,
+                description: '',
+                date: new Date().toISOString().slice(0, 10),
+                status: 'Em andamento',
+                public: false,
+            },
         },
         references: {
             products: [],
             bankAccounts: [],
+        },
+    },
+    computed: {
+        protocolInstallmentValue() {
+            const total =
+                (this.Protocol?.Protocol_registers?.reduce((s, v) => s + v.value, 0) || 0) +
+                (this.Protocol?.Protocol_products?.reduce((s, v) => s + v.value, 0) || 0)
+            const n = this.Protocol?.total_installments
+            if (!n || n <= 1) return 0
+            return parseFloat((total / n).toFixed(2))
         },
     },
     methods: {
@@ -74,6 +92,8 @@ const service_order = new Vue({
                 .put('/api/protocols/' + this.$data.Protocol.id, {
                     status: this.$data.Protocol.status,
                     notes: this.$data.Protocol.notes,
+                    current_installment: this.$data.Protocol.current_installment || null,
+                    total_installments: this.$data.Protocol.total_installments || null,
                 })
                 .then(() => {
                     window.location.reload()
@@ -82,6 +102,57 @@ const service_order = new Vue({
                     alert(e.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.')
                     window.location.reload()
                 })
+        },
+        handlerNewApontamento() {
+            this.payloads.apontamento = {
+                id: null,
+                description: '',
+                date: new Date().toISOString().slice(0, 10),
+                status: 'Em andamento',
+                public: false,
+            }
+            new bootstrap.Modal(document.getElementById('apontamentoModal')).show()
+        },
+        handlerEditApontamento(a) {
+            this.payloads.apontamento = {
+                id: a.id,
+                description: a.description,
+                date: moment.utc(a.date).format('YYYY-MM-DD'),
+                status: a.status,
+                public: a.public,
+            }
+            new bootstrap.Modal(document.getElementById('apontamentoModal')).show()
+        },
+        async handlerDeleteApontamento(id) {
+            if (!confirm('Confirma exclusão?')) return
+            try {
+                await __api__.delete('/api/os-entries/' + id)
+                this.apontamentos = this.apontamentos.filter((a) => a.id !== id)
+            } catch (e) {
+                alert('Erro ao excluir apontamento.')
+            }
+        },
+        async handlerApontamentoSubmit() {
+            const payload = {
+                description: this.payloads.apontamento.description,
+                date: this.payloads.apontamento.date,
+                status: this.payloads.apontamento.status,
+                public: this.payloads.apontamento.public,
+                ServiceOrderId: this.id,
+            }
+            try {
+                if (this.payloads.apontamento.id) {
+                    const { data } = await __api__.put('/api/os-entries/' + this.payloads.apontamento.id, payload)
+                    const idx = this.apontamentos.findIndex((a) => a.id === data.id)
+                    if (idx !== -1) this.$set(this.apontamentos, idx, data)
+                } else {
+                    const { data } = await __api__.post('/api/os-entries', payload)
+                    this.apontamentos.push(data)
+                }
+                bootstrap.Modal.getInstance(document.getElementById('apontamentoModal')).hide()
+            } catch (e) {
+                alert(e.response?.data?.message || 'Erro ao salvar apontamento.')
+            }
         },
         handlerNewProtocolRegister() {
             this.$data.payloads.protocolRegister = {
@@ -321,6 +392,15 @@ const service_order = new Vue({
             .catch((error) => {
                 console.log(error)
                 alert(error.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.')
+            })
+
+        __api__
+            .get('/api/os-entries?serviceOrderId=' + params.id)
+            .then(({ data }) => {
+                this.apontamentos = data
+            })
+            .catch((error) => {
+                console.log(error)
             })
     },
 })

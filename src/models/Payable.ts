@@ -19,6 +19,11 @@ class Payable extends Model<InferAttributes<Payable>, InferCreationAttributes<Pa
     declare paymentDate: CreationOptional<Date>
     declare status: CreationOptional<'pendente' | 'pago' | 'atrasado' | 'cancelado'>
 
+    declare recurrence: CreationOptional<'quinzenal' | 'mensal' | 'trimestral' | 'semestral' | 'anual' | 'bianual' | 'trianual' | null>
+    declare total_installments: CreationOptional<number>
+    declare current_installment: CreationOptional<number>
+    declare parent_payable_id: CreationOptional<number>
+
     declare SupplierId: ForeignKey<Supplier['id']>
     declare BankAccountId: ForeignKey<BankAccount['id']>
     declare CostCenterId: ForeignKey<CostCenter['id']>
@@ -43,17 +48,33 @@ Payable.init(
             allowNull: false,
         },
         dueDate: {
-            type: DataTypes.DATE,
+            type: DataTypes.DATEONLY,
             allowNull: false,
         },
         paymentDate: {
-            type: DataTypes.DATE,
+            type: DataTypes.DATEONLY,
             allowNull: true,
         },
         status: {
             type: DataTypes.ENUM('pendente', 'pago', 'atrasado', 'cancelado'),
             defaultValue: 'pendente',
             allowNull: false,
+        },
+        recurrence: {
+            type: DataTypes.ENUM('quinzenal', 'mensal', 'trimestral', 'semestral', 'anual', 'bianual', 'trianual'),
+            allowNull: true,
+        },
+        total_installments: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+        },
+        current_installment: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+        },
+        parent_payable_id: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
         },
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,

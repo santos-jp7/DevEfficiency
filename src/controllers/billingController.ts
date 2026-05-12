@@ -6,6 +6,7 @@ import fs from 'fs'
 import ejs from 'ejs'
 
 import Billing from '../models/Billing'
+import BillingFile from '../models/BillingFile'
 import BillingProtocol from '../models/BillingProtocol'
 import Client from '../models/Client'
 import Protocol from '../models/Protocol'
@@ -19,6 +20,7 @@ import Receipts from '../models/Receipts'
 import Config from '../models/Config'
 
 import puppeteer from 'puppeteer'
+import CloudFlareR2 from '../providers/CloudFlareR2'
 
 type billingRequest = FastifyRequest<{
     Body: Billing
@@ -64,6 +66,7 @@ class billingController {
         const billing = await Billing.findByPk(req.params.id, {
             include: [
                 Client,
+                BillingFile,
                 {
                     model: BillingProtocol,
                     include: [
@@ -82,6 +85,44 @@ class billingController {
             ],
         })
         return res.send(billing)
+    }
+
+    static async upload(req: FastifyRequest<{ Params: { id: string } }>, res: FastifyReply): Promise<FastifyReply> {
+        const { id } = req.params
+
+        const billing = await Billing.findByPk(id)
+        if (!billing) {
+            return res.status(404).send({ message: 'Cobrança não encontrada' })
+        }
+
+        const data = await req.file()
+        if (!data) {
+            return res.status(400).send({ message: 'Arquivo não enviado' })
+        }
+
+        const type = (data.fields.type as any)?.value as 'boleto' | 'nota_fiscal'
+        if (!type || !['boleto', 'nota_fiscal'].includes(type)) {
+            return res.status(400).send({ message: 'Tipo inválido. Use boleto ou nota_fiscal' })
+        }
+
+        const chunks: Buffer[] = []
+        for await (const chunk of data.file) {
+            chunks.push(chunk)
+        }
+        const buffer = Buffer.concat(chunks)
+
+        const timestamp = Date.now()
+        const key = `billings/${id}/${type}/${timestamp}_${data.filename}`
+        const url = await CloudFlareR2.uploadFile(key, buffer, data.mimetype)
+
+        const billingFile = await BillingFile.create({
+            BillingId: parseInt(id),
+            type,
+            filename: data.filename,
+            url,
+        })
+
+        return res.status(201).send(billingFile)
     }
 
     // A criação de cobranças é automática via hooks.

@@ -78,12 +78,27 @@ const app = new Vue({
                 alert(error.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.')
             })
     },
+    computed: {
+        installmentValue() {
+            const total =
+                (this.protocol?.Protocol_registers?.reduce((s, v) => s + v.value, 0) || 0) +
+                (this.protocol?.Protocol_products?.reduce((s, v) => s + v.value, 0) || 0)
+            const n = this.protocol?.total_installments
+            if (!n || n <= 1) return 0
+            return parseFloat((total / n).toFixed(2))
+        },
+    },
     methods: {
         handlerSubmit() {
             let method = this.$data.protocol.id ? __api__.put : __api__.post
             let url = this.$data.protocol.id ? '/api/protocols/' + this.$data.protocol.id : '/api/protocols'
 
-            method(url, { status: this.protocol.status, notes: this.protocol.notes })
+            method(url, {
+                status: this.protocol.status,
+                notes: this.protocol.notes,
+                current_installment: this.protocol.current_installment || null,
+                total_installments: this.protocol.total_installments || null,
+            })
                 .then((res) => {
                     alert('Protocolo atualizado com sucesso!')
                     window.location.reload()
