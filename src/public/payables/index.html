@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-br">
 
 <head>
@@ -16,6 +16,7 @@
     <script src="../assets/js/bootstrap.min.js"></script>
     <script src="../assets/js/axios.min.js"></script>
     <script src="../assets/js/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
@@ -67,7 +68,6 @@
                         <li><a class="dropdown-item" href="../bank-accounts">Contas Bancárias</a></li>
                         <li><a class="dropdown-item" href="../cost-centers">Centros de Custo</a></li>
                         <li><a class="dropdown-item" href="../bank-transfers">Transferências entre contas</a></li>
-
                     </ul>
                 </div>
 
@@ -97,38 +97,172 @@
 
         <hr />
 
-        <div class="d-flex flex-wrap justify-content-between">
-            <h5>Contas a Pagar</h5>
-            <a class="btn btn-dark" href="../payables/i.html"><i class="fa-solid fa-plus"></i> Nova Conta</a>
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+            <h5 class="mb-0">Contas a Pagar</h5>
+            <a class="btn btn-dark btn-sm" href="../payables/i.html"><i class="fa-solid fa-plus me-1"></i> Nova Conta</a>
         </div>
 
-        <div class="table-responsive m-2">
-            <table class="table table-striped border">
-                <thead>
-                    <tr>
-                        <th>Descrição</th>
-                        <th>Fornecedor</th>
-                        <th class="text-right">Valor</th>
-                        <th>Vencimento</th>
-                        <th>Status</th>
-                        <th>Abrir</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="payable in payables">
-                        <td>{{ payable.description }}</td>
-                        <td>{{ payable.Supplier ? payable.Supplier.name : '-' }}</td>
-                        <td class="text-right">{{ formatCurrency(payable.value) }}</td>
-                        <td>{{ formatDate(payable.dueDate) }}</td>
-                        <td><span :class="'badge bg-' + getStatusClass(payable.status)">{{ payable.status }}</span>
-                        </td>
-                        <td>
-                            <a :href="'../payables/i.html?id=' + payable.id"><i class="fa-solid fa-arrow-right"></i></a>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+        <!-- Summary Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3 mb-2">
+                <div class="card border-0 shadow-sm bg-primary text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title text-white-50 mb-1">Total em Aberto</h6>
+                                <h4 class="mb-0">{{ summary.totalOpen | currency }}</h4>
+                            </div>
+                            <i class="fa-solid fa-wallet fa-2x text-white-50"></i>
+                        </div>
+                        <p class="card-text mt-2 small text-white-50">{{ summary.totalOpenCount }} conta(s)</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-2">
+                <div class="card border-0 shadow-sm bg-danger text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title text-white-50 mb-1">Atrasadas</h6>
+                                <h4 class="mb-0">{{ summary.overdueValue | currency }}</h4>
+                            </div>
+                            <i class="fa-solid fa-circle-exclamation fa-2x text-white-50"></i>
+                        </div>
+                        <p class="card-text mt-2 small text-white-50">{{ summary.overdueCount }} conta(s)</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-2">
+                <div class="card border-0 shadow-sm bg-warning">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-1" style="color: rgba(0,0,0,.6)">Vencendo em 3 dias</h6>
+                                <h4 class="mb-0">{{ summary.upcomingValue | currency }}</h4>
+                            </div>
+                            <i class="fa-solid fa-clock fa-2x" style="color: rgba(0,0,0,.3)"></i>
+                        </div>
+                        <p class="card-text mt-2 small" style="color: rgba(0,0,0,.6)">{{ summary.upcomingCount }} conta(s)</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-2">
+                <div class="card border-0 shadow-sm bg-success text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title text-white-50 mb-1">Pagas este mês</h6>
+                                <h4 class="mb-0">{{ summary.paidMonthValue | currency }}</h4>
+                            </div>
+                            <i class="fa-solid fa-check-circle fa-2x text-white-50"></i>
+                        </div>
+                        <p class="card-text mt-2 small text-white-50">{{ summary.paidMonthCount }} conta(s)</p>
+                    </div>
+                </div>
+            </div>
         </div>
+
+        <!-- Chart -->
+        <div class="card border-0 shadow-sm mb-4 p-3" v-if="chartReady">
+            <h6 class="mb-3 text-muted">Gastos Previstos por Mês</h6>
+            <canvas id="payablesChart" height="80"></canvas>
+        </div>
+
+        <!-- Filters -->
+        <div class="card border-0 shadow-sm mb-3 p-3">
+            <div class="row g-2">
+                <div class="col-md-5">
+                    <input type="text" class="form-control form-control-sm" placeholder="Buscar por descrição..."
+                        v-model="filterDesc" />
+                </div>
+                <div class="col-md-5">
+                    <input type="text" class="form-control form-control-sm" placeholder="Buscar por fornecedor..."
+                        v-model="filterSupplier" />
+                </div>
+                <div class="col-md-2 d-flex align-items-center">
+                    <div class="form-check form-switch mb-0">
+                        <input class="form-check-input" type="checkbox" id="showPastMonths" v-model="showPastMonths">
+                        <label class="form-check-label small" for="showPastMonths">Meses anteriores</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Month Groups -->
+        <div v-if="groupedPayables.length === 0" class="text-center text-muted py-5">
+            <i class="fa-solid fa-inbox fa-3x mb-3"></i>
+            <p>Nenhuma conta encontrada.</p>
+        </div>
+
+        <div v-for="(group, index) in groupedPayables" :key="group.monthKey" class="mb-3">
+            <div class="card border-0 shadow-sm">
+                <!-- Month header (collapsible) -->
+                <div class="card-header d-flex justify-content-between align-items-center"
+                    :class="group.isPast && group.hasOverdue ? 'bg-danger text-white' : group.isCurrent ? 'bg-dark text-white' : 'bg-light'"
+                    style="cursor: pointer"
+                    :data-bs-toggle="'collapse'"
+                    :data-bs-target="'#month-' + group.monthKey"
+                    :aria-expanded="group.isCurrent ? 'true' : 'false'">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fw-semibold text-capitalize">{{ group.monthLabel }}</span>
+                        <span v-if="group.isCurrent" class="badge bg-primary">Este mês</span>
+                        <span v-if="group.isPast && group.hasOverdue" class="badge bg-light text-danger">
+                            <i class="fa-solid fa-triangle-exclamation me-1"></i>Atrasadas
+                        </span>
+                    </div>
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="small">{{ group.items.length }} conta(s)</span>
+                        <span class="fw-semibold">{{ group.pendingTotal | currency }}</span>
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </div>
+                </div>
+
+                <!-- Month table -->
+                <div :id="'month-' + group.monthKey" :class="'collapse' + (group.isCurrent ? ' show' : '')">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Descrição</th>
+                                    <th>Fornecedor</th>
+                                    <th>Centro de Custo</th>
+                                    <th>Valor</th>
+                                    <th>Vencimento</th>
+                                    <th>Recorrência</th>
+                                    <th>Status</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="p in group.items" :key="p.id"
+                                    :class="rowClass(p)">
+                                    <td class="text-muted small">{{ p.id }}</td>
+                                    <td>{{ p.description }}</td>
+                                    <td>{{ p.Supplier ? p.Supplier.name : '-' }}</td>
+                                    <td>{{ p.CostCenter ? p.CostCenter.name : '-' }}</td>
+                                    <td class="fw-semibold">{{ p.value | currency }}</td>
+                                    <td>{{ p.dueDate | date }}</td>
+                                    <td>
+                                        <span v-if="p.recurrence" class="badge bg-secondary small">{{ p.recurrence }}</span>
+                                        <span v-else class="text-muted small">-</span>
+                                    </td>
+                                    <td>
+                                        <span :class="'badge bg-' + statusClass(p)">{{ p.status }}</span>
+                                    </td>
+                                    <td>
+                                        <a :href="'../payables/i.html?id=' + p.id" class="text-dark">
+                                            <i class="fa-solid fa-arrow-right"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script src="../assets/js/payables/payables.js"></script>

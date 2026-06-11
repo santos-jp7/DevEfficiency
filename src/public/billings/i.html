@@ -96,6 +96,11 @@
 
         <h5>Cobrança #{{id}}</h5>
 
+        <div v-if="billing.status === 'faturada'" class="alert alert-warning d-flex align-items-center mb-3">
+            <i class="fa-solid fa-lock me-2"></i>
+            <span>Esta cobrança foi <strong>faturada</strong>. O valor dos protocolos não pode ser alterado.</span>
+        </div>
+
         <form v-on:submit.prevent="updateBilling">
             <div class="row">
                 <div class="mb-3 col">
@@ -106,6 +111,7 @@
                     <label class="form-label">Status</label>
                     <select class="form-control" v-model="billing.status" disabled>
                         <option value="pendente">Pendente</option>
+                        <option value="faturada">Faturada</option>
                         <option value="pago">Pago</option>
                         <option value="cancelado">Cancelado</option>
                     </select>
@@ -150,7 +156,11 @@
 
             <button type="submit" class="btn btn-dark mt-2">Salvar Alterações</button>
             &bull;
-            <button type="button" class="btn btn-danger mt-2" @click="deleteBilling">Excluir Cobrança</button>
+            <button type="button" class="btn btn-danger mt-2" @click="deleteBilling"
+                :disabled="billing.status === 'faturada'"
+                :title="billing.status === 'faturada' ? 'Cobrança já faturada' : ''">
+                Excluir Cobrança
+            </button>
             &bull;
             <button type="button" class="btn btn-primary mt-2" @click="handlerBillingReceipt"
                 :disabled="billing.status === 'pago'"
@@ -275,8 +285,12 @@
                         <td>{{item.Protocol.notes || '-'}}</td>
                         <td>{{formatCurrency(item.value)}}</td>
                         <td>
-
-                            <a href="#" @click="openValueModal(item)"><i class="fa-solid fa-pen-to-square"></i></a>
+                            <a v-if="billing.status !== 'faturada'" href="#" @click.prevent="openValueModal(item)">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </a>
+                            <span v-else class="text-muted" title="Cobrança já faturada">
+                                <i class="fa-solid fa-lock"></i>
+                            </span>
                         </td>
                         <td>
                             <a :href="'/protocols/i.html?id='+item.Protocol?.id" target="_blank"><i

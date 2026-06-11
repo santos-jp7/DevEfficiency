@@ -19,6 +19,12 @@ class billingProtocolController {
             return res.status(404).send({ message: 'Protocolo da cobrança não encontrado' })
         }
 
+        // Block value changes if billing is already faturada
+        const billingCheck = await Billing.findByPk(billingProtocol.BillingId)
+        if (billingCheck?.status === 'faturada') {
+            return res.status(400).send({ message: 'Cobrança já faturada. Não é possível alterar o valor.' })
+        }
+
         await billingProtocol.update({ value })
 
         const billing = await Billing.findByPk(billingProtocol.BillingId, {

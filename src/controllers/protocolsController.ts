@@ -4,6 +4,7 @@ import puppeteer from 'puppeteer'
 import fs from 'fs'
 import path from 'path'
 import ejs from 'ejs'
+import moment from 'moment'
 
 import Product from '../models/Product'
 import Protocol from '../models/Protocol'
@@ -15,6 +16,8 @@ import Project from '../models/Project'
 import Service_order from '../models/Service_order'
 import Subscription from '../models/Subscription'
 import Config from '../models/Config'
+import Billing from '../models/Billing'
+import BillingProtocol from '../models/BillingProtocol'
 
 type protocolsRequest = FastifyRequest<{
     Body: Protocol
@@ -92,6 +95,38 @@ class protocolsController {
         if (!protocol) throw new Error('Protocolo não existe.')
 
         await protocol.update({ status, notes, current_installment, total_installments })
+
+        // When releasing for payment, create a new billing if current billing is already faturada
+        if (status === 'Liberado para pagamento') {
+            const existingBPs = await BillingProtocol.findAll({
+                where: { ProtocolId: id },
+                include: [Billing],
+                order: [['createdAt', 'DESC']],
+            })
+            if ((existingBPs[0] as any)?.Billing?.status === 'faturada') {
+                let clientId: number | undefined
+                if (protocol.ServiceOrderId) {
+                    const so = await Service_order.findByPk(protocol.ServiceOrderId)
+                    clientId = (so as any)?.ClientId
+                } else if (protocol.SubscriptionId) {
+                    const sub = await Subscription.findByPk(protocol.SubscriptionId)
+                    clientId = (sub as any)?.ClientId
+                }
+                const products = await Protocol_product.findAll({ where: { ProtocolId: id } })
+                const totalValue = products.reduce((sum, p) => sum + Number((p as any).value), 0)
+                const newBilling = await Billing.create({
+                    ClientId: clientId,
+                    status: 'pendente',
+                    total_value: totalValue,
+                    due_date: moment().add(30, 'days').toDate(),
+                } as any)
+                await BillingProtocol.create({
+                    BillingId: (newBilling as any).id,
+                    ProtocolId: typeof id === 'string' ? parseInt(id) : id,
+                    value: totalValue,
+                } as any)
+            }
+        }
 
         return res.send(protocol)
     }
