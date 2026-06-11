@@ -130,8 +130,11 @@ const app = new Vue({
                 const res = await __api__.post(`/api/billings/${this.id}/upload`, formData, {
                     headers: { 'Content-Type': 'multipart/form-data' },
                 })
+                const data = res.data
+                const file = data.billingFile || data
                 if (!this.billing.BillingFiles) this.billing.BillingFiles = []
-                this.billing.BillingFiles.push(res.data)
+                this.billing.BillingFiles.push(file)
+                if (data.billingStatus) this.billing.status = data.billingStatus
                 alert('Arquivo enviado com sucesso!')
             } catch (err) {
                 alert(err.response?.data?.message || 'Erro ao enviar arquivo.')

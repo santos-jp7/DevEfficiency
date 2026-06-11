@@ -1,4 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
+import { Op } from 'sequelize'
 import Payable from '../models/Payable'
 import Supplier from '../models/Supplier'
 import BankAccount from '../models/BankAccount'
@@ -15,8 +16,32 @@ type PayableRequest = FastifyRequest<{
 class PayablesController {
     static async index(req: FastifyRequest, res: FastifyReply): Promise<FastifyReply> {
         try {
+            const { startDate, endDate, supplier } = req.query as any
+
+            const where: any = {}
+            if (startDate || endDate) {
+                where.dueDate = {}
+                if (startDate) where.dueDate[Op.gte] = startDate
+                if (endDate) where.dueDate[Op.lte] = endDate
+            }
+
+            const { costCenter } = req.query as any
+
+            const supplierInclude: any = { model: Supplier }
+            if (supplier) {
+                supplierInclude.where = { name: { [Op.like]: `%${supplier}%` } }
+                supplierInclude.required = true
+            }
+
+            const costCenterInclude: any = { model: CostCenter }
+            if (costCenter) {
+                costCenterInclude.where = { name: { [Op.like]: `%${costCenter}%` } }
+                costCenterInclude.required = true
+            }
+
             const payables = await Payable.findAll({
-                include: [Supplier, BankAccount, CostCenter],
+                where,
+                include: [supplierInclude, BankAccount, costCenterInclude],
                 order: [['dueDate', 'DESC']],
             })
             return res.send(payables)

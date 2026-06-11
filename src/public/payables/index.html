@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-br">
 
 <head>
@@ -6,16 +6,15 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Codlinx - Contas a Pagar</title>
-
     <link href="../assets/css/bootstrap.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css" />
-
     <script src="../assets/js/vue.min.js"></script>
     <script src="../assets/js/jquery-3.6.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2/dist/umd/popper.min.js"></script>
     <script src="../assets/js/bootstrap.min.js"></script>
     <script src="../assets/js/axios.min.js"></script>
     <script src="../assets/js/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
@@ -28,13 +27,12 @@
     </nav>
 
     <div class="container p-4" id="app">
-        <div class="col">
+
+        <!-- Nav -->
+        <div class="col mb-3">
             <div class="d-flex flex-wrap" style="gap:.5rem">
                 <div class="btn-group">
-                    <button type="button" class="btn btn-dark btn-sm dropdown-toggle" data-bs-toggle="dropdown"
-                        aria-expanded="false">
-                        Gestão
-                    </button>
+                    <button type="button" class="btn btn-dark btn-sm dropdown-toggle" data-bs-toggle="dropdown">Gestão</button>
                     <ul class="dropdown-menu dropdown-menu-dark">
                         <li><a class="dropdown-item" href="../clients">Clientes</a></li>
                         <li><a class="dropdown-item" href="../projects">Projetos</a></li>
@@ -43,23 +41,15 @@
                         <li><a class="dropdown-item" href="../config">Configurações</a></li>
                     </ul>
                 </div>
-
                 <div class="btn-group">
-                    <button type="button" class="btn btn-dark btn-sm dropdown-toggle" data-bs-toggle="dropdown"
-                        aria-expanded="false">
-                        Operações
-                    </button>
+                    <button type="button" class="btn btn-dark btn-sm dropdown-toggle" data-bs-toggle="dropdown">Operações</button>
                     <ul class="dropdown-menu dropdown-menu-dark">
                         <li><a class="dropdown-item" href="../service_orders">Ordens de serviço</a></li>
                         <li><a class="dropdown-item" href="../subscriptions">Assinaturas</a></li>
                     </ul>
                 </div>
-
                 <div class="btn-group">
-                    <button type="button" class="btn btn-dark btn-sm dropdown-toggle" data-bs-toggle="dropdown"
-                        aria-expanded="false">
-                        Financeiro
-                    </button>
+                    <button type="button" class="btn btn-dark btn-sm dropdown-toggle" data-bs-toggle="dropdown">Financeiro</button>
                     <ul class="dropdown-menu dropdown-menu-dark">
                         <li><a class="dropdown-item" href="../billings">Cobranças</a></li>
                         <li><a class="dropdown-item" href="../payables">Contas a Pagar</a></li>
@@ -67,25 +57,16 @@
                         <li><a class="dropdown-item" href="../bank-accounts">Contas Bancárias</a></li>
                         <li><a class="dropdown-item" href="../cost-centers">Centros de Custo</a></li>
                         <li><a class="dropdown-item" href="../bank-transfers">Transferências entre contas</a></li>
-
                     </ul>
                 </div>
-
                 <div class="btn-group">
-                    <button type="button" class="btn btn-dark btn-sm dropdown-toggle" data-bs-toggle="dropdown"
-                        aria-expanded="false">
-                        Infraestrutura
-                    </button>
+                    <button type="button" class="btn btn-dark btn-sm dropdown-toggle" data-bs-toggle="dropdown">Infraestrutura</button>
                     <ul class="dropdown-menu dropdown-menu-dark">
                         <li><a class="dropdown-item" href="../servers/">Servidores</a></li>
                     </ul>
                 </div>
-
                 <div class="btn-group">
-                    <button type="button" class="btn btn-dark btn-sm dropdown-toggle" data-bs-toggle="dropdown"
-                        aria-expanded="false">
-                        Relatórios
-                    </button>
+                    <button type="button" class="btn btn-dark btn-sm dropdown-toggle" data-bs-toggle="dropdown">Relatórios</button>
                     <ul class="dropdown-menu dropdown-menu-dark">
                         <li><a class="dropdown-item" href="../financial-history/">Fluxo de caixa</a></li>
                         <li><a class="dropdown-item" href="../dre-report/">DRE</a></li>
@@ -97,38 +78,382 @@
 
         <hr />
 
-        <div class="d-flex flex-wrap justify-content-between">
-            <h5>Contas a Pagar</h5>
-            <a class="btn btn-dark" href="../payables/i.html"><i class="fa-solid fa-plus"></i> Nova Conta</a>
+        <!-- Page header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h5 class="mb-0">Contas a Pagar</h5>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-secondary btn-sm" @click="exportCSV" title="Exportar CSV">
+                    <i class="fa-solid fa-file-csv me-1"></i> Exportar
+                </button>
+                <a class="btn btn-dark btn-sm" href="../payables/i.html">
+                    <i class="fa-solid fa-plus me-1"></i> Nova Conta
+                </a>
+            </div>
         </div>
 
-        <div class="table-responsive m-2">
-            <table class="table table-striped border">
-                <thead>
-                    <tr>
-                        <th>Descrição</th>
-                        <th>Fornecedor</th>
-                        <th class="text-right">Valor</th>
-                        <th>Vencimento</th>
-                        <th>Status</th>
-                        <th>Abrir</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="payable in payables">
-                        <td>{{ payable.description }}</td>
-                        <td>{{ payable.Supplier ? payable.Supplier.name : '-' }}</td>
-                        <td class="text-right">{{ formatCurrency(payable.value) }}</td>
-                        <td>{{ formatDate(payable.dueDate) }}</td>
-                        <td><span :class="'badge bg-' + getStatusClass(payable.status)">{{ payable.status }}</span>
-                        </td>
-                        <td>
-                            <a :href="'../payables/i.html?id=' + payable.id"><i class="fa-solid fa-arrow-right"></i></a>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+        <!-- Summary cards -->
+        <div class="row mb-4">
+            <div class="col-md-3 mb-2">
+                <div class="card border-0 shadow-sm bg-primary text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title text-white-50 mb-1">Total em Aberto</h6>
+                                <h4 class="mb-0">{{ summary.totalOpen | currency }}</h4>
+                            </div>
+                            <i class="fa-solid fa-wallet fa-2x text-white-50"></i>
+                        </div>
+                        <p class="card-text mt-2 small text-white-50">{{ summary.totalOpenCount }} conta(s)</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-2">
+                <div class="card border-0 shadow-sm bg-danger text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title text-white-50 mb-1">Atrasadas</h6>
+                                <h4 class="mb-0">{{ summary.overdueValue | currency }}</h4>
+                            </div>
+                            <i class="fa-solid fa-circle-exclamation fa-2x text-white-50"></i>
+                        </div>
+                        <p class="card-text mt-2 small text-white-50">{{ summary.overdueCount }} conta(s)</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-2">
+                <div class="card border-0 shadow-sm bg-warning">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-1" style="color:rgba(0,0,0,.6)">Vencendo em 3 dias</h6>
+                                <h4 class="mb-0">{{ summary.upcomingValue | currency }}</h4>
+                            </div>
+                            <i class="fa-solid fa-clock fa-2x" style="color:rgba(0,0,0,.3)"></i>
+                        </div>
+                        <p class="card-text mt-2 small" style="color:rgba(0,0,0,.6)">{{ summary.upcomingCount }} conta(s)</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-2">
+                <div class="card border-0 shadow-sm bg-success text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title text-white-50 mb-1">Pagas este mês</h6>
+                                <h4 class="mb-0">{{ summary.paidMonthValue | currency }}</h4>
+                            </div>
+                            <i class="fa-solid fa-check-circle fa-2x text-white-50"></i>
+                        </div>
+                        <p class="card-text mt-2 small text-white-50">{{ summary.paidMonthCount }} conta(s)</p>
+                    </div>
+                </div>
+            </div>
         </div>
+
+        <!-- Chart -->
+        <div class="card border-0 shadow-sm mb-4 p-3" v-if="chartReady">
+            <h6 class="mb-3 text-muted">Gastos Previstos por Mês</h6>
+            <canvas id="payablesChart" height="80"></canvas>
+        </div>
+
+        <!-- Filters card -->
+        <div class="card border-0 shadow-sm mb-3 p-3">
+            <!-- Row 1: server-side filters -->
+            <div class="row g-2 align-items-end mb-3">
+                <div class="col-md-3">
+                    <label class="form-label small text-muted mb-1">Fornecedor</label>
+                    <input type="text" class="form-control form-control-sm" placeholder="Nome do fornecedor..."
+                        v-model="filterSupplier" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-muted mb-1">Centro de Custo</label>
+                    <input type="text" class="form-control form-control-sm" placeholder="Centro de custo..."
+                        v-model="filterCostCenterServer" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small text-muted mb-1">De</label>
+                    <input type="month" class="form-control form-control-sm" v-model="filterStart" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small text-muted mb-1">Até</label>
+                    <input type="month" class="form-control form-control-sm" v-model="filterEnd" />
+                </div>
+                <div class="col-md-2 d-flex gap-2">
+                    <button class="btn btn-dark btn-sm flex-fill" @click="applyFilters"
+                        :disabled="!filterStart && !filterEnd && !filterSupplier && !filterCostCenterServer">
+                        <i class="fa-solid fa-magnifying-glass me-1"></i> Buscar
+                    </button>
+                    <button v-if="isFilterMode" class="btn btn-outline-secondary btn-sm" @click="clearFilters" title="Limpar filtros">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Row 2: client-side filters -->
+            <div class="row g-2 align-items-end mb-3">
+                <div class="col-md-4">
+                    <label class="form-label small text-muted mb-1">Descrição</label>
+                    <input type="text" class="form-control form-control-sm" placeholder="Filtrar por descrição..."
+                        v-model="filterDesc" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small text-muted mb-1">Centro de Custo (rápido)</label>
+                    <input type="text" class="form-control form-control-sm" placeholder="Filtrar por centro de custo..."
+                        v-model="filterCostCenter" />
+                </div>
+                <div class="col-md-4 d-flex align-items-end gap-3">
+                    <div class="form-check form-switch mb-0">
+                        <input class="form-check-input" type="checkbox" id="showPastMonths" v-model="showPastMonths">
+                        <label class="form-check-label small text-muted" for="showPastMonths">Meses anteriores</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 3: status tabs + visible summary -->
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <ul class="nav nav-pills nav-sm gap-1 mb-0">
+                    <li class="nav-item">
+                        <a class="nav-link py-1 px-2 small" :class="{ active: filterStatus === 'todos' }"
+                            href="#" @click.prevent="filterStatus = 'todos'">
+                            Todos <span class="badge bg-secondary ms-1">{{ statusCounts.todos }}</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link py-1 px-2 small" :class="{ active: filterStatus === 'pendente' }"
+                            href="#" @click.prevent="filterStatus = 'pendente'">
+                            Pendente <span class="badge bg-primary ms-1">{{ statusCounts.pendente }}</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link py-1 px-2 small" :class="{ active: filterStatus === 'atrasado' }"
+                            href="#" @click.prevent="filterStatus = 'atrasado'">
+                            Atrasado <span class="badge bg-danger ms-1">{{ statusCounts.atrasado }}</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link py-1 px-2 small" :class="{ active: filterStatus === 'pago' }"
+                            href="#" @click.prevent="filterStatus = 'pago'">
+                            Pago <span class="badge bg-success ms-1">{{ statusCounts.pago }}</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link py-1 px-2 small" :class="{ active: filterStatus === 'cancelado' }"
+                            href="#" @click.prevent="filterStatus = 'cancelado'">
+                            Cancelado <span class="badge bg-secondary ms-1">{{ statusCounts.cancelado }}</span>
+                        </a>
+                    </li>
+                </ul>
+                <div class="small text-muted d-flex gap-3">
+                    <span>{{ visibleSummary.count }} conta(s)</span>
+                    <span class="text-danger fw-semibold" v-if="visibleSummary.pendingValue > 0">
+                        Pendente: {{ visibleSummary.pendingValue | currency }}
+                    </span>
+                    <span class="text-success fw-semibold" v-if="visibleSummary.paidValue > 0">
+                        Pago: {{ visibleSummary.paidValue | currency }}
+                    </span>
+                    <span v-if="!isFilterMode">
+                        a partir de {{ progressiveStart ? progressiveStart.format('MM/YYYY') : '...' }}
+                    </span>
+                    <span v-else class="badge bg-primary">
+                        <i class="fa-solid fa-filter me-1"></i> Filtro ativo
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Empty state -->
+        <div v-if="groupedPayables.length === 0" class="text-center text-muted py-5">
+            <i class="fa-solid fa-inbox fa-3x mb-3"></i>
+            <p>Nenhuma conta encontrada.</p>
+        </div>
+
+        <!-- Month groups -->
+        <div v-for="group in groupedPayables" :key="group.monthKey" class="mb-3">
+            <div class="card border-0 shadow-sm">
+                <!-- Month header -->
+                <div class="card-header d-flex justify-content-between align-items-center"
+                    :class="group.isPast && group.hasOverdue ? 'bg-danger text-white' : group.isCurrent ? 'bg-dark text-white' : 'bg-light'"
+                    style="cursor:pointer"
+                    :data-bs-toggle="'collapse'"
+                    :data-bs-target="'#month-' + group.monthKey">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fw-semibold text-capitalize">{{ group.monthLabel }}</span>
+                        <span v-if="group.isCurrent" class="badge bg-primary">Este mês</span>
+                        <span v-if="group.isPast && group.hasOverdue" class="badge bg-light text-danger">
+                            <i class="fa-solid fa-triangle-exclamation me-1"></i>Atrasadas
+                        </span>
+                    </div>
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="small">{{ group.totalItems }} conta(s)</span>
+                        <span class="fw-semibold">{{ group.pendingTotal | currency }}</span>
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </div>
+                </div>
+
+                <!-- Month table -->
+                <div :id="'month-' + group.monthKey" :class="'collapse' + (group.isCurrent ? ' show' : '')">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="text-muted" style="width:40px">#</th>
+                                    <th style="cursor:pointer" @click="toggleSort('description')">
+                                        Descrição <i :class="'fa-solid ms-1 ' + sortIcon('description')"></i>
+                                    </th>
+                                    <th style="cursor:pointer" @click="toggleSort('supplier')">
+                                        Fornecedor <i :class="'fa-solid ms-1 ' + sortIcon('supplier')"></i>
+                                    </th>
+                                    <th style="cursor:pointer" @click="toggleSort('costCenter')">
+                                        C. Custo <i :class="'fa-solid ms-1 ' + sortIcon('costCenter')"></i>
+                                    </th>
+                                    <th style="cursor:pointer" @click="toggleSort('value')">
+                                        Valor <i :class="'fa-solid ms-1 ' + sortIcon('value')"></i>
+                                    </th>
+                                    <th style="cursor:pointer" @click="toggleSort('dueDate')">
+                                        Vencimento <i :class="'fa-solid ms-1 ' + sortIcon('dueDate')"></i>
+                                    </th>
+                                    <th style="cursor:pointer" @click="toggleSort('paymentDate')">
+                                        Pago em <i :class="'fa-solid ms-1 ' + sortIcon('paymentDate')"></i>
+                                    </th>
+                                    <th>Recorrência</th>
+                                    <th style="cursor:pointer" @click="toggleSort('status')">
+                                        Status <i :class="'fa-solid ms-1 ' + sortIcon('status')"></i>
+                                    </th>
+                                    <th style="width:80px"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="p in group.items" :key="p.id" :class="rowClass(p)">
+                                    <td class="small text-muted">{{ p.id }}</td>
+                                    <td>{{ p.description }}</td>
+                                    <td class="small">{{ p.Supplier ? p.Supplier.name : '-' }}</td>
+                                    <td class="small">{{ p.CostCenter ? p.CostCenter.name : '-' }}</td>
+                                    <td class="fw-semibold small">{{ p.value | currency }}</td>
+                                    <td class="small">{{ p.dueDate | date }}</td>
+                                    <td class="small">{{ p.paymentDate | date }}</td>
+                                    <td>
+                                        <span v-if="p.recurrence" class="badge bg-secondary small">{{ p.recurrence }}</span>
+                                        <span v-else class="text-muted small">-</span>
+                                    </td>
+                                    <td>
+                                        <span :class="'badge bg-' + statusClass(p)">{{ p.status }}</span>
+                                    </td>
+                                    <td class="text-end pe-2">
+                                        <button v-if="p.status !== 'pago' && p.status !== 'cancelado'"
+                                            class="btn btn-success btn-sm py-0 px-1 me-1"
+                                            @click="openPayModal(p)" title="Registrar pagamento">
+                                            <i class="fa-solid fa-check"></i>
+                                        </button>
+                                        <a :href="'../payables/i.html?id=' + p.id" class="btn btn-outline-secondary btn-sm py-0 px-1">
+                                            <i class="fa-solid fa-arrow-right"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination within month -->
+                    <div v-if="group.totalPages > 1" class="d-flex justify-content-between align-items-center px-3 py-2 border-top bg-light">
+                        <span class="small text-muted">
+                            Página {{ group.currentPage }} de {{ group.totalPages }}
+                            ({{ group.totalItems }} itens)
+                        </span>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-secondary"
+                                :disabled="group.currentPage <= 1"
+                                @click="setPage(group.monthKey, group.currentPage - 1)">
+                                <i class="fa-solid fa-chevron-left"></i>
+                            </button>
+                            <button v-for="p in group.totalPages" :key="p"
+                                class="btn btn-outline-secondary"
+                                :class="{ active: p === group.currentPage }"
+                                @click="setPage(group.monthKey, p)"
+                                v-if="group.totalPages <= 7 || Math.abs(p - group.currentPage) <= 2 || p === 1 || p === group.totalPages">
+                                {{ p }}
+                            </button>
+                            <button class="btn btn-outline-secondary"
+                                :disabled="group.currentPage >= group.totalPages"
+                                @click="setPage(group.monthKey, group.currentPage + 1)">
+                                <i class="fa-solid fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Load more -->
+        <div v-if="!isFilterMode" class="text-center py-3">
+            <button v-if="hasMore" class="btn btn-outline-secondary" @click="loadMore" :disabled="loadingMore">
+                <span v-if="loadingMore">
+                    <span class="spinner-border spinner-border-sm me-1"></span> Carregando...
+                </span>
+                <span v-else>
+                    <i class="fa-solid fa-clock-rotate-left me-1"></i> Carregar mais 3 meses
+                </span>
+            </button>
+            <span v-else class="text-muted small">
+                <i class="fa-solid fa-check me-1"></i> Histórico completo carregado
+            </span>
+        </div>
+
+        <!-- Payment Modal -->
+        <div class="modal fade" id="payModal" tabindex="-1" aria-labelledby="payModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="payModalLabel">
+                            <i class="fa-solid fa-check-circle text-success me-2"></i>Registrar Pagamento
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body" v-if="payModal.payable">
+                        <p class="text-muted small mb-3">
+                            <strong>{{ payModal.payable.description }}</strong>
+                            <span v-if="payModal.payable.Supplier"> · {{ payModal.payable.Supplier.name }}</span>
+                        </p>
+                        <div class="mb-3">
+                            <label class="form-label">Valor pago <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input type="number" step="0.01" min="0" class="form-control"
+                                    v-model="payModal.value" />
+                            </div>
+                            <div class="form-text text-muted">
+                                Valor original: {{ payModal.payable.value | currency }}
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Data do pagamento <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" v-model="payModal.paymentDate" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Conta bancária <span class="text-danger">*</span></label>
+                            <select class="form-select" v-model="payModal.BankAccountId">
+                                <option value="" disabled>Selecione uma conta...</option>
+                                <option v-for="ba in bankAccounts" :key="ba.id" :value="ba.id">
+                                    {{ ba.name }} — {{ ba.bank }}
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-success" @click="confirmPayment" :disabled="paying">
+                            <span v-if="paying">
+                                <span class="spinner-border spinner-border-sm me-1"></span> Salvando...
+                            </span>
+                            <span v-else>
+                                <i class="fa-solid fa-check me-1"></i> Confirmar Pagamento
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script src="../assets/js/payables/payables.js"></script>

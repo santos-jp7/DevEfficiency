@@ -122,7 +122,12 @@ class billingController {
             url,
         })
 
-        return res.status(201).send(billingFile)
+        // Auto-set status to 'faturada' on first upload
+        if (billing.status === 'pendente') {
+            await billing.update({ status: 'faturada' })
+        }
+
+        return res.status(201).send({ billingFile, billingStatus: billing.status })
     }
 
     // A criação de cobranças é automática via hooks.
