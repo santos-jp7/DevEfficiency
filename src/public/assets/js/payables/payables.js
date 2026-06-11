@@ -1,12 +1,26 @@
 let __api__ = null
 let chartInstance = null
+const MONTHS_PER_LOAD = 3
 
 const app = new Vue({
     el: '#app',
     data: {
         payables: [],
+
+        // Progressive loading state
+        progressiveStart: null, // moment: earliest date loaded in progressive mode
+        isFilterMode: false,
+        loadingMore: false,
+        hasMore: true,
+
+        // Filters (applied via "Buscar" button)
+        filterStart: '',     // YYYY-MM from month picker
+        filterEnd: '',       // YYYY-MM from month picker
+        filterSupplier: '',  // text search, server-side
+
+        // Client-side only (instant, no server call)
         filterDesc: '',
-        filterSupplier: '',
+
         showPastMonths: true,
         chartReady: false,
     },
@@ -30,8 +44,11 @@ const app = new Vue({
         currentMonthKey() {
             return moment().format('YYYY-MM')
         },
+        hasActiveFilters() {
+            return this.filterStart || this.filterEnd || this.filterSupplier
+        },
 
-        // Summary cards (all payables, not just filtered)
+        // Summary cards — computed from all loaded payables (not filtered by description)
         summary() {
             const today = this.today
             const threeDays = this.threeDaysFromNow
@@ -63,18 +80,14 @@ const app = new Vue({
             }
         },
 
-        // Filtered payables (search only — grouping handles month filter)
+        // Description filter applied on top of loaded payables
         filtered() {
-            return this.payables.filter((p) => {
-                const matchDesc = !this.filterDesc || (p.description || '').toLowerCase().includes(this.filterDesc.toLowerCase())
-                const matchSupplier =
-                    !this.filterSupplier ||
-                    (p.Supplier && p.Supplier.name.toLowerCase().includes(this.filterSupplier.toLowerCase()))
-                return matchDesc && matchSupplier
-            })
+            if (!this.filterDesc) return this.payables
+            const q = this.filterDesc.toLowerCase()
+            return this.payables.filter((p) => (p.description || '').toLowerCase().includes(q))
         },
 
-        // Group by month (YYYY-MM), sorted ascending
+        // Group filtered payables by month, sorted: current → future → past
         groupedPayables() {
             const groups = {}
             const today = this.today
@@ -86,16 +99,12 @@ const app = new Vue({
                 groups[key].push(p)
             })
 
-            const currentKey = this.currentMonthKey
             const result = Object.keys(groups)
                 .sort((a, b) => {
-                    // Current month always first
                     if (a === currentKey) return -1
                     if (b === currentKey) return 1
-                    // 'sem-data' always last
                     if (a === 'sem-data') return 1
                     if (b === 'sem-data') return -1
-                    // Future months before past months, both in ascending order
                     const aFuture = a > currentKey
                     const bFuture = b > currentKey
                     if (aFuture && !bFuture) return -1
@@ -103,9 +112,9 @@ const app = new Vue({
                     return a.localeCompare(b)
                 })
                 .map((key) => {
-                    const items = groups[key].slice().sort((a, b) => {
-                        return moment.utc(a.dueDate).valueOf() - moment.utc(b.dueDate).valueOf()
-                    })
+                    const items = groups[key].slice().sort((a, b) =>
+                        moment.utc(a.dueDate).valueOf() - moment.utc(b.dueDate).valueOf(),
+                    )
                     const isPast = key < currentKey
                     const isCurrent = key === currentKey
                     const hasOverdue = items.some(
@@ -115,21 +124,18 @@ const app = new Vue({
                         .filter((p) => p.status === 'pendente')
                         .reduce((s, p) => s + parseFloat(p.value || 0), 0)
                     const monthLabel =
-                        key === 'sem-data'
-                            ? 'Sem data definida'
-                            : moment(key, 'YYYY-MM').format('MMMM [de] YYYY')
+                        key === 'sem-data' ? 'Sem data definida' : moment(key, 'YYYY-MM').format('MMMM [de] YYYY')
 
                     return { monthKey: key, monthLabel, items, isPast, isCurrent, hasOverdue, pendingTotal }
                 })
 
-            // Filter past months unless toggle is on
             if (!this.showPastMonths) {
                 return result.filter((g) => !g.isPast || g.hasOverdue)
             }
             return result
         },
 
-        // Chart data: pending totals by month (sorted)
+        // Chart data: pending totals per month from loaded payables
         chartData() {
             const monthTotals = {}
             this.payables
@@ -140,27 +146,91 @@ const app = new Vue({
                 })
 
             const keys = Object.keys(monthTotals).sort()
-            const labels = keys.map((k) => moment(k, 'YYYY-MM').format('MMM/YY'))
-            const values = keys.map((k) => monthTotals[k])
             const currentKey = this.currentMonthKey
-            const colors = keys.map((k) => (k === currentKey ? '#0d6efd' : '#6c757d'))
-
-            return { labels, values, colors }
+            return {
+                labels: keys.map((k) => moment(k, 'YYYY-MM').format('MMM/YY')),
+                values: keys.map((k) => monthTotals[k]),
+                colors: keys.map((k) => (k === currentKey ? '#0d6efd' : '#6c757d')),
+            }
         },
     },
     methods: {
-        statusClass(p) {
-            switch (p.status) {
-                case 'pago':
-                    return 'success'
-                case 'pendente':
-                    return 'primary'
-                case 'cancelado':
-                    return 'secondary'
-                default:
-                    return 'light'
+        // Build query string from active filters (date + supplier)
+        buildQuery(extra = {}) {
+            const params = { ...extra }
+            if (this.filterStart) params.startDate = moment(this.filterStart, 'YYYY-MM').startOf('month').format('YYYY-MM-DD')
+            if (this.filterEnd) params.endDate = moment(this.filterEnd, 'YYYY-MM').endOf('month').format('YYYY-MM-DD')
+            if (this.filterSupplier) params.supplier = this.filterSupplier
+            const qs = Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&')
+            return qs ? '?' + qs : ''
+        },
+
+        // Load initial chunk: from MONTHS_PER_LOAD months ago to future (no endDate)
+        async loadInitial() {
+            this.progressiveStart = moment().subtract(MONTHS_PER_LOAD, 'months').startOf('month')
+            const startDate = this.progressiveStart.format('YYYY-MM-DD')
+            const { data } = await __api__.get(`/api/payables?startDate=${startDate}`)
+            this.payables = data
+            this.hasMore = true
+            this.renderChart()
+        },
+
+        // Load 3 more past months and prepend to list
+        async loadMore() {
+            if (this.loadingMore || !this.hasMore) return
+            this.loadingMore = true
+            try {
+                const endDate = this.progressiveStart.clone().subtract(1, 'day').format('YYYY-MM-DD')
+                const newStart = this.progressiveStart.clone().subtract(MONTHS_PER_LOAD, 'months')
+                const startDate = newStart.format('YYYY-MM-DD')
+
+                const { data } = await __api__.get(`/api/payables?startDate=${startDate}&endDate=${endDate}`)
+                if (data.length === 0) {
+                    this.hasMore = false
+                } else {
+                    this.payables = [...this.payables, ...data]
+                    this.progressiveStart = newStart
+                    this.renderChart()
+                }
+            } catch (err) {
+                console.error(err)
+            } finally {
+                this.loadingMore = false
             }
         },
+
+        // Apply server-side filters (date range + supplier) — replaces list
+        async applyFilters() {
+            this.isFilterMode = true
+            try {
+                const { data } = await __api__.get('/api/payables' + this.buildQuery())
+                this.payables = data
+                this.renderChart()
+            } catch (err) {
+                console.error(err)
+                alert(err.response?.data?.message || 'Erro ao buscar contas.')
+            }
+        },
+
+        // Clear filters and go back to progressive mode
+        async clearFilters() {
+            this.filterStart = ''
+            this.filterEnd = ''
+            this.filterSupplier = ''
+            this.filterDesc = ''
+            this.isFilterMode = false
+            await this.loadInitial()
+        },
+
+        statusClass(p) {
+            switch (p.status) {
+                case 'pago': return 'success'
+                case 'pendente': return 'primary'
+                case 'cancelado': return 'secondary'
+                default: return 'light'
+            }
+        },
+
         rowClass(p) {
             const today = this.today
             const threeDays = this.threeDaysFromNow
@@ -169,13 +239,11 @@ const app = new Vue({
             if (p.status === 'pendente' && p.dueDate && moment.utc(p.dueDate).isSameOrBefore(threeDays)) return 'table-warning'
             return ''
         },
+
         renderChart() {
-            if (chartInstance) {
-                chartInstance.destroy()
-                chartInstance = null
-            }
+            if (chartInstance) { chartInstance.destroy(); chartInstance = null }
             const { labels, values, colors } = this.chartData
-            if (!labels.length) return
+            if (!labels.length) { this.chartReady = false; return }
 
             this.chartReady = true
             this.$nextTick(() => {
@@ -185,13 +253,7 @@ const app = new Vue({
                     type: 'bar',
                     data: {
                         labels,
-                        datasets: [
-                            {
-                                label: 'Gastos Previstos (R$)',
-                                data: values,
-                                backgroundColor: colors,
-                            },
-                        ],
+                        datasets: [{ label: 'Gastos Previstos (R$)', data: values, backgroundColor: colors }],
                     },
                     options: {
                         responsive: true,
@@ -206,13 +268,7 @@ const app = new Vue({
                             },
                         },
                         scales: {
-                            y: {
-                                ticks: {
-                                    callback(v) {
-                                        return 'R$ ' + v.toLocaleString('pt-BR')
-                                    },
-                                },
-                            },
+                            y: { ticks: { callback(v) { return 'R$ ' + v.toLocaleString('pt-BR') } } },
                         },
                     },
                 })
@@ -227,26 +283,13 @@ const app = new Vue({
         if (!token || !expires_in || !type) return (location.href = '/')
         if (expires_in <= new Date().valueOf()) return (location.href = '/')
 
-        __api__ = axios.create({
-            headers: {
-                Authorization: [type, token].join(' '),
-            },
-        })
+        __api__ = axios.create({ headers: { Authorization: [type, token].join(' ') } })
 
-        __api__.get('/api/auth/verify').catch(() => {
-            localStorage.clear()
-            location.href = '/'
-        })
+        __api__.get('/api/auth/verify').catch(() => { localStorage.clear(); location.href = '/' })
 
-        __api__
-            .get('/api/payables')
-            .then(({ data }) => {
-                this.payables = data
-                this.renderChart()
-            })
-            .catch((error) => {
-                console.error(error)
-                alert(error.response?.data?.message || 'Ocorreu um erro ao buscar as contas a pagar.')
-            })
+        this.loadInitial().catch((err) => {
+            console.error(err)
+            alert(err.response?.data?.message || 'Erro ao carregar contas a pagar.')
+        })
     },
 })
