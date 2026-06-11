@@ -25,15 +25,23 @@ class PayablesController {
                 if (endDate) where.dueDate[Op.lte] = endDate
             }
 
+            const { costCenter } = req.query as any
+
             const supplierInclude: any = { model: Supplier }
             if (supplier) {
                 supplierInclude.where = { name: { [Op.like]: `%${supplier}%` } }
                 supplierInclude.required = true
             }
 
+            const costCenterInclude: any = { model: CostCenter }
+            if (costCenter) {
+                costCenterInclude.where = { name: { [Op.like]: `%${costCenter}%` } }
+                costCenterInclude.required = true
+            }
+
             const payables = await Payable.findAll({
                 where,
-                include: [supplierInclude, BankAccount, CostCenter],
+                include: [supplierInclude, BankAccount, costCenterInclude],
                 order: [['dueDate', 'DESC']],
             })
             return res.send(payables)
