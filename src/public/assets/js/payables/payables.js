@@ -86,8 +86,22 @@ const app = new Vue({
                 groups[key].push(p)
             })
 
+            const currentKey = this.currentMonthKey
             const result = Object.keys(groups)
-                .sort()
+                .sort((a, b) => {
+                    // Current month always first
+                    if (a === currentKey) return -1
+                    if (b === currentKey) return 1
+                    // 'sem-data' always last
+                    if (a === 'sem-data') return 1
+                    if (b === 'sem-data') return -1
+                    // Future months before past months, both in ascending order
+                    const aFuture = a > currentKey
+                    const bFuture = b > currentKey
+                    if (aFuture && !bFuture) return -1
+                    if (!aFuture && bFuture) return 1
+                    return a.localeCompare(b)
+                })
                 .map((key) => {
                     const items = groups[key].slice().sort((a, b) => {
                         return moment.utc(a.dueDate).valueOf() - moment.utc(b.dueDate).valueOf()
