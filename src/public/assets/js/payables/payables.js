@@ -1,8 +1,20 @@
 let __api__ = null
 let chartInstance = null
+let historyChartInstance = null
 let _payModalBS = null
 const MONTHS_PER_LOAD = 3
 const PAGE_SIZE = 10
+const MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+
+function monthLabel(key) {
+    if (key === 'sem-data') return 'Sem data definida'
+    const m = moment(key, 'YYYY-MM')
+    return `${MONTHS_PT[m.month()]} de ${m.year()}`
+}
+function monthShort(key) {
+    const m = moment(key, 'YYYY-MM')
+    return `${MONTHS_PT[m.month()].substring(0, 3)}/${m.format('YY')}`
+}
 
 const app = new Vue({
     el: '#app',
@@ -36,6 +48,7 @@ const app = new Vue({
 
         showPastMonths: true,
         chartReady: false,
+        historyChartReady: false,
 
         // Payment modal
         payModal: { payable: null, value: 0, paymentDate: '', BankAccountId: '' },
@@ -212,12 +225,10 @@ const app = new Vue({
                     const pendingTotal = sortedItems
                         .filter(p => p.status === 'pendente')
                         .reduce((s, p) => s + parseFloat(p.value || 0), 0)
-                    const monthLabel = key === 'sem-data'
-                        ? 'Sem data definida'
-                        : moment(key, 'YYYY-MM').format('MMMM [de] YYYY')
+                    const label = monthLabel(key)
 
                     return {
-                        monthKey: key, monthLabel, items: pageItems,
+                        monthKey: key, monthLabel: label, items: pageItems,
                         totalItems: sortedItems.length, currentPage: page, totalPages,
                         isPast, isCurrent, hasOverdue, pendingTotal,
                     }
@@ -235,9 +246,24 @@ const app = new Vue({
             const keys = Object.keys(monthTotals).sort()
             const cur = this.currentMonthKey
             return {
-                labels: keys.map(k => moment(k, 'YYYY-MM').format('MMM/YY')),
+                labels: keys.map(k => monthShort(k)),
                 values: keys.map(k => monthTotals[k]),
                 colors: keys.map(k => k === cur ? '#0d6efd' : '#6c757d'),
+            }
+        },
+
+        historyChartData() {
+            const monthTotals = {}
+            this.payables.filter(p => p.status === 'pago' && p.paymentDate).forEach(p => {
+                const key = moment.utc(p.paymentDate).format('YYYY-MM')
+                monthTotals[key] = (monthTotals[key] || 0) + parseFloat(p.value || 0)
+            })
+            const keys = Object.keys(monthTotals).sort()
+            const cur = this.currentMonthKey
+            return {
+                labels: keys.map(k => monthShort(k)),
+                values: keys.map(k => monthTotals[k]),
+                colors: keys.map(k => k === cur ? '#198754' : '#20c997'),
             }
         },
     },
@@ -417,27 +443,44 @@ const app = new Vue({
             URL.revokeObjectURL(url)
         },
 
-        // ── Chart ─────────────────────────────────────────────────────────────
+        // ── Charts ────────────────────────────────────────────────────────────
         renderChart() {
             if (chartInstance) { chartInstance.destroy(); chartInstance = null }
-            const { labels, values, colors } = this.chartData
-            if (!labels.length) { this.chartReady = false; return }
-            this.chartReady = true
+            if (historyChartInstance) { historyChartInstance.destroy(); historyChartInstance = null }
+
+            const predicted = this.chartData
+            const history = this.historyChartData
+
+            this.chartReady = predicted.labels.length > 0 || history.labels.length > 0
+            if (!this.chartReady) return
+
             this.$nextTick(() => {
-                const ctx = document.getElementById('payablesChart')
-                if (!ctx) return
-                chartInstance = new Chart(ctx.getContext('2d'), {
-                    type: 'bar',
-                    data: { labels, datasets: [{ label: 'Gastos Previstos (R$)', data: values, backgroundColor: colors }] },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: { callbacks: { label(c) { return ' R$ ' + c.parsed.y.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) } } },
-                        },
-                        scales: { y: { ticks: { callback(v) { return 'R$ ' + v.toLocaleString('pt-BR') } } } },
+                const chartOptions = (label) => ({
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { label(c) { return ` R$ ${c.parsed.y.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` } } },
                     },
+                    scales: { y: { ticks: { callback(v) { return 'R$ ' + v.toLocaleString('pt-BR') } } } },
                 })
+
+                const ctxP = document.getElementById('payablesChart')
+                if (ctxP && predicted.labels.length) {
+                    chartInstance = new Chart(ctxP.getContext('2d'), {
+                        type: 'bar',
+                        data: { labels: predicted.labels, datasets: [{ label: 'Previsto', data: predicted.values, backgroundColor: predicted.colors }] },
+                        options: chartOptions('Previsto'),
+                    })
+                }
+
+                const ctxH = document.getElementById('historyChart')
+                if (ctxH && history.labels.length) {
+                    historyChartInstance = new Chart(ctxH.getContext('2d'), {
+                        type: 'bar',
+                        data: { labels: history.labels, datasets: [{ label: 'Pago', data: history.values, backgroundColor: history.colors }] },
+                        options: chartOptions('Pago'),
+                    })
+                }
             })
         },
     },

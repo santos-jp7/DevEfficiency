@@ -151,10 +151,26 @@
             </div>
         </div>
 
-        <!-- Chart -->
-        <div class="card border-0 shadow-sm mb-4 p-3" v-if="chartReady">
-            <h6 class="mb-3 text-muted">Gastos Previstos por Mês</h6>
-            <canvas id="payablesChart" height="80"></canvas>
+        <!-- Charts -->
+        <div class="row mb-4" v-if="chartReady">
+            <div class="col-md-6 mb-3 mb-md-0">
+                <div class="card border-0 shadow-sm p-3 h-100">
+                    <h6 class="mb-3 text-muted">
+                        <i class="fa-solid fa-clock me-1 text-primary"></i> Gastos Previstos por Mês
+                        <small class="text-muted fw-normal">(pendentes)</small>
+                    </h6>
+                    <canvas id="payablesChart" height="120"></canvas>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm p-3 h-100">
+                    <h6 class="mb-3 text-muted">
+                        <i class="fa-solid fa-check-circle me-1 text-success"></i> Histórico de Gastos
+                        <small class="text-muted fw-normal">(pagos)</small>
+                    </h6>
+                    <canvas id="historyChart" height="120"></canvas>
+                </div>
+            </div>
         </div>
 
         <!-- Filters card -->
