@@ -7,7 +7,7 @@ const app = new Vue({
         payables: [],
         filterDesc: '',
         filterSupplier: '',
-        showPastMonths: false,
+        showPastMonths: true,
         chartReady: false,
     },
     filters: {
