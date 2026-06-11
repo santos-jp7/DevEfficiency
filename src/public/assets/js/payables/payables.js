@@ -49,6 +49,7 @@ const app = new Vue({
         showPastMonths: true,
         chartReady: false,
         historyChartReady: false,
+        INITIAL_MONTHS: 12,
 
         // Payment modal
         payModal: { payable: null, value: 0, paymentDate: '', BankAccountId: '' },
@@ -300,7 +301,7 @@ const app = new Vue({
         },
 
         async loadInitial() {
-            this.progressiveStart = moment().subtract(MONTHS_PER_LOAD, 'months').startOf('month')
+            this.progressiveStart = moment().subtract(12, 'months').startOf('month')
             const startDate = this.progressiveStart.format('YYYY-MM-DD')
             const { data } = await __api__.get(`/api/payables?startDate=${startDate}`)
             this.payables = data
@@ -451,35 +452,38 @@ const app = new Vue({
             const predicted = this.chartData
             const history = this.historyChartData
 
-            this.chartReady = predicted.labels.length > 0 || history.labels.length > 0
-            if (!this.chartReady) return
+            this.chartReady = predicted.labels.length > 0
+            this.historyChartReady = history.labels.length > 0
+
+            const chartOptions = () => ({
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label(c) { return ` R$ ${c.parsed.y.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` } } },
+                },
+                scales: { y: { ticks: { callback(v) { return 'R$ ' + v.toLocaleString('pt-BR') } } } },
+            })
 
             this.$nextTick(() => {
-                const chartOptions = (label) => ({
-                    responsive: true,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: { callbacks: { label(c) { return ` R$ ${c.parsed.y.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` } } },
-                    },
-                    scales: { y: { ticks: { callback(v) { return 'R$ ' + v.toLocaleString('pt-BR') } } } },
-                })
-
-                const ctxP = document.getElementById('payablesChart')
-                if (ctxP && predicted.labels.length) {
-                    chartInstance = new Chart(ctxP.getContext('2d'), {
-                        type: 'bar',
-                        data: { labels: predicted.labels, datasets: [{ label: 'Previsto', data: predicted.values, backgroundColor: predicted.colors }] },
-                        options: chartOptions('Previsto'),
-                    })
+                if (this.chartReady) {
+                    const ctxP = document.getElementById('payablesChart')
+                    if (ctxP) {
+                        chartInstance = new Chart(ctxP.getContext('2d'), {
+                            type: 'bar',
+                            data: { labels: predicted.labels, datasets: [{ label: 'Previsto', data: predicted.values, backgroundColor: predicted.colors }] },
+                            options: chartOptions(),
+                        })
+                    }
                 }
-
-                const ctxH = document.getElementById('historyChart')
-                if (ctxH && history.labels.length) {
-                    historyChartInstance = new Chart(ctxH.getContext('2d'), {
-                        type: 'bar',
-                        data: { labels: history.labels, datasets: [{ label: 'Pago', data: history.values, backgroundColor: history.colors }] },
-                        options: chartOptions('Pago'),
-                    })
+                if (this.historyChartReady) {
+                    const ctxH = document.getElementById('historyChart')
+                    if (ctxH) {
+                        historyChartInstance = new Chart(ctxH.getContext('2d'), {
+                            type: 'bar',
+                            data: { labels: history.labels, datasets: [{ label: 'Pago', data: history.values, backgroundColor: history.colors }] },
+                            options: chartOptions(),
+                        })
+                    }
                 }
             })
         },

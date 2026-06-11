@@ -152,8 +152,8 @@
         </div>
 
         <!-- Charts -->
-        <div class="row mb-4" v-if="chartReady">
-            <div class="col-md-6 mb-3 mb-md-0">
+        <div class="row mb-4" v-if="chartReady || historyChartReady">
+            <div class="col-md-6 mb-3 mb-md-0" v-if="chartReady">
                 <div class="card border-0 shadow-sm p-3 h-100">
                     <h6 class="mb-3 text-muted">
                         <i class="fa-solid fa-clock me-1 text-primary"></i> Gastos Previstos por Mês
@@ -162,7 +162,7 @@
                     <canvas id="payablesChart" height="120"></canvas>
                 </div>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-6" v-if="historyChartReady">
                 <div class="card border-0 shadow-sm p-3 h-100">
                     <h6 class="mb-3 text-muted">
                         <i class="fa-solid fa-check-circle me-1 text-success"></i> Histórico de Gastos
