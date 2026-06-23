@@ -10,6 +10,9 @@ class BankAccount extends Model<InferAttributes<BankAccount>, InferCreationAttri
     declare agency: CreationOptional<string>
     declare accountNumber: CreationOptional<string>
     declare balance: CreationOptional<number>
+    declare iban: CreationOptional<string>
+    declare swiftCode: CreationOptional<string>
+    declare bankAddress: CreationOptional<string>
 
     declare createdAt: CreationOptional<Date>
     declare updatedAt: CreationOptional<Date>
@@ -42,6 +45,18 @@ BankAccount.init(
             type: DataTypes.FLOAT,
             defaultValue: 0.0,
             allowNull: false,
+        },
+        iban: {
+            type: DataTypes.STRING(50),
+            allowNull: true,
+        },
+        swiftCode: {
+            type: DataTypes.STRING(20),
+            allowNull: true,
+        },
+        bankAddress: {
+            type: DataTypes.STRING(255),
+            allowNull: true,
         },
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,

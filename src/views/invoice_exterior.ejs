@@ -1,0 +1,233 @@
+<head>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            color: #333;
+            line-height: 1.5;
+            margin: 0;
+            padding: 40px;
+            background-color: #fff;
+        }
+
+        .header-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 30px;
+        }
+
+        .company-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: #000;
+            display: block;
+        }
+
+        .text-muted {
+            font-size: 13px;
+            color: #666;
+            display: block;
+        }
+
+        .invoice-title {
+            text-align: right;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 32px;
+            color: #ccc;
+            font-weight: 700;
+        }
+
+        .invoice-number {
+            font-size: 16px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .creation-date {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .section-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .billed-to {
+            margin: 30px 0;
+        }
+
+        .client-name {
+            font-size: 16px;
+            font-weight: 700;
+            display: block;
+        }
+
+        .services-box {
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 0 20px;
+            margin-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        th {
+            text-align: left;
+            color: #999;
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            padding: 14px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        td {
+            padding: 14px 0;
+            border-bottom: 1px solid #fafafa;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .total-row td {
+            background: #eef3fc;
+            font-weight: 700;
+            color: #1a4fb4;
+            border-bottom: none;
+        }
+
+        .payment-info {
+            margin-top: 50px;
+        }
+
+        .payment-info-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+        }
+
+        .payment-line {
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="header-nav">
+        <div>
+            <span class="company-name">
+                <%= configMap['name'] || 'Empresa' %>
+            </span>
+            <span class="text-muted">
+                <%= configMap['address'] || 'Endereço da empresa' %>
+            </span>
+            <span class="text-muted">CNPJ: <%= configMap['cnpj'] || '00.000.000/0000-00' %></span>
+        </div>
+        <div class="invoice-title">
+            <h1>Invoice</h1>
+            <span class="invoice-number">
+                <%= os.id %>
+            </span>
+            <span class="creation-date">Creation date: <%= `
+                    ${String(new Date().getDate()).padStart(2, "0"
+                    )}.${String(new Date().getMonth()+1).padStart(2, "0" )}.${new Date().getFullYear()}` %></span>
+        </div>
+    </header>
+
+    <div class="billed-to">
+        <div class="section-label">Billed to</div>
+        <span class="client-name">
+            <%= os.Client?.name || os.Project?.Client?.name %>
+        </span>
+        <span class="text-muted">
+            <%= os.Client?.email || os.Project?.Client?.email %>
+        </span>
+    </div>
+
+    <div class="services-box">
+        <table>
+            <thead>
+                <tr>
+                    <th>Title / Description</th>
+                    <th class="text-right">Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% for(let register of os.Protocol?.Protocol_registers || []){ %>
+                    <tr>
+                        <td>
+                            <%= register.description %>
+                        </td>
+                        <td class="text-right">
+                            <%= Number(register.value).toLocaleString('en-US', { style: 'currency', currency }) %>
+                        </td>
+                    </tr>
+                    <% } %>
+
+                        <% for(let prod of os.Protocol?.Protocol_products || []){ %>
+                            <tr>
+                                <td>
+                                    <%= prod.Product?.description || 'Produto' %>
+                                </td>
+                                <td class="text-right">
+                                    <%= Number(prod.value).toLocaleString('en-US', { style: 'currency', currency }) %>
+                                </td>
+                            </tr>
+                            <% } %>
+
+                                <tr class="total-row">
+                                    <td>Total (<%= currency %>)</td>
+                                    <td class="text-right">
+                                        <%= ( (os.Protocol?.Protocol_registers?.reduce((sum, v)=> sum +
+                                            Number(v.value), 0) || 0) +
+                                            (os.Protocol?.Protocol_products?.reduce((sum, v) => sum + Number(v.value),
+                                            0) || 0) ).toLocaleString('en-US', { style: 'currency', currency }) %>
+                                    </td>
+                                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="payment-info">
+        <div class="payment-info-title">Payment info</div>
+        <div class="payment-line"><strong>Beneficiary:</strong>
+            <%= configMap['name'] || 'Empresa' %>
+        </div>
+        <div class="payment-line"><strong>Beneficiary Address:</strong>
+            <%= configMap['address'] || 'Endereço da empresa' %>
+        </div>
+        <div class="payment-line"><strong>Account Number (IBAN):</strong>
+            <%= bankAccount?.iban || '-' %>
+        </div>
+        <div class="payment-line"><strong>SWIFT CODE:</strong>
+            <%= bankAccount?.swiftCode || '-' %>
+        </div>
+        <div class="payment-line"><strong>Bank Name:</strong>
+            <%= bankAccount?.bank || '-' %>
+        </div>
+        <div class="payment-line"><strong>Bank Address:</strong>
+            <%= bankAccount?.bankAddress || '-' %>
+        </div>
+    </div>
+</body>

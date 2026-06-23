@@ -14,6 +14,7 @@ import Receipts from '../models/Receipts'
 import Service_order from '../models/Service_order'
 import Product from '../models/Product'
 import Config from '../models/Config'
+import BankAccount from '../models/BankAccount'
 
 import db from '../db'
 
@@ -22,6 +23,11 @@ type serviceOrdersRequest = FastifyRequest<{
     Params: Service_order
     Querystring: Service_order & { filter: 'last_three' | 'pending' }
     Headers: any
+}>
+
+type invoicePdfRequest = FastifyRequest<{
+    Params: { id: string }
+    Querystring: { currency?: string; BankAccountId?: string }
 }>
 
 class serviceOrdersController {
@@ -158,6 +164,62 @@ class serviceOrdersController {
 
         res.header('Content-Type', 'application/pdf')
         res.header('Content-Disposition', `attachment; filename=os_${os?.id}_${Date.now()}.pdf`)
+
+        return res.send(pdf)
+    }
+
+    static async invoicePdf(req: invoicePdfRequest, res: FastifyReply) {
+        const { id } = req.params
+        const { currency = 'USD', BankAccountId } = req.query
+
+        const os = await Service_order.findByPk(id, {
+            include: [
+                Client,
+                {
+                    model: Protocol,
+                    include: [Protocol_register, { model: Protocol_product, include: [Product] }],
+                },
+                { model: Project, include: [Client] },
+            ],
+        })
+
+        const bankAccount = BankAccountId ? await BankAccount.findByPk(BankAccountId) : null
+
+        const config = await Config.findAll({})
+        const configMap: { [key: string]: string | null } = {}
+        config.forEach((cfg) => {
+            if (cfg.upload) {
+                const file = fs.readFileSync(path.join(process.cwd(), 'tmp', cfg.value))
+                const extension = path.extname(cfg.value).substring(1)
+
+                //is image?
+                if (['png', 'jpg', 'jpeg', 'gif'].includes(extension.toLowerCase())) {
+                    const fileBase64 = Buffer.from(file).toString('base64')
+                    configMap[cfg.type] = `data:image/${extension};base64,${fileBase64}`
+                } else {
+                    configMap[cfg.type] = null
+                }
+            } else configMap[cfg.type] = cfg.value
+        })
+
+        const template = fs.readFileSync(path.resolve('src', 'views', 'invoice_exterior.ejs'), 'utf-8')
+        const html = ejs.render(template, { os, configMap, currency, bankAccount })
+
+        const browser = await puppeteer.launch({
+            headless: 'new',
+            executablePath: '/usr/bin/google-chrome',
+            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu'],
+        })
+
+        const page = await browser.newPage()
+        await page.setContent(html, { waitUntil: 'networkidle0' })
+        await page.emulateMediaType('screen')
+        const pdf = await page.pdf()
+        await page.close()
+        await browser.close()
+
+        res.header('Content-Type', 'application/pdf')
+        res.header('Content-Disposition', `attachment; filename=invoice_os_${os?.id}_${Date.now()}.pdf`)
 
         return res.send(pdf)
     }

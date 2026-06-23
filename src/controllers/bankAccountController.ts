@@ -37,8 +37,17 @@ class BankAccountController {
 
     static async store(req: BankAccountRequest, res: FastifyReply): Promise<FastifyReply> {
         try {
-            const { name, bank, agency, accountNumber, balance } = req.body
-            const newBankAccount = await BankAccount.create({ name, bank, agency, accountNumber, balance })
+            const { name, bank, agency, accountNumber, balance, iban, swiftCode, bankAddress } = req.body
+            const newBankAccount = await BankAccount.create({
+                name,
+                bank,
+                agency,
+                accountNumber,
+                balance,
+                iban,
+                swiftCode,
+                bankAddress,
+            })
             return res.status(201).send(newBankAccount)
         } catch (error) {
             console.error(error)
@@ -49,7 +58,7 @@ class BankAccountController {
     static async update(req: BankAccountRequest, res: FastifyReply): Promise<FastifyReply> {
         try {
             const { id } = req.params
-            const { name, bank, agency, accountNumber, balance } = req.body
+            const { name, bank, agency, accountNumber, iban, swiftCode, bankAddress } = req.body
 
             const bankAccount = await BankAccount.findByPk(id)
 
@@ -58,7 +67,7 @@ class BankAccountController {
             }
 
             // Prevent balance from being updated directly via this endpoint for safety
-            await bankAccount.update({ name, bank, agency, accountNumber })
+            await bankAccount.update({ name, bank, agency, accountNumber, iban, swiftCode, bankAddress })
 
             return res.send(bankAccount)
         } catch (error) {

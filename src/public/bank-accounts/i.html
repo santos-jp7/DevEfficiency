@@ -128,6 +128,28 @@
             <div class="alert alert-info" v-if="id">
                 O saldo é atualizado automaticamente através das transações de entrada e saída.
             </div>
+
+            <hr>
+            <h6>Dados internacionais (opcional)</h6>
+            <p class="text-muted small">Preencha apenas se esta conta for usada para receber transferências
+                internacionais (ex: invoices em USD).</p>
+            <div class="row">
+                <div class="mb-3 col-md-6">
+                    <label class="form-label">IBAN</label>
+                    <input type="text" class="form-control" v-model="iban">
+                </div>
+                <div class="mb-3 col-md-6">
+                    <label class="form-label">SWIFT Code</label>
+                    <input type="text" class="form-control" v-model="swiftCode">
+                </div>
+            </div>
+            <div class="row">
+                <div class="mb-3 col-md-12">
+                    <label class="form-label">Endereço do Banco</label>
+                    <input type="text" class="form-control" v-model="bankAddress">
+                </div>
+            </div>
+
             <button type="submit" class="btn btn-dark">Salvar</button>
             <a href="./index.html" class="btn btn-secondary">Voltar</a>
         </form>

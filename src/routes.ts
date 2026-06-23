@@ -123,6 +123,7 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.put('/os/:id', { preHandler: [isAuthed] }, serviceOrdersController.update)
 
     instance.get('/os/:id/pdf', serviceOrdersController.pdf)
+    instance.get('/os/:id/invoice-pdf', serviceOrdersController.invoicePdf)
 
     instance.get('/protocols', { preHandler: [isAuthed] }, protocolsController.index)
     instance.get('/protocols/:id', { preHandler: [isAuthed] }, protocolsController.show)
