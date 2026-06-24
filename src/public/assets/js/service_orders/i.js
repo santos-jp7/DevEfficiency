@@ -51,6 +51,10 @@ const service_order = new Vue({
                 status: 'Em andamento',
                 public: false,
             },
+            invoice: {
+                currency: 'USD',
+                BankAccountId: '',
+            },
         },
         references: {
             products: [],
@@ -315,6 +319,26 @@ const service_order = new Vue({
                     alert(e.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.')
                     window.location.reload()
                 })
+        },
+        handlerNewInvoice() {
+            this.$data.payloads.invoice = {
+                currency: 'USD',
+                BankAccountId: '',
+            }
+
+            new bootstrap.Modal(document.getElementById('invoiceModal')).show()
+        },
+        handlerInvoiceSubmit() {
+            const params = new URLSearchParams({
+                currency: this.$data.payloads.invoice.currency,
+                ...(this.$data.payloads.invoice.BankAccountId
+                    ? { BankAccountId: this.$data.payloads.invoice.BankAccountId }
+                    : {}),
+            })
+
+            window.open(`/api/os/${this.$data.id}/invoice-pdf?${params.toString()}`, '_blank')
+
+            bootstrap.Modal.getInstance(document.getElementById('invoiceModal')).hide()
         },
     },
     mounted: function () {

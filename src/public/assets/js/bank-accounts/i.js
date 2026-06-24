@@ -10,6 +10,9 @@ const app = new Vue({
         agency: '',
         accountNumber: '',
         balance: 0.0,
+        iban: '',
+        swiftCode: '',
+        bankAddress: '',
     },
     methods: {
         async saveAccount() {
@@ -22,6 +25,9 @@ const app = new Vue({
                 bank: this.bank,
                 agency: this.agency,
                 accountNumber: this.accountNumber,
+                iban: this.iban,
+                swiftCode: this.swiftCode,
+                bankAddress: this.bankAddress,
             };
 
             if (!isEditing) {
@@ -57,6 +63,9 @@ const app = new Vue({
                 this.bank = data.bank;
                 this.agency = data.agency;
                 this.accountNumber = data.accountNumber;
+                this.iban = data.iban;
+                this.swiftCode = data.swiftCode;
+                this.bankAddress = data.bankAddress;
                 // Balance is not editable
             } catch (error) {
                 console.error(error);
