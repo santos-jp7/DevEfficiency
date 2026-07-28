@@ -7,6 +7,7 @@ const app = new Vue({
             status: 'Em aberto',
         },
         id: null,
+        discountPct: null,
         payloads: {
             protocolRegister: {
                 description: null,
@@ -79,16 +80,26 @@ const app = new Vue({
             })
     },
     computed: {
-        installmentValue() {
-            const total =
+        protocolGross() {
+            return (
                 (this.protocol?.Protocol_registers?.reduce((s, v) => s + v.value, 0) || 0) +
                 (this.protocol?.Protocol_products?.reduce((s, v) => s + v.value, 0) || 0)
+            )
+        },
+        discountedTotal() {
+            return this.protocolGross - (Number(this.protocol?.discount_value) || 0)
+        },
+        installmentValue() {
             const n = this.protocol?.total_installments
             if (!n || n <= 1) return 0
-            return parseFloat((total / n).toFixed(2))
+            return parseFloat((this.discountedTotal / n).toFixed(2))
         },
     },
     methods: {
+        applyDiscountPct() {
+            if (!this.discountPct) return
+            this.protocol.discount_value = parseFloat(((this.protocolGross / 100) * this.discountPct).toFixed(2))
+        },
         handlerSubmit() {
             let method = this.$data.protocol.id ? __api__.put : __api__.post
             let url = this.$data.protocol.id ? '/api/protocols/' + this.$data.protocol.id : '/api/protocols'
@@ -98,6 +109,7 @@ const app = new Vue({
                 notes: this.protocol.notes,
                 current_installment: this.protocol.current_installment || null,
                 total_installments: this.protocol.total_installments || null,
+                discount_value: this.protocol.discount_value || null,
             })
                 .then((res) => {
                     alert('Protocolo atualizado com sucesso!')

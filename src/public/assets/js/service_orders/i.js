@@ -60,15 +60,22 @@ const service_order = new Vue({
             products: [],
             bankAccounts: [],
         },
+        protocolDiscountPct: null,
     },
     computed: {
-        protocolInstallmentValue() {
-            const total =
+        protocolGross() {
+            return (
                 (this.Protocol?.Protocol_registers?.reduce((s, v) => s + v.value, 0) || 0) +
                 (this.Protocol?.Protocol_products?.reduce((s, v) => s + v.value, 0) || 0)
+            )
+        },
+        protocolDiscountedTotal() {
+            return this.protocolGross - (Number(this.Protocol?.discount_value) || 0)
+        },
+        protocolInstallmentValue() {
             const n = this.Protocol?.total_installments
             if (!n || n <= 1) return 0
-            return parseFloat((total / n).toFixed(2))
+            return parseFloat((this.protocolDiscountedTotal / n).toFixed(2))
         },
     },
     methods: {
@@ -89,6 +96,10 @@ const service_order = new Vue({
                     window.location.reload()
                 })
         },
+        applyProtocolDiscountPct() {
+            if (!this.protocolDiscountPct) return
+            this.Protocol.discount_value = parseFloat(((this.protocolGross / 100) * this.protocolDiscountPct).toFixed(2))
+        },
         handlerProtocolSubmit(e) {
             e.preventDefault()
 
@@ -98,6 +109,7 @@ const service_order = new Vue({
                     notes: this.$data.Protocol.notes,
                     current_installment: this.$data.Protocol.current_installment || null,
                     total_installments: this.$data.Protocol.total_installments || null,
+                    discount_value: this.$data.Protocol.discount_value || null,
                 })
                 .then(() => {
                     window.location.reload()

@@ -324,34 +324,21 @@
                             <div class="total-line">
                                 <span>Subtotal Consolidado:</span>
                                 <span>
-                                    <% let total=oss.map( os=> os.Protocol?.Protocol_registers?.reduce((
-                                        sum, v) => sum + v.value, 0) || 0).reduce((
-                                        sum, v) => sum + v, 0)
+                                    <% let total=oss.reduce((sum, os) => {
+                                        const gross = (os.Protocol?.Protocol_registers?.reduce((s,v) => s+v.value, 0)||0)
+                                                    + (os.Protocol?.Protocol_products?.reduce((s,v) => s+v.value, 0)||0)
+                                        const disc = Number(os.Protocol?.discount_value) || 0
+                                        return sum + gross - disc
+                                        }, 0)
                                         +
-                                        oss.map(
-                                        os=> os.Protocol?.Protocol_products?.reduce((
-                                        sum, v) => sum + v.value, 0) || 0).reduce((
-                                        sum, v) => sum + v, 0)
-                                        +
-                                        subscriptions.map(
-                                        subscription=>
-                                        subscription.Protocols?.map(
-                                        protocol=>
-                                        protocol.Protocol_registers?.reduce((
-                                        sum, v) => sum + v.value, 0) || 0).reduce((
-                                        sum, v) => sum + v, 0)
-                                        ).reduce((
-                                        sum, v) => sum + v, 0)
-                                        +
-                                        subscriptions.map(
-                                        subscription=>
-                                        subscription.Protocols?.map(
-                                        protocol=>
-                                        protocol.Protocol_products?.reduce((
-                                        sum, v) => sum + v.value, 0) || 0).reduce((
-                                        sum, v) => sum + v, 0)
-                                        ).reduce((
-                                        sum, v) => sum + v, 0)
+                                        subscriptions.reduce((sum, sub) => {
+                                        return sum + (sub.Protocols?.reduce((s2, p) => {
+                                        const gross = (p.Protocol_registers?.reduce((s,v) => s+v.value, 0)||0)
+                                                    + (p.Protocol_products?.reduce((s,v) => s+v.value, 0)||0)
+                                        const disc = Number(p.discount_value) || 0
+                                        return s2 + gross - disc
+                                        }, 0)||0)
+                                        }, 0)
                                         %>
 
                                         <%= total.toLocaleString('pt-br',{style: 'currency' , currency: 'BRL' }) %>

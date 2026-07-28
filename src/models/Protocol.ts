@@ -59,6 +59,8 @@ class Protocol extends Model<InferAttributes<Protocol>, InferCreationAttributes<
     declare current_installment: CreationOptional<number>
     declare total_installments: CreationOptional<number>
 
+    declare discount_value: CreationOptional<number>
+
     declare closedAt: CreationOptional<Date>
 
     declare createdAt: CreationOptional<Date>
@@ -87,6 +89,11 @@ Protocol.init(
         total_installments: {
             type: DataTypes.INTEGER,
             allowNull: true,
+        },
+        discount_value: {
+            type: DataTypes.DECIMAL(10, 2),
+            allowNull: true,
+            defaultValue: 0,
         },
         closedAt: DataTypes.DATE,
         createdAt: DataTypes.DATE,

@@ -8,6 +8,10 @@ import BillingProtocol from '../models/BillingProtocol'
 import { InstanceUpdateOptions } from 'sequelize/types/model'
 import Client from '../models/Client'
 
+function calcDiscount(discountValue: number): number {
+    return Number(discountValue) || 0
+}
+
 class protocolHooks {
     static async beforeSave(protocol: Protocol, options: InstanceUpdateOptions) {
         const service_order = protocol?.ServiceOrderId ? await Service_order.findByPk(protocol.ServiceOrderId) : false
@@ -25,7 +29,8 @@ class protocolHooks {
         const total_receipt = receipts?.reduce((sum, v) => sum + v.value, 0) || 0
 
         if (protocol.status == 'Fechado') {
-            if (total_receipt < total_cost)
+            const discount = calcDiscount(Number(protocol.discount_value) || 0)
+            if (total_receipt < (total_cost - discount))
                 throw new Error('Não é possivel finalizar, protocolo com recebimentos pendentes.')
 
             if (subscription && !protocol.closedAt) {
@@ -164,10 +169,11 @@ class protocolHooks {
             const protocol_registers = await protocol.getProtocol_registers({ transaction: options.transaction })
             const receipts = await protocol.getReceipts({ transaction: options.transaction })
 
-            const value =
+            const gross =
                 (protocol_products.reduce((sum, v) => sum + v.value, 0) || 0) +
-                (protocol_registers.reduce((sum, v) => sum + v.value, 0) || 0) -
-                (receipts.reduce((sum, v) => sum + v.value, 0) || 0)
+                (protocol_registers.reduce((sum, v) => sum + v.value, 0) || 0)
+            const discount = calcDiscount(Number(protocol.discount_value) || 0)
+            const value = gross - discount - (receipts.reduce((sum, v) => sum + v.value, 0) || 0)
 
             await BillingProtocol.create(
                 {

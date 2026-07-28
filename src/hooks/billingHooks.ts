@@ -31,11 +31,13 @@ class billingHooks {
                 const registersTotal = protocol_registers.reduce((sum, v) => sum + v.value, 0) || 0
                 const receiptsTotal = receipts.reduce((sum, v) => sum + v.value, 0) || 0
                 const protocolTotal = productsTotal + registersTotal
+                const discountAmt = Number(protocol.discount_value) || 0
+                const discountedTotal = protocolTotal - discountAmt
 
                 // Installment-based logic
                 if (protocol.total_installments && protocol.total_installments > 1) {
                     const currentInstallment = protocol.current_installment || 1
-                    const installmentValue = parseFloat((protocolTotal / protocol.total_installments).toFixed(2))
+                    const installmentValue = parseFloat((discountedTotal / protocol.total_installments).toFixed(2))
 
                     if (currentInstallment >= protocol.total_installments) {
                         await protocol.update({ status: 'Fechado' }, { transaction: options.transaction })
@@ -74,7 +76,7 @@ class billingHooks {
                 }
 
                 // Original remaining-value logic
-                const protocolValue = protocolTotal - receiptsTotal
+                const protocolValue = discountedTotal - receiptsTotal
 
                 console.log('Protocol Value:', protocolValue)
 

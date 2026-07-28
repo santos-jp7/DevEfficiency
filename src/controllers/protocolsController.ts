@@ -89,12 +89,12 @@ class protocolsController {
 
     static async update(req: protocolsRequest, res: FastifyReply): Promise<FastifyReply> {
         const { id } = req.params
-        const { status, notes, current_installment, total_installments } = req.body as any
+        const { status, notes, current_installment, total_installments, discount_value } = req.body as any
 
         const protocol = await Protocol.findByPk(id)
         if (!protocol) throw new Error('Protocolo não existe.')
 
-        await protocol.update({ status, notes, current_installment, total_installments })
+        await protocol.update({ status, notes, current_installment, total_installments, discount_value: discount_value ?? null })
 
         // When releasing for payment, create a new billing if current billing is already faturada
         if (status === 'Liberado para pagamento') {

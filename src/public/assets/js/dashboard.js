@@ -70,7 +70,7 @@ const dashboard = new Vue({
 
                 // Billings Metrics
                 const { data: billings } = await __api__.get('/api/billings')
-                const pendingBillings = billings.filter((b) => b.status === 'pendente')
+                const pendingBillings = billings.filter((b) => b.status === 'pendente' || b.status === 'faturada')
                 this.metrics.billings.total_pending = pendingBillings.length
                 this.metrics.billings.pending_value = pendingBillings.reduce((sum, b) => sum + parseFloat(b.total_value), 0)
 
