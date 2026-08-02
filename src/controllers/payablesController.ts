@@ -4,6 +4,9 @@ import Payable from '../models/Payable'
 import Supplier from '../models/Supplier'
 import BankAccount from '../models/BankAccount'
 import CostCenter from '../models/CostCenter'
+import Reimbursement from '../models/Reimbursement'
+import ReimbursementFile from '../models/ReimbursementFile'
+import User from '../models/User'
 import db from '../db'
 
 // Define a type for the request to ensure type safety
@@ -41,7 +44,7 @@ class PayablesController {
 
             const payables = await Payable.findAll({
                 where,
-                include: [supplierInclude, BankAccount, costCenterInclude],
+                include: [supplierInclude, BankAccount, costCenterInclude, { model: Reimbursement, attributes: ['id', 'value'] }],
                 order: [['dueDate', 'DESC']],
             })
             return res.send(payables)
@@ -55,7 +58,10 @@ class PayablesController {
         try {
             const { id } = req.params
             const payable = await Payable.findByPk(id, {
-                include: [Supplier, BankAccount, CostCenter],
+                include: [Supplier, BankAccount, CostCenter, {
+                    model: Reimbursement,
+                    include: [Supplier, BankAccount, { model: User, attributes: ['id', 'username'] }, ReimbursementFile],
+                }],
             })
 
             if (!payable) {

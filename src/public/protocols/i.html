@@ -138,6 +138,26 @@
                 </div>
             </div>
 
+            <div class="row mt-2">
+                <div class="mb-3 col-md-4">
+                    <label class="form-label">Desconto (R$)</label>
+                    <input type="number" step="0.01" min="0" class="form-control" v-model.number="protocol.discount_value" placeholder="0,00" />
+                </div>
+                <div class="mb-3 col-md-4">
+                    <label class="form-label">Ou calcular por % do total</label>
+                    <div class="input-group">
+                        <input type="number" step="0.01" min="0" max="100" class="form-control" v-model.number="discountPct" placeholder="%" />
+                        <button type="button" class="btn btn-outline-secondary" @click="applyDiscountPct">Aplicar</button>
+                    </div>
+                </div>
+                <div class="mb-3 col-md-4 d-flex align-items-end" v-if="protocol.discount_value > 0">
+                    <div class="text-muted small pb-2">
+                        Total com desconto:
+                        <strong>{{ discountedTotal.toLocaleString('pt-br', {style:'currency', currency:'BRL'}) }}</strong>
+                    </div>
+                </div>
+            </div>
+
             <button type="submit" class="btn btn-dark">Salvar Alterações</button>
 
             <div v-if="protocol.SubscriptionId">
@@ -183,11 +203,11 @@
                             0).toLocaleString('pt-br',{style: 'currency', currency: 'BRL'})}}
                         </span>
                     </li>
+                    <li v-if="protocol.discount_value > 0">
+                        <span>Desconto: -{{Number(protocol.discount_value).toLocaleString('pt-br',{style: 'currency', currency: 'BRL'})}}</span>
+                    </li>
                     <li>
-                        <span>Valor a receber: {{((protocol?.Protocol_registers?.reduce((sum, v) => sum +
-                            v.value, 0)) + (protocol?.Protocol_products?.reduce((sum, v) => sum + v.value, 0)) -
-                            protocol?.Receipts?.reduce((sum, v) => (sum + v.value),
-                            0)).toLocaleString('pt-br',{style: 'currency', currency: 'BRL'})}}
+                        <span>Valor a receber: {{(discountedTotal - (protocol?.Receipts?.reduce((sum, v) => (sum + v.value), 0) || 0)).toLocaleString('pt-br',{style: 'currency', currency: 'BRL'})}}
                         </span>
                     </li>
                 </ul>
