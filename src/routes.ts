@@ -34,6 +34,7 @@ import addressController from './controllers/addressController'
 import configController from './controllers/configController' // Import the new controller
 import dreReportController from './controllers/dreReportController'
 import osEntriesController from './controllers/osEntriesController'
+import reimbursementsController from './controllers/reimbursementsController'
 
 const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.get('/', helloController.handler)
@@ -193,6 +194,11 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.delete('/os-entries/:id', { preHandler: [isAuthed] }, osEntriesController.destroy as any)
 
     instance.get('/utils/currentOs', { preHandler: [isAuthed] }, currentOs)
+
+    instance.post('/reimbursements', { preHandler: [isAuthed] }, reimbursementsController.store)
+    instance.get('/reimbursements/:id', { preHandler: [isAuthed] }, reimbursementsController.show as any)
+    instance.post('/reimbursements/:id/upload', { preHandler: [isAuthed] }, reimbursementsController.upload as any)
+    instance.delete('/reimbursements/:id', { preHandler: [isAuthed] }, reimbursementsController.destroy as any)
 
     next()
 }

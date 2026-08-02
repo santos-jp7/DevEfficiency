@@ -189,6 +189,116 @@
         </form>
         <hr>
         <button v-if="id" @click="deletePayable" class="btn btn-danger">Excluir Conta</button>
+
+        <!-- Reimbursement section -->
+        <template v-if="id">
+            <hr>
+            <div v-if="reimbursement">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="mb-0 text-success"><i class="fa-solid fa-rotate-left me-1"></i> Ressarcimento registrado</h6>
+                    <button class="btn btn-sm btn-outline-danger" @click="deleteReimbursement">Excluir</button>
+                </div>
+                <div class="card border-success mb-3">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-2">
+                                <small class="text-muted d-block">Descrição</small>
+                                <span>{{ reimbursement.description }}</span>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <small class="text-muted d-block">Valor</small>
+                                <span class="fw-semibold text-success">{{ Number(reimbursement.value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</span>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <small class="text-muted d-block">Conta Bancária</small>
+                                <span>{{ reimbursement.BankAccount ? reimbursement.BankAccount.name : '-' }}</span>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <small class="text-muted d-block">Fornecedor</small>
+                                <span>{{ reimbursement.Supplier ? reimbursement.Supplier.name : '-' }}</span>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <small class="text-muted d-block">Registrado por</small>
+                                <span>{{ reimbursement.User ? reimbursement.User.username : '-' }}</span>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <small class="text-muted d-block">Data</small>
+                                <span>{{ reimbursement.createdAt ? new Date(reimbursement.createdAt).toLocaleDateString('pt-BR') : '-' }}</span>
+                            </div>
+                        </div>
+                        <div v-if="reimbursement.ReimbursementFiles && reimbursement.ReimbursementFiles.length > 0" class="mt-2">
+                            <small class="text-muted d-block mb-1">Comprovantes</small>
+                            <div class="d-flex flex-wrap gap-2">
+                                <a v-for="f in reimbursement.ReimbursementFiles" :key="f.id" :href="f.url" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                    <i class="fa-solid fa-file me-1"></i>{{ f.filename }}
+                                </a>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <label class="form-label small">Adicionar comprovante</label>
+                            <div class="d-flex gap-2">
+                                <input type="file" class="form-control form-control-sm" @change="handleReimbursementFileChange" ref="reimbursementFileInput">
+                                <button class="btn btn-sm btn-dark" @click="uploadReimbursementFile" :disabled="!reimbursementFileToUpload">Upload</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div v-else>
+                <button class="btn btn-outline-success" @click="showReimbursementModal = true">
+                    <i class="fa-solid fa-rotate-left me-1"></i> Registrar Ressarcimento
+                </button>
+            </div>
+        </template>
+
+        <!-- Reimbursement creation modal -->
+        <div v-if="showReimbursementModal" class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.5)">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="fa-solid fa-rotate-left me-1"></i> Registrar Ressarcimento</h5>
+                        <button type="button" class="btn-close" @click="showReimbursementModal = false"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Descrição <span class="text-danger">*</span></label>
+                            <textarea class="form-control" v-model="reimbursementForm.description" rows="2"></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Valor Ressarcido (R$) <span class="text-danger">*</span></label>
+                                <input type="number" step="0.01" min="0" class="form-control" v-model="reimbursementForm.value">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Conta Bancária (destino) <span class="text-danger">*</span></label>
+                                <select class="form-control" v-model="reimbursementForm.BankAccountId">
+                                    <option value="" disabled>Selecione...</option>
+                                    <option v-for="ba in bankAccounts" :key="ba.id" :value="ba.id">{{ ba.name }}</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Fornecedor</label>
+                            <select class="form-control" v-model="reimbursementForm.SupplierId">
+                                <option value="" disabled>Selecione...</option>
+                                <option v-for="s in suppliers" :key="s.id" :value="s.id">{{ s.name }}</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Comprovante (opcional)</label>
+                            <input type="file" class="form-control" @change="handleNewReimbursementFileChange" ref="newReimbursementFileInput">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @click="showReimbursementModal = false">Cancelar</button>
+                        <button type="button" class="btn btn-success" @click="createReimbursement" :disabled="savingReimbursement">
+                            <span v-if="savingReimbursement"><span class="spinner-border spinner-border-sm me-1"></span> Salvando...</span>
+                            <span v-else>Salvar</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="../assets/js/payables/i.js"></script>

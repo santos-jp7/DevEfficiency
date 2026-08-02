@@ -21,6 +21,14 @@ const app = new Vue({
         suppliers: [],
         costCenters: [],
         bankAccounts: [],
+
+        // Reimbursement
+        reimbursement: null,
+        showReimbursementModal: false,
+        savingReimbursement: false,
+        reimbursementForm: { description: '', value: null, BankAccountId: '', SupplierId: '' },
+        reimbursementFileToUpload: null,
+        newReimbursementFile: null,
     },
     computed: {
         recurrenceLabel() {
@@ -92,10 +100,83 @@ const app = new Vue({
                 this.recurrence = data.recurrence || null
                 this.total_installments = data.total_installments || null
                 this.current_installment = data.current_installment || null
+                this.reimbursement = data.Reimbursement || null
+                if (this.reimbursement && this.reimbursement.SupplierId) {
+                    this.reimbursementForm.SupplierId = this.reimbursement.SupplierId
+                } else {
+                    this.reimbursementForm.SupplierId = data.SupplierId
+                }
             } catch (error) {
                 console.error(error)
                 alert('Erro ao carregar os dados da conta.')
                 location.href = './index.html'
+            }
+        },
+        async createReimbursement() {
+            if (!this.reimbursementForm.description || !this.reimbursementForm.value || !this.reimbursementForm.BankAccountId) {
+                alert('Preencha descrição, valor e conta bancária.')
+                return
+            }
+            this.savingReimbursement = true
+            try {
+                const { data } = await __api__.post('/api/reimbursements', {
+                    description: this.reimbursementForm.description,
+                    value: this.reimbursementForm.value,
+                    PayableId: parseInt(this.id),
+                    BankAccountId: this.reimbursementForm.BankAccountId,
+                    SupplierId: this.reimbursementForm.SupplierId || null,
+                })
+                if (this.newReimbursementFile) {
+                    const form = new FormData()
+                    form.append('file', this.newReimbursementFile)
+                    await __api__.post(`/api/reimbursements/${data.id}/upload`, form, {
+                        headers: { 'Content-Type': 'multipart/form-data' },
+                    })
+                }
+                this.showReimbursementModal = false
+                this.reimbursementForm = { description: '', value: null, BankAccountId: '', SupplierId: '' }
+                this.newReimbursementFile = null
+                await this.fetchPayableData()
+                alert('Ressarcimento registrado com sucesso!')
+            } catch (error) {
+                console.error(error)
+                alert(error.response?.data?.error || 'Erro ao registrar ressarcimento.')
+            } finally {
+                this.savingReimbursement = false
+            }
+        },
+        async deleteReimbursement() {
+            if (!confirm('Excluir o ressarcimento? O valor será revertido da conta bancária.')) return
+            try {
+                await __api__.delete(`/api/reimbursements/${this.reimbursement.id}`)
+                this.reimbursement = null
+                alert('Ressarcimento excluído.')
+            } catch (error) {
+                console.error(error)
+                alert(error.response?.data?.error || 'Erro ao excluir ressarcimento.')
+            }
+        },
+        handleReimbursementFileChange(event) {
+            this.reimbursementFileToUpload = event.target.files[0] || null
+        },
+        handleNewReimbursementFileChange(event) {
+            this.newReimbursementFile = event.target.files[0] || null
+        },
+        async uploadReimbursementFile() {
+            if (!this.reimbursementFileToUpload || !this.reimbursement) return
+            try {
+                const form = new FormData()
+                form.append('file', this.reimbursementFileToUpload)
+                await __api__.post(`/api/reimbursements/${this.reimbursement.id}/upload`, form, {
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                })
+                this.reimbursementFileToUpload = null
+                if (this.$refs.reimbursementFileInput) this.$refs.reimbursementFileInput.value = ''
+                await this.fetchPayableData()
+                alert('Comprovante enviado com sucesso!')
+            } catch (error) {
+                console.error(error)
+                alert('Erro ao enviar comprovante.')
             }
         },
         async fetchDropdownData() {

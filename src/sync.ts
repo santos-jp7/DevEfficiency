@@ -24,6 +24,8 @@ import Payable from './models/Payable'
 import BankTransfer from './models/BankTransfer'
 import Config from './models/Config' // Import Config model
 import seedConfigs from './seeds/configSeed' // Import seedConfigs
+import Reimbursement from './models/Reimbursement'
+import ReimbursementFile from './models/ReimbursementFile'
 
 async function syncModels(): Promise<true> {
     await User.sync()
@@ -64,6 +66,9 @@ async function syncModels(): Promise<true> {
 
     await Config.sync({ alter: { drop: false } }) // Sync Config model
     await seedConfigs() // Seed default configurations
+
+    await Reimbursement.sync({ alter: { drop: false } })
+    await ReimbursementFile.sync({ alter: { drop: false } })
 
     return true
 }
