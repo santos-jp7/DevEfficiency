@@ -68,7 +68,13 @@ const client = new Vue({
                 zip: null,
                 ibge: null,
             },
+            slaConfig: {
+                gravidade: '',
+                response_hours: '',
+                solution_hours: '',
+            },
         },
+        slaConfigs: [],
     },
     methods: {
         handlerSubmit(e) {
@@ -451,6 +457,40 @@ const client = new Vue({
                     return acc
                 }, {})
         },
+        gravityBadgeClass(g) {
+            const map = {
+                'Crítico': 'badge bg-danger',
+                'Alto': 'badge bg-warning text-dark',
+                'Médio': 'badge bg-info text-dark',
+                'Baixo': 'badge bg-secondary',
+            }
+            return map[g] || 'badge bg-secondary'
+        },
+        handlerNewSlaConfig() {
+            this.payloads.slaConfig = { gravidade: '', response_hours: '', solution_hours: '' }
+            new bootstrap.Modal(document.getElementById('slaConfigModal')).show()
+        },
+        async handlerSlaConfigSubmit(e) {
+            e.preventDefault()
+            try {
+                const { data } = await __api__.post('/api/clients/' + this.id + '/sla-configs', this.payloads.slaConfig)
+                const idx = this.slaConfigs.findIndex((c) => c.gravidade === data.gravidade)
+                if (idx !== -1) this.$set(this.slaConfigs, idx, data)
+                else this.slaConfigs.push(data)
+                bootstrap.Modal.getInstance(document.getElementById('slaConfigModal')).hide()
+            } catch (e) {
+                alert(e.response?.data?.message || 'Erro ao salvar configuração.')
+            }
+        },
+        async handlerDeleteSlaConfig(configId) {
+            if (!confirm('Confirma exclusão?')) return
+            try {
+                await __api__.delete('/api/clients/' + this.id + '/sla-configs/' + configId)
+                this.slaConfigs = this.slaConfigs.filter((c) => c.id !== configId)
+            } catch (e) {
+                alert('Erro ao excluir configuração.')
+            }
+        },
         formatCurrency(value) {
             return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
         },
@@ -505,6 +545,7 @@ const client = new Vue({
                 this.$data.Subscriptions = (await __api__.get('/api/subscriptions?ClientId=' + data.id)).data
                 this.$data.Protocols = (await __api__.get('/api/protocols?limit=-1&ClientId=' + data.id)).data
                 this.$data.Billings = (await __api__.get('/api/billings?limit=5&ClientId=' + data.id)).data
+                this.$data.slaConfigs = (await __api__.get('/api/clients/' + data.id + '/sla-configs')).data
 
                 this.maskDocument()
                 this.calcProtocols()

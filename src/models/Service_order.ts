@@ -32,6 +32,8 @@ class Service_order extends Model<InferAttributes<Service_order>, InferCreationA
     declare SlaLevelId: CreationOptional<ForeignKey<SlaLevel['id']> | null>
     declare sla_response_deadline: CreationOptional<Date | null>
     declare sla_solution_deadline: CreationOptional<Date | null>
+    declare gravidade: CreationOptional<'Crítico' | 'Alto' | 'Médio' | 'Baixo' | null>
+    declare prazo: CreationOptional<Date | null>
 
     declare getProtocol: HasOneGetAssociationMixin<Protocol>
     declare createProtocol: HasOneCreateAssociationMixin<Protocol>
@@ -90,6 +92,14 @@ Service_order.init(
             allowNull: true,
         },
         sla_solution_deadline: {
+            type: DataTypes.DATE,
+            allowNull: true,
+        },
+        gravidade: {
+            type: DataTypes.ENUM('Crítico', 'Alto', 'Médio', 'Baixo'),
+            allowNull: true,
+        },
+        prazo: {
             type: DataTypes.DATE,
             allowNull: true,
         },

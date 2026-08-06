@@ -355,6 +355,59 @@
             </div>
         </div>
 
+        <!-- SLA em Risco -->
+        <div class="row mb-3" v-if="slaAtRiskOs.length > 0">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header d-flex align-items-center gap-2" style="background:#dc3545;color:#fff">
+                        <i class="fa-solid fa-shield-halved"></i>
+                        <span class="fw-semibold">SLA em Risco</span>
+                        <span class="badge bg-light text-danger ms-auto">{{ slaAtRiskOs.length }}</span>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-sm mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Assunto</th>
+                                    <th>Gravidade</th>
+                                    <th>Prazo SLA</th>
+                                    <th>Prazo Manual</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="os in slaAtRiskOs" :key="os.id" class="table-danger">
+                                    <td class="small">{{ os.id }}</td>
+                                    <td class="small">{{ os.subject }}</td>
+                                    <td class="small">
+                                        <span v-if="os.gravidade" class="badge"
+                                            :class="{'bg-danger': os.gravidade==='Crítico','bg-warning text-dark': os.gravidade==='Alto','bg-info text-dark': os.gravidade==='Médio','bg-secondary': os.gravidade==='Baixo'}">
+                                            {{ os.gravidade }}
+                                        </span>
+                                        <span v-else>—</span>
+                                    </td>
+                                    <td class="small">
+                                        <span v-if="os.sla_solution_deadline">{{ os.sla_solution_deadline | date }}</span>
+                                        <span v-else>—</span>
+                                    </td>
+                                    <td class="small">
+                                        <span v-if="os.prazo">{{ os.prazo | date }}</span>
+                                        <span v-else>—</span>
+                                    </td>
+                                    <td>
+                                        <a :href="'/service_orders/i?id=' + os.id" class="text-danger">
+                                            <i class="fa-solid fa-arrow-right"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- OS em correções + OS recentes + Projetos fixados -->
         <div class="row g-3">
             <div class="col-md-8" v-if="currentOs || recentsOs.length > 0">

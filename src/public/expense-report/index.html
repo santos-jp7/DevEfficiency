@@ -114,6 +114,33 @@
 
         <h5>Relatório de Despesas por Centro de Custo</h5>
 
+        <!-- Comparison KPIs -->
+        <div class="row g-3 mb-4" v-if="comparison">
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm p-3 text-center">
+                    <div class="text-muted small mb-1">Entrada (recebido)</div>
+                    <div class="fs-4 fw-bold text-success">{{ formatCurrency(comparison.income) }}</div>
+                    <div class="text-muted" style="font-size:.8rem">{{ comparison.incomeCount }} cobranças pagas</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm p-3 text-center">
+                    <div class="text-muted small mb-1">Saída (pago)</div>
+                    <div class="fs-4 fw-bold text-danger">{{ formatCurrency(comparison.expenses) }}</div>
+                    <div class="text-muted" style="font-size:.8rem">{{ comparison.expenseCount }} contas pagas</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm p-3 text-center">
+                    <div class="text-muted small mb-1">Resultado do período</div>
+                    <div class="fs-4 fw-bold" :class="comparison.balance >= 0 ? 'text-success' : 'text-danger'">
+                        {{ formatCurrency(comparison.balance) }}
+                    </div>
+                    <div class="text-muted" style="font-size:.8rem">{{ comparison.balance >= 0 ? 'Superávit' : 'Déficit' }}</div>
+                </div>
+            </div>
+        </div>
+
         <!-- Filters -->
         <div class="row mb-3">
             <div class="col-md-4">
@@ -125,7 +152,7 @@
                 <input type="date" class="form-control" v-model="filters.endDate">
             </div>
             <div class="col-md-4 d-flex align-items-end">
-                <button class="btn btn-primary" @click="fetchReport">Filtrar</button>
+                <button class="btn btn-primary" @click="fetchAll">Filtrar</button>
             </div>
         </div>
 

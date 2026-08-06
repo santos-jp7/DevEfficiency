@@ -1,6 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
 import { Op, fn, col, literal, where } from 'sequelize'
 import Payable from '../models/Payable'
+import Billing from '../models/Billing'
 import CostCenter from '../models/CostCenter'
 
 interface CostCenterNode {
@@ -83,6 +84,46 @@ class ExpenseReportController {
             rootNodes.forEach(calculateRollupTotal)
 
             return res.send(rootNodes)
+        } catch (error) {
+            console.error(error)
+            return res.status(500).send({ error: 'Internal Server Error' })
+        }
+    }
+
+    static async comparison(req: ReportRequest, res: FastifyReply): Promise<FastifyReply> {
+        try {
+            const { startDate, endDate } = req.query
+
+            const dateRange = startDate && endDate ? [new Date(startDate), new Date(endDate)] : null
+
+            const billingWhere: any = { status: 'pago' }
+            if (dateRange) billingWhere.due_date = { [Op.between]: dateRange }
+
+            const payableWhere: any = { status: 'pago' }
+            if (dateRange) payableWhere.paymentDate = { [Op.between]: dateRange }
+
+            const billingResultP = Billing.findAll({
+                attributes: [[fn('SUM', col('total_value')), 'total'], [fn('COUNT', col('id')), 'count']],
+                where: billingWhere,
+                raw: true,
+            })
+            const payableResultP = Payable.findAll({
+                attributes: [[fn('SUM', col('value')), 'total'], [fn('COUNT', col('id')), 'count']],
+                where: payableWhere,
+                raw: true,
+            })
+            const [billingResult, payableResult] = await Promise.all([billingResultP, payableResultP])
+
+            const income = parseFloat((billingResult[0] as any)?.total || '0')
+            const expenses = parseFloat((payableResult[0] as any)?.total || '0')
+
+            return res.send({
+                income,
+                expenses,
+                balance: income - expenses,
+                incomeCount: parseInt((billingResult[0] as any)?.count || '0'),
+                expenseCount: parseInt((payableResult[0] as any)?.count || '0'),
+            })
         } catch (error) {
             console.error(error)
             return res.status(500).send({ error: 'Internal Server Error' })

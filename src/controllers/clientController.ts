@@ -6,6 +6,7 @@ import Credential from '../models/Credential'
 import Project from '../models/Project'
 import Server from '../models/Server'
 import Config from '../models/Config'
+import ClientSlaConfig from '../models/ClientSlaConfig'
 
 type clientRequest = FastifyRequest<{
     Body: Client
@@ -23,7 +24,7 @@ class clientController {
     static async show(req: clientRequest, res: FastifyReply): Promise<FastifyReply> {
         return res.send(
             await Client.findByPk(req.params.id, {
-                include: [Credential, Project, Server, Contact, Address],
+                include: [Credential, Project, Server, Contact, Address, { model: ClientSlaConfig, as: 'SlaConfigs' }],
             }),
         )
     }

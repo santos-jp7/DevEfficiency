@@ -490,6 +490,45 @@
             </div>
         </div>
 
+        <br>
+
+        <!-- SLA Config Section -->
+        <div class="row" style="gap: 10px">
+            <div class="col border rounded p-2">
+                <div class="d-flex justify-content-between mb-2">
+                    <h5>SLA por Gravidade</h5>
+                    <button class="btn" v-on:click="handlerNewSlaConfig">
+                        <i class="fa-solid fa-plus"></i> Adicionar
+                    </button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-striped border">
+                        <thead>
+                            <tr>
+                                <th>Gravidade</th>
+                                <th>Resposta (h)</th>
+                                <th>Solução (h)</th>
+                                <th>Excluir</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="cfg of slaConfigs" :key="cfg.id">
+                                <td><span :class="gravityBadgeClass(cfg.gravidade)">{{ cfg.gravidade }}</span></td>
+                                <td>{{ cfg.response_hours }}h</td>
+                                <td>{{ cfg.solution_hours }}h</td>
+                                <td>
+                                    <i class="fa-solid fa-trash" v-on:click="handlerDeleteSlaConfig(cfg.id)" style="cursor: pointer"></i>
+                                </td>
+                            </tr>
+                            <tr v-if="slaConfigs.length === 0">
+                                <td colspan="4" class="text-muted text-center">Nenhum SLA configurado para este cliente</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <!-- Modal Project -->
         <div class="modal fade" id="newProjectModal" tabindex="-1" aria-labelledby="newProjectModalLabel"
             aria-hidden="true">
@@ -810,6 +849,43 @@
             </div>
         </div>
     </div>
+
+        <!-- Modal SLA Config -->
+        <div class="modal fade" id="slaConfigModal" tabindex="-1" aria-labelledby="slaConfigModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h1 class="modal-title fs-5" id="slaConfigModalLabel">Configurar SLA por Gravidade</h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form @submit="handlerSlaConfigSubmit">
+                            <div class="row mb-3">
+                                <label class="form-label" for="sla_gravidade">Gravidade</label>
+                                <select class="form-select" id="sla_gravidade" v-model="payloads.slaConfig.gravidade" required>
+                                    <option disabled value="">Selecione</option>
+                                    <option value="Crítico">Crítico</option>
+                                    <option value="Alto">Alto</option>
+                                    <option value="Médio">Médio</option>
+                                    <option value="Baixo">Baixo</option>
+                                </select>
+                            </div>
+                            <div class="row mb-3">
+                                <label class="form-label" for="sla_response">Prazo para Resposta (horas)</label>
+                                <input type="number" class="form-control" id="sla_response" v-model.number="payloads.slaConfig.response_hours" min="1" required />
+                            </div>
+                            <div class="row mb-3">
+                                <label class="form-label" for="sla_solution">Prazo para Solução (horas)</label>
+                                <input type="number" class="form-control" id="sla_solution" v-model.number="payloads.slaConfig.solution_hours" min="1" required />
+                            </div>
+                            <div class="row mb-3">
+                                <input type="submit" class="form-control btn btn-dark btn-block" value="Salvar" />
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
 
     <script src="../assets/js/clients/i.js"></script>
     <script src="../assets/js/nav.js"></script>

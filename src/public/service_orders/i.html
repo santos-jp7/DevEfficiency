@@ -110,17 +110,21 @@
         </div>
 
         <!-- SLA Status Banner -->
-        <div v-if="SlaLevel" class="sla-banner mb-3" :class="slaBannerClass">
+        <div v-if="gravidade || sla_solution_deadline || prazo" class="sla-banner mb-3" :class="slaBannerClass">
             <div class="sla-banner__level">
                 <i class="fa-solid fa-shield-halved"></i>
-                SLA: <strong>{{ SlaLevel.name }}</strong>
+                <span v-if="gravidade">Gravidade: <strong>{{ gravidade }}</strong></span>
+                <span v-else>SLA ativo</span>
             </div>
             <div class="sla-banner__deadlines">
-                <span class="sla-deadline" :class="slaResponseStatus.cls" :title="'Prazo de resposta: ' + formatDeadline(sla_response_deadline)">
+                <span v-if="sla_response_deadline" class="sla-deadline" :class="slaResponseStatus.cls">
                     <i class="fa-solid fa-reply"></i> Resposta: {{ slaResponseStatus.label }}
                 </span>
-                <span class="sla-deadline" :class="slaSolutionStatus.cls" :title="'Prazo de solução: ' + formatDeadline(sla_solution_deadline)">
+                <span v-if="sla_solution_deadline" class="sla-deadline" :class="slaSolutionStatus.cls">
                     <i class="fa-solid fa-circle-check"></i> Solução: {{ slaSolutionStatus.label }}
+                </span>
+                <span v-if="prazo" class="sla-deadline" :class="prazoBadgeClass">
+                    <i class="fa-solid fa-calendar-xmark"></i> Prazo: {{ prazoStatus.label }}
                 </span>
             </div>
         </div>
@@ -147,20 +151,31 @@
                 </div>
             </div>
             <div class="row">
-                <div class="mb-3 col-lg-8">
+                <div class="mb-3 col-lg-6">
                     <label for="description" class="form-label">Descrição</label>
                     <textarea type="text" class="form-control" v-model="description" id="description"
                         rows="4"></textarea>
                 </div>
-                <div class="mb-3 col-lg-4">
-                    <label class="form-label">Nível de SLA</label>
-                    <select class="form-select" v-model="SlaLevelId" id="SlaLevelId">
-                        <option value="">Sem SLA</option>
-                        <option v-for="lvl in slaLevels" :key="lvl.id" :value="lvl.id">
-                            {{ lvl.name }} — R:{{ lvl.response_hours }}h / S:{{ formatSolutionHours(lvl.solution_hours) }}
-                        </option>
+                <div class="mb-3 col-lg-3">
+                    <label class="form-label">Gravidade</label>
+                    <select class="form-select" v-model="gravidade" id="gravidade">
+                        <option value="">Sem gravidade</option>
+                        <option value="Baixo">Baixo</option>
+                        <option value="Médio">Médio</option>
+                        <option value="Alto">Alto</option>
+                        <option value="Crítico">Crítico</option>
                     </select>
-                    <div class="form-text" v-if="SlaLevelId">Prazos recalculados a partir da data de criação da OS.</div>
+                    <div class="form-text" v-if="gravidade && !hasSlaConfig">
+                        <i class="fa-solid fa-triangle-exclamation text-warning"></i> Cliente sem SLA configurado para esta gravidade.
+                    </div>
+                    <div class="form-text text-success" v-if="gravidade && hasSlaConfig">
+                        SLA será aplicado automaticamente ao salvar.
+                    </div>
+                </div>
+                <div class="mb-3 col-lg-3">
+                    <label class="form-label">Prazo (manual)</label>
+                    <input type="date" class="form-control" v-model="prazoInput" id="prazo" />
+                    <div class="form-text">Data limite acordada com o cliente.</div>
                 </div>
             </div>
 
