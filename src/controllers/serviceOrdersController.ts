@@ -59,7 +59,7 @@ class serviceOrdersController {
                 offset: (page - 1) * limit,
             }),
             where,
-            include: [{ model: Project, include: [Client] }, Client, SlaLevel],
+            include: [{ model: Project, include: [Client] }, Client, { model: SlaLevel, as: 'SlaLevel' }],
         })
 
         return res.send({
@@ -73,7 +73,7 @@ class serviceOrdersController {
     static async show(req: serviceOrdersRequest, res: FastifyReply): Promise<FastifyReply> {
         return res.send(
             await Service_order.findByPk(req.params.id, {
-                include: [Protocol, { model: Project, include: [Client] }, Client, SlaLevel],
+                include: [Protocol, { model: Project, include: [Client] }, Client, { model: SlaLevel, as: 'SlaLevel' }],
             }),
         )
     }
