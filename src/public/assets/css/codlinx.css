@@ -48,6 +48,11 @@ h1, h2, h3, h4, h5, h6 {
     letter-spacing: -0.015em;
 }
 
+/* Font weight helpers */
+.fw-500 { font-weight: 500 !important; }
+.fw-600 { font-weight: 600 !important; }
+.fw-700 { font-weight: 700 !important; }
+
 /* Numbers in tables and metrics */
 .cx-num {
     font-family: var(--cx-font-mono);
@@ -582,6 +587,68 @@ h1, h2, h3, h4, h5, h6 {
     from { transform: translateY(100%); }
     to   { transform: translateY(0); }
 }
+
+/* ── SLA Banner ──────────────────────────────────────────── */
+.sla-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: .5rem;
+    padding: .625rem .875rem;
+    border-radius: var(--cx-radius);
+    border: 1px solid transparent;
+    font-size: 13px;
+}
+
+.sla-banner--ok    { background: var(--cx-green-bg);  border-color: #bbf7d0; }
+.sla-banner--warn  { background: var(--cx-amber-bg);  border-color: #fde68a; }
+.sla-banner--breach{ background: var(--cx-red-bg);    border-color: #fecaca; }
+.sla-banner--none  { background: var(--cx-brand-bg);  border-color: #bfdbfe; }
+
+.sla-banner__level {
+    font-weight: 600;
+    color: var(--cx-ink);
+    display: flex;
+    align-items: center;
+    gap: .375rem;
+}
+
+.sla-banner__deadlines {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.sla-deadline {
+    display: flex;
+    align-items: center;
+    gap: .3rem;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.sla-ok     { color: var(--cx-green); }
+.sla-warn   { color: var(--cx-amber); }
+.sla-breach { color: var(--cx-red);   }
+.sla-done   { color: var(--cx-ink-subtle); }
+
+/* SLA badge in list table */
+.cx-sla-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: .25rem;
+    font-size: 10.5px;
+    font-weight: 600;
+    padding: .15rem .4rem;
+    border-radius: 3px;
+    letter-spacing: .02em;
+    white-space: nowrap;
+}
+.cx-sla-badge--ok     { background: var(--cx-green-bg); color: var(--cx-green); }
+.cx-sla-badge--warn   { background: var(--cx-amber-bg); color: var(--cx-amber); }
+.cx-sla-badge--breach { background: var(--cx-red-bg);   color: var(--cx-red); }
+.cx-sla-badge--none   { background: var(--cx-bg);       color: var(--cx-ink-subtle); }
 
 /* ── Alert urgency strip ─────────────────────────────────── */
 .cx-alert-strip {

@@ -22,10 +22,13 @@ import CostCenter from './models/CostCenter'
 import Supplier from './models/Supplier'
 import Payable from './models/Payable'
 import BankTransfer from './models/BankTransfer'
-import Config from './models/Config' // Import Config model
-import seedConfigs from './seeds/configSeed' // Import seedConfigs
+import Config from './models/Config'
+import seedConfigs from './seeds/configSeed'
 import Reimbursement from './models/Reimbursement'
 import ReimbursementFile from './models/ReimbursementFile'
+import Os_entry from './models/Os_entry'
+import SlaLevel from './models/SlaLevel'
+import seedSlaLevels from './seeds/slaLevelSeed'
 
 async function syncModels(): Promise<true> {
     await User.sync()
@@ -43,7 +46,12 @@ async function syncModels(): Promise<true> {
     await Subproject.sync()
     await Check.sync()
 
-    await Service_order.sync()
+    await SlaLevel.sync({ alter: { drop: false } })
+    await seedSlaLevels()
+
+    await Service_order.sync({ alter: { drop: false } })
+    await Os_entry.sync({ alter: { drop: false } })
+
     await Subscription.sync({ alter: { drop: false } })
 
     await License.sync({ alter: { drop: false } })
@@ -64,8 +72,8 @@ async function syncModels(): Promise<true> {
     await Receipts.sync({ alter: { drop: false } })
     await Payable.sync()
 
-    await Config.sync({ alter: { drop: false } }) // Sync Config model
-    await seedConfigs() // Seed default configurations
+    await Config.sync({ alter: { drop: false } })
+    await seedConfigs()
 
     await Reimbursement.sync({ alter: { drop: false } })
     await ReimbursementFile.sync({ alter: { drop: false } })

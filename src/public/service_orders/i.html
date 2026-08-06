@@ -109,6 +109,22 @@
             </div>
         </div>
 
+        <!-- SLA Status Banner -->
+        <div v-if="SlaLevel" class="sla-banner mb-3" :class="slaBannerClass">
+            <div class="sla-banner__level">
+                <i class="fa-solid fa-shield-halved"></i>
+                SLA: <strong>{{ SlaLevel.name }}</strong>
+            </div>
+            <div class="sla-banner__deadlines">
+                <span class="sla-deadline" :class="slaResponseStatus.cls" :title="'Prazo de resposta: ' + formatDeadline(sla_response_deadline)">
+                    <i class="fa-solid fa-reply"></i> Resposta: {{ slaResponseStatus.label }}
+                </span>
+                <span class="sla-deadline" :class="slaSolutionStatus.cls" :title="'Prazo de solução: ' + formatDeadline(sla_solution_deadline)">
+                    <i class="fa-solid fa-circle-check"></i> Solução: {{ slaSolutionStatus.label }}
+                </span>
+            </div>
+        </div>
+
         <form v-on:submit="handlerSubmit">
             <div class="row">
                 <div class="mb-3 col-lg">
@@ -131,10 +147,20 @@
                 </div>
             </div>
             <div class="row">
-                <div class="mb-3 col-lg">
+                <div class="mb-3 col-lg-8">
                     <label for="description" class="form-label">Descrição</label>
                     <textarea type="text" class="form-control" v-model="description" id="description"
                         rows="4"></textarea>
+                </div>
+                <div class="mb-3 col-lg-4">
+                    <label class="form-label">Nível de SLA</label>
+                    <select class="form-select" v-model="SlaLevelId" id="SlaLevelId">
+                        <option value="">Sem SLA</option>
+                        <option v-for="lvl in slaLevels" :key="lvl.id" :value="lvl.id">
+                            {{ lvl.name }} — R:{{ lvl.response_hours }}h / S:{{ formatSolutionHours(lvl.solution_hours) }}
+                        </option>
+                    </select>
+                    <div class="form-text" v-if="SlaLevelId">Prazos recalculados a partir da data de criação da OS.</div>
                 </div>
             </div>
 
