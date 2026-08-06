@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
 import { Op, fn, col, literal, where } from 'sequelize'
 import Payable from '../models/Payable'
-import Billing from '../models/Billing'
+import Receipts from '../models/Receipts'
 import CostCenter from '../models/CostCenter'
 
 interface CostCenterNode {
@@ -96,15 +96,15 @@ class ExpenseReportController {
 
             const dateRange = startDate && endDate ? [new Date(startDate), new Date(endDate)] : null
 
-            const billingWhere: any = { status: 'pago' }
-            if (dateRange) billingWhere.due_date = { [Op.between]: dateRange }
+            const receiptWhere: any = {}
+            if (dateRange) receiptWhere.createdAt = { [Op.between]: dateRange }
 
             const payableWhere: any = { status: 'pago' }
             if (dateRange) payableWhere.paymentDate = { [Op.between]: dateRange }
 
-            const billingResultP = Billing.findAll({
-                attributes: [[fn('SUM', col('total_value')), 'total'], [fn('COUNT', col('id')), 'count']],
-                where: billingWhere,
+            const receiptResultP = Receipts.findAll({
+                attributes: [[fn('SUM', col('value')), 'total'], [fn('COUNT', col('id')), 'count']],
+                where: receiptWhere,
                 raw: true,
             })
             const payableResultP = Payable.findAll({
@@ -112,16 +112,16 @@ class ExpenseReportController {
                 where: payableWhere,
                 raw: true,
             })
-            const [billingResult, payableResult] = await Promise.all([billingResultP, payableResultP])
+            const [receiptResult, payableResult] = await Promise.all([receiptResultP, payableResultP])
 
-            const income = parseFloat((billingResult[0] as any)?.total || '0')
+            const income = parseFloat((receiptResult[0] as any)?.total || '0')
             const expenses = parseFloat((payableResult[0] as any)?.total || '0')
 
             return res.send({
                 income,
                 expenses,
                 balance: income - expenses,
-                incomeCount: parseInt((billingResult[0] as any)?.count || '0'),
+                incomeCount: parseInt((receiptResult[0] as any)?.count || '0'),
                 expenseCount: parseInt((payableResult[0] as any)?.count || '0'),
             })
         } catch (error) {
