@@ -5,12 +5,36 @@ const app = new Vue({
     el: '#app',
     data: {
         id: null,
+        isInternational: false,
+        cnpjLookupLoading: false,
         name: '',
         cnpj: '',
         email: '',
         phone: '',
     },
     methods: {
+        async lookupCnpj() {
+            const raw = (this.cnpj || '').replace(/\D/g, '')
+            if (raw.length !== 14) return alert('Informe um CNPJ com 14 dígitos antes de buscar.')
+            this.cnpjLookupLoading = true
+            try {
+                const { data } = await axios.get(`https://brasilapi.com.br/api/cnpj/v1/${raw}`)
+                this.name = data.razao_social || this.name
+                this.email = data.email || this.email
+                if (data.ddd_telefone_1) {
+                    this.phone = data.ddd_telefone_1.replace(/\D/g, '')
+                }
+            } catch (e) {
+                alert('CNPJ não encontrado. Preencha os dados manualmente.')
+            } finally {
+                this.cnpjLookupLoading = false
+            }
+        },
+        maskCnpj() {
+            if (!this.cnpj) return
+            const raw = this.cnpj.replace(/\D/g, '').slice(0, 14)
+            this.cnpj = raw.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5')
+        },
         async saveSupplier() {
             const isEditing = !!this.id;
             const url = isEditing ? `/api/suppliers/${this.id}` : '/api/suppliers';
