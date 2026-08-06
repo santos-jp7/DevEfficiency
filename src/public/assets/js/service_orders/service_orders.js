@@ -57,6 +57,37 @@ const service_orders = new Vue({
             })
         },
 
+        osStatusBadge(status) {
+            const map = {
+                'Em avaliação': 'bg-secondary',
+                'Orçamento enviado': 'bg-info text-dark',
+                'Na fila': 'bg-warning text-dark',
+                'Em correções': 'bg-primary',
+                'Pendente': 'bg-warning text-dark',
+                'Finalizado': 'bg-success',
+                'Cancelado': 'bg-danger',
+            }
+            return map[status] || 'bg-secondary'
+        },
+        slaBadgeClass(os) {
+            if (!os.sla_solution_deadline) return 'cx-sla-badge--none'
+            const now = new Date()
+            const due = new Date(os.sla_solution_deadline)
+            const diffH = (due - now) / 3600000
+            if (diffH <= 0) return 'cx-sla-badge--breach'
+            if (diffH <= 8) return 'cx-sla-badge--warn'
+            return 'cx-sla-badge--ok'
+        },
+        slaShortLabel(os) {
+            if (!os.SlaLevel) return '—'
+            if (!os.sla_solution_deadline) return os.SlaLevel.name
+            const now = new Date()
+            const due = new Date(os.sla_solution_deadline)
+            const diffH = (due - now) / 3600000
+            if (diffH <= 0) return 'Expirado'
+            if (diffH < 24) return Math.round(diffH) + 'h restantes'
+            return Math.ceil(diffH / 24) + 'd restantes'
+        },
         exportToFile: function () {
             const o = document.getElementById('table-os')
             const tab = o.cloneNode(true)

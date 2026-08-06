@@ -99,20 +99,35 @@
 
         <h5>Cliente #{{id}}</h5>
 
+        <div class="form-check form-switch mb-3">
+            <input class="form-check-input" type="checkbox" id="intlToggle" v-model="isInternational">
+            <label class="form-check-label" for="intlToggle">Empresa internacional (sem CNPJ)</label>
+        </div>
+
         <form v-on:submit="handlerSubmit">
+            <div class="row mb-3" v-if="!isInternational">
+                <div class="col-md-5">
+                    <label for="inputDocument" class="form-label">CNPJ / Documento</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="inputDocument" v-model="document"
+                            v-on:keyup="maskDocument" placeholder="00.000.000/0000-00" />
+                        <button type="button" class="btn btn-outline-secondary" @click="lookupCnpj"
+                            :disabled="cnpjLookupLoading">
+                            <i class="fa-solid fa-spinner fa-spin" v-if="cnpjLookupLoading"></i>
+                            <span v-else><i class="fa-solid fa-magnifying-glass"></i> Buscar</span>
+                        </button>
+                    </div>
+                    <div class="form-text">Digite o CNPJ e clique em Buscar para preencher os dados automaticamente.</div>
+                </div>
+            </div>
             <div class="row">
                 <div class="mb-3 col">
-                    <label for="inputName1" class="form-label">Nome</label>
+                    <label for="inputName1" class="form-label">Nome / Razão Social</label>
                     <input type="text" class="form-control" id="inputName1" v-model="name" />
                 </div>
                 <div class="mb-3 col">
-                    <label for="inputName2" class="form-label">Nome Social</label>
+                    <label for="inputName2" class="form-label">Nome Fantasia</label>
                     <input type="text" class="form-control" id="inputName2" v-model="corporate_name" />
-                </div>
-                <div class="mb-3 col">
-                    <label for="inputDocument" class="form-label">Documento</label>
-                    <input type="text" class="form-control" id="inputDocument" v-model="document"
-                        v-on:keyup="maskDocument" />
                 </div>
             </div>
             <div class="row">
@@ -120,14 +135,13 @@
                     <label for="inputEmail" class="form-label">Email</label>
                     <input type="email" class="form-control" id="inputEmail" v-model="email" />
                 </div>
-
                 <div class="mb-3 col">
                     <label for="inputDueDay" class="form-label">Dia de vencimento</label>
                     <input type="number" class="form-control" id="inputDueDay" v-model="due_day" min="1" max="28" />
                 </div>
             </div>
 
-            <button type="submit" class="btn btn-dark">Enviar</button>
+            <button type="submit" class="btn btn-dark">Salvar cliente</button>
         </form>
 
         <hr />
@@ -698,7 +712,10 @@
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h1 class="modal-title fs-5" id="addressModalLabel">Endereço</h1>
+                        <h1 class="modal-title fs-5" id="addressModalLabel">
+                            Confirmar endereço
+                            <small class="text-muted fw-normal fs-6 ms-2" v-if="payloads.address.street_name && !payloads.address.id">— pré-preenchido via CNPJ</small>
+                        </h1>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
                     </div>
                     <div class="modal-body">
@@ -795,6 +812,7 @@
     </div>
 
     <script src="../assets/js/clients/i.js"></script>
+    <script src="../assets/js/nav.js"></script>
 </body>
 
 </html>

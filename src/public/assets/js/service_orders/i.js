@@ -10,6 +10,11 @@ const service_order = new Vue({
         createdAt: null,
         ProjectId: null,
         ClientId: null,
+        SlaLevelId: null,
+        SlaLevel: null,
+        sla_response_deadline: null,
+        sla_solution_deadline: null,
+        slaLevels: [],
         Protocol: {
             id: null,
             status: null,
@@ -77,8 +82,42 @@ const service_order = new Vue({
             if (!n || n <= 1) return 0
             return parseFloat((this.protocolDiscountedTotal / n).toFixed(2))
         },
+        slaResponseStatus() {
+            return this._slaDeadlineStatus(this.sla_response_deadline)
+        },
+        slaSolutionStatus() {
+            return this._slaDeadlineStatus(this.sla_solution_deadline)
+        },
+        slaBannerClass() {
+            if (!this.SlaLevel) return 'sla-banner--none'
+            const sol = this._slaDeadlineStatus(this.sla_solution_deadline)
+            if (sol.cls === 'sla-breach') return 'sla-banner--breach'
+            const res = this._slaDeadlineStatus(this.sla_response_deadline)
+            if (res.cls === 'sla-warn' || sol.cls === 'sla-warn') return 'sla-banner--warn'
+            if (res.cls === 'sla-done' && sol.cls === 'sla-done') return 'sla-banner--none'
+            return 'sla-banner--ok'
+        },
     },
     methods: {
+        _slaDeadlineStatus(deadline) {
+            if (!deadline) return { cls: 'sla-done', label: '—' }
+            const now = new Date()
+            const due = new Date(deadline)
+            const diffMs = due - now
+            const diffH = diffMs / 3600000
+            if (diffMs <= 0) return { cls: 'sla-breach', label: 'Expirado ' + moment(due).fromNow() }
+            if (diffH <= 4) return { cls: 'sla-warn', label: 'Expira ' + moment(due).fromNow() }
+            return { cls: 'sla-ok', label: moment(due).format('DD/MM HH:mm') + ' (' + moment(due).fromNow() + ')' }
+        },
+        formatDeadline(deadline) {
+            if (!deadline) return '—'
+            return moment(deadline).format('DD/MM/YYYY HH:mm')
+        },
+        formatSolutionHours(h) {
+            if (h < 24) return h + 'h'
+            const d = Math.round(h / 24)
+            return d + 'd'
+        },
         handlerSubmit(e) {
             e.preventDefault()
 
@@ -87,6 +126,7 @@ const service_order = new Vue({
                     subject: this.$data.subject,
                     description: this.$data.description,
                     status: this.$data.status,
+                    SlaLevelId: this.$data.SlaLevelId || null,
                 })
                 .then(() => {
                     window.location.reload()
@@ -373,9 +413,7 @@ const service_order = new Vue({
 
         __api__.get('/api/auth/verify').catch((error) => {
             console.log(error)
-
             localStorage.clear()
-
             location.href = '/'
         })
 
@@ -396,26 +434,29 @@ const service_order = new Vue({
                     })
                     .catch((error) => {
                         console.log(error)
-
                         alert(error.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.')
                     })
             })
             .catch((error) => {
                 console.log(error)
-
                 alert(error.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.')
             })
+
+        __api__
+            .get('/api/sla-levels')
+            .then(({ data }) => {
+                this.slaLevels = data
+            })
+            .catch(() => {})
 
         __api__
             .get('/api/products')
             .then(({ data }) => {
                 if (!data) return
-
                 this.$data.references.products = data
             })
             .catch((error) => {
                 console.log(error)
-
                 alert(error.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.')
             })
 

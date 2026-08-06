@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-br">
 
 <head>
@@ -9,6 +9,7 @@
 
     <link href="../assets/css/bootstrap.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css" />
+    <link rel="stylesheet" href="../assets/css/codlinx.css" />
 
     <script src="../assets/js/vue.min.js"></script>
     <script src="../assets/js/jquery-3.6.1.min.js"></script>
@@ -20,125 +21,147 @@
 
 <body>
     <nav class="navbar bg-light">
-        <div class="container">
+        <div class="container-fluid px-4">
             <a class="navbar-brand" href="/dashboard">
                 <img src="../assets/img/logo_cabecalho.png" alt="Codlinx" width="40" height="40" />
             </a>
         </div>
     </nav>
 
-    <div class="container p-4" id="billings">
-        <div class="col">
-            <div class="d-flex flex-wrap" style="gap:.5rem">
-                <div class="btn-group">
-                    <button type="button" class="btn btn-dark btn-sm dropdown-toggle" data-bs-toggle="dropdown"
-                        aria-expanded="false">
-                        Gestão
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-dark">
-                        <li><a class="dropdown-item" href="../clients">Clientes</a></li>
-                        <li><a class="dropdown-item" href="../projects">Projetos</a></li>
-                        <li><a class="dropdown-item" href="../products">Produtos</a></li>
-                        <li><a class="dropdown-item" href="../suppliers">Fornecedores</a></li>
-                        <li><a class="dropdown-item" href="../config">Configurações</a></li>
-                    </ul>
-                </div>
-
-                <div class="btn-group">
-                    <button type="button" class="btn btn-dark btn-sm dropdown-toggle" data-bs-toggle="dropdown"
-                        aria-expanded="false">
-                        Operações
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-dark">
-                        <li><a class="dropdown-item" href="../service_orders">Ordens de serviço</a></li>
-                        <li><a class="dropdown-item" href="../subscriptions">Assinaturas</a></li>
-                    </ul>
-                </div>
-
-                <div class="btn-group">
-                    <button type="button" class="btn btn-dark btn-sm dropdown-toggle" data-bs-toggle="dropdown"
-                        aria-expanded="false">
-                        Financeiro
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-dark">
-                        <li><a class="dropdown-item" href="../billings">Cobranças</a></li>
-                        <li><a class="dropdown-item" href="../payables">Contas a Pagar</a></li>
-                        <li><a class="dropdown-item" href="../protocols">Protocolos</a></li>
-                        <li><a class="dropdown-item" href="../bank-accounts">Contas Bancárias</a></li>
-                        <li><a class="dropdown-item" href="../cost-centers">Centros de Custo</a></li>
-                        <li><a class="dropdown-item" href="../bank-transfers">Transferências entre contas</a></li>
-
-                    </ul>
-                </div>
-
-                <div class="btn-group">
-                    <button type="button" class="btn btn-dark btn-sm dropdown-toggle" data-bs-toggle="dropdown"
-                        aria-expanded="false">
-                        Infraestrutura
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-dark">
-                        <li><a class="dropdown-item" href="../servers/">Servidores</a></li>
-                    </ul>
-                </div>
-
-                <div class="btn-group">
-                    <button type="button" class="btn btn-dark btn-sm dropdown-toggle" data-bs-toggle="dropdown"
-                        aria-expanded="false">
-                        Relatórios
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-dark">
-                        <li><a class="dropdown-item" href="../financial-history/">Fluxo de caixa</a></li>
-                        <li><a class="dropdown-item" href="../dre-report/">DRE</a></li>
-                        <li><a class="dropdown-item" href="../expense-report/">Relatório de Despesas</a></li>
-                    </ul>
-                </div>
-            </div>
-        </div>
+    <div class="container-fluid px-4 py-3" id="billings">
 
         <hr />
 
-        <div class="d-flex flex-wrap justify-content-between">
-            <div class="w-80">
-                <h5>Cobranças</h5>
+        <!-- ── Metric Cards ───────────────────────────── -->
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
+                <div class="cx-kpi cx-kpi--amber">
+                    <div class="cx-kpi__label">A Receber</div>
+                    <div class="cx-kpi__value cx-num">{{ formatCurrency(metrics.pendente) }}</div>
+                    <div class="cx-kpi__sub">{{ counts.pendente }} cobrança(s) pendente</div>
+                </div>
             </div>
-            <div class="w-15 d-flex" style="gap: 5px">
-                <input type="date" class="form-control" v-model="startDate" v-on:change="handlerSearch" />
-                <input type="date" class="form-control" v-model="endDate" v-on:change="handlerSearch" />
-                <input type="search" class="form-control" placeholder="Pesquisar" v-model="q"
-                    v-on:keyup="handlerSearch" />
-                <a class="btn btn-dark" href="../billings/i.html"><i class="fa-solid fa-plus"></i></a>
+            <div class="col-6 col-md-3">
+                <div class="cx-kpi cx-kpi--brand">
+                    <div class="cx-kpi__label">Faturado</div>
+                    <div class="cx-kpi__value cx-num">{{ formatCurrency(metrics.faturada) }}</div>
+                    <div class="cx-kpi__sub">{{ counts.faturada }} fatura(s) emitida</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="cx-kpi cx-kpi--green">
+                    <div class="cx-kpi__label">Recebido</div>
+                    <div class="cx-kpi__value cx-num">{{ formatCurrency(metrics.pago) }}</div>
+                    <div class="cx-kpi__sub">{{ counts.pago }} cobrança(s) paga</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="cx-kpi cx-kpi--red">
+                    <div class="cx-kpi__label">Atrasado</div>
+                    <div class="cx-kpi__value cx-num">{{ formatCurrency(metrics.atrasado) }}</div>
+                    <div class="cx-kpi__sub">{{ counts.atrasado }} cobrança(s) vencida</div>
+                </div>
             </div>
         </div>
 
-        <div class="table-responsive m-2">
-            <table class="table table-striped border">
-                <thead>
-                    <tr>
-                        <th scope="col">#</th>
-                        <th scope="col">Cliente</th>
-                        <th scope="col">Valor</th>
-                        <th scope="col">Status</th>
-                        <th scope="col">Vencimento</th>
-                        <th scope="col">Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="billing of billings">
-                        <th scope="row">{{billing.id}}</th>
-                        <td>{{billing.Client.name}}</td>
-                        <td>{{formatCurrency(billing.total_value)}}</td>
-                        <td><span :class="'badge bg-' + statusColor(billing.status)">{{billing.status}}</span></td>
-                        <td>{{billing.due_date ? formatDate(billing.due_date) : '-'}}</td>
-                        <td>
-                            <a :href="'../billings/i.html?id='+billing.id"><i class="fa-solid fa-arrow-right"></i></a>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+        <!-- ── Filters ────────────────────────────────── -->
+        <div class="card mb-3">
+            <div class="card-body py-2">
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <div class="d-flex align-items-center gap-1">
+                        <label class="form-label mb-0 small fw-500 text-cx-muted" style="white-space:nowrap">De</label>
+                        <input type="date" class="form-control form-control-sm" style="width:140px" v-model="startDate" @change="handlerSearch" />
+                    </div>
+                    <div class="d-flex align-items-center gap-1">
+                        <label class="form-label mb-0 small fw-500 text-cx-muted" style="white-space:nowrap">Até</label>
+                        <input type="date" class="form-control form-control-sm" style="width:140px" v-model="endDate" @change="handlerSearch" />
+                    </div>
+                    <input type="search" class="form-control form-control-sm" placeholder="Buscar cliente..." style="width:180px" v-model="q" @input="applyFilters" />
+                    <!-- Status tabs -->
+                    <div class="d-flex gap-1 flex-wrap">
+                        <button v-for="s in statusOptions" :key="s.value"
+                            class="btn btn-sm"
+                            :class="activeStatus === s.value ? 'btn-dark' : 'btn-outline-secondary'"
+                            @click="setStatus(s.value)">
+                            {{ s.label }}
+                            <span v-if="s.value && counts[s.value]" class="badge ms-1"
+                                :class="activeStatus === s.value ? 'bg-light text-dark' : 'bg-secondary'">
+                                {{ counts[s.value] }}
+                            </span>
+                        </button>
+                    </div>
+                    <a class="btn btn-sm btn-dark ms-auto" href="../billings/i.html">
+                        <i class="fa-solid fa-plus me-1"></i>Nova cobrança
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Table ──────────────────────────────────── -->
+        <div class="card">
+            <div class="card-body p-0">
+                <div v-if="billings.length === 0" class="text-center text-cx-muted py-5">
+                    <i class="fa-solid fa-inbox fa-2x mb-2 d-block"></i>
+                    Nenhuma cobrança encontrada para o período selecionado.
+                </div>
+                <div class="table-responsive" v-else>
+                    <table class="table mb-0">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Cliente</th>
+                                <th>Vencimento</th>
+                                <th>Método</th>
+                                <th>Status</th>
+                                <th class="text-end">Valor</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="billing of billings" :key="billing.id" :class="rowClass(billing)">
+                                <td class="cx-num text-cx-muted">{{ billing.id }}</td>
+                                <td>
+                                    <div class="fw-500">{{ billing.Client.name }}</div>
+                                </td>
+                                <td>
+                                    <span :class="isOverdue(billing) ? 'text-cx-red fw-600' : ''">
+                                        {{ billing.due_date ? formatDate(billing.due_date) : '—' }}
+                                    </span>
+                                    <small v-if="isOverdue(billing)" class="d-block text-cx-red" style="font-size:10px">
+                                        {{ overdueDays(billing) }}d em atraso
+                                    </small>
+                                </td>
+                                <td class="text-cx-muted small">{{ billing.method || '—' }}</td>
+                                <td>
+                                    <span class="badge" :class="statusBadge(billing.status)">{{ billing.status }}</span>
+                                </td>
+                                <td class="text-end cx-num fw-600">{{ formatCurrency(billing.total_value) }}</td>
+                                <td>
+                                    <a :href="'../billings/i.html?id='+billing.id" class="text-cx-brand">
+                                        <i class="fa-solid fa-arrow-right"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tfoot v-if="billings.length > 0">
+                            <tr class="table-light">
+                                <td colspan="5" class="text-end fw-600 small text-cx-muted">Total filtrado</td>
+                                <td class="text-end cx-num fw-700">{{ formatCurrency(filteredTotal) }}</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-cx-subtle small mt-2 text-end">
+            {{ billings.length }} registro(s) exibido(s) · período: {{ startDate | date }} → {{ endDate | date }}
         </div>
     </div>
 
     <script src="../assets/js/billings/billings.js"></script>
+    <script src="../assets/js/nav.js"></script>
 </body>
 
 </html>

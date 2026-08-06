@@ -35,6 +35,7 @@ import configController from './controllers/configController' // Import the new 
 import dreReportController from './controllers/dreReportController'
 import osEntriesController from './controllers/osEntriesController'
 import reimbursementsController from './controllers/reimbursementsController'
+import slaController from './controllers/slaController'
 
 const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.get('/', helloController.handler)
@@ -194,6 +195,11 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.delete('/os-entries/:id', { preHandler: [isAuthed] }, osEntriesController.destroy as any)
 
     instance.get('/utils/currentOs', { preHandler: [isAuthed] }, currentOs)
+
+    instance.get('/sla-levels', { preHandler: [isAuthed] }, slaController.index)
+    instance.post('/sla-levels', { preHandler: [isAuthed] }, slaController.store)
+    instance.put('/sla-levels/:id', { preHandler: [isAuthed] }, slaController.update)
+    instance.delete('/sla-levels/:id', { preHandler: [isAuthed] }, slaController.destroy)
 
     instance.post('/reimbursements', { preHandler: [isAuthed] }, reimbursementsController.store)
     instance.get('/reimbursements/:id', { preHandler: [isAuthed] }, reimbursementsController.show as any)

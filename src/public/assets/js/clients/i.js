@@ -4,6 +4,8 @@ const client = new Vue({
     el: '#client',
     data: {
         id: 0,
+        isInternational: false,
+        cnpjLookupLoading: false,
         name: null,
         corporate_name: null,
         document: null,
@@ -251,7 +253,7 @@ const client = new Vue({
                 district: this.$data.payloads.address.district == '' ? null : this.$data.payloads.address.district,
                 city: this.$data.payloads.address.city == '' ? null : this.$data.payloads.address.city,
                 state: this.$data.payloads.address.state,
-                zip: this.$data.payloads.address.zip.replace(/[^0-9]/g, ''),
+                zip: (this.$data.payloads.address.zip || '').replace(/[^0-9]/g, ''),
                 ibge: this.$data.payloads.address.ibge,
                 ClientId: this.$data.id,
             })
@@ -314,6 +316,34 @@ const client = new Vue({
                 .catch((e) =>
                     console.log(error.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.'),
                 )
+        },
+        async lookupCnpj() {
+            const raw = (this.document || '').replace(/\D/g, '')
+            if (raw.length !== 14) return alert('Informe um CNPJ com 14 dígitos antes de buscar.')
+            this.cnpjLookupLoading = true
+            try {
+                const { data } = await axios.get(`https://brasilapi.com.br/api/cnpj/v1/${raw}`)
+                this.name = data.razao_social || this.name
+                this.corporate_name = data.nome_fantasia || this.corporate_name
+                this.email = data.email || this.email
+                this.payloads.address = {
+                    id: null,
+                    type: 'Cobrança',
+                    street_name: data.logradouro || '',
+                    number: data.numero || '',
+                    complement: data.complemento || '',
+                    district: data.bairro || '',
+                    city: data.municipio || '',
+                    state: data.uf || '',
+                    zip: String(data.cep || '').replace(/\D/g, ''),
+                    ibge: String(data.codigo_municipio_ibge || ''),
+                }
+                $('#addressModal').modal('show')
+            } catch (e) {
+                alert('CNPJ não encontrado. Preencha os dados manualmente.')
+            } finally {
+                this.cnpjLookupLoading = false
+            }
         },
         maskDocument() {
             if (!this.$data.document) return

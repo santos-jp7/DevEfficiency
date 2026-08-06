@@ -12,6 +12,7 @@ import Protocol_product from '../models/Protocol_product'
 import Protocol_register from '../models/Protocol_register'
 import Receipts from '../models/Receipts'
 import Service_order from '../models/Service_order'
+import SlaLevel from '../models/SlaLevel'
 import Product from '../models/Product'
 import Config from '../models/Config'
 import BankAccount from '../models/BankAccount'
@@ -57,7 +58,7 @@ class serviceOrdersController {
                 offset: (page - 1) * limit,
             }),
             where,
-            include: [{ model: Project, include: [Client] }, Client],
+            include: [{ model: Project, include: [Client] }, Client, SlaLevel],
         })
 
         return res.send({
@@ -71,13 +72,13 @@ class serviceOrdersController {
     static async show(req: serviceOrdersRequest, res: FastifyReply): Promise<FastifyReply> {
         return res.send(
             await Service_order.findByPk(req.params.id, {
-                include: [Protocol, { model: Project, include: [Client] }, Client],
+                include: [Protocol, { model: Project, include: [Client] }, Client, SlaLevel],
             }),
         )
     }
 
     static async store(req: serviceOrdersRequest, res: FastifyReply): Promise<FastifyReply> {
-        const { subject, description, ProjectId, ClientId } = req.body
+        const { subject, description, ProjectId, ClientId, SlaLevelId } = req.body as any
 
         let project = ProjectId ? await Project.findByPk(ProjectId) : undefined
 
@@ -90,12 +91,24 @@ class serviceOrdersController {
 
         await os?.createProtocol()
 
+        if (SlaLevelId) {
+            const slaLevel = await SlaLevel.findByPk(SlaLevelId)
+            if (slaLevel && os.createdAt) {
+                const base = new Date(os.createdAt)
+                await os.update({
+                    SlaLevelId,
+                    sla_response_deadline: new Date(base.getTime() + slaLevel.response_hours * 3600000),
+                    sla_solution_deadline: new Date(base.getTime() + slaLevel.solution_hours * 3600000),
+                })
+            }
+        }
+
         return res.send(os)
     }
 
     static async update(req: serviceOrdersRequest, res: FastifyReply): Promise<FastifyReply> {
         const { id } = req.params
-        const { description, subject, status } = req.body
+        const { description, subject, status, SlaLevelId } = req.body as any
 
         const transaction = await db.transaction()
 
@@ -107,7 +120,25 @@ class serviceOrdersController {
 
         await protocol?.save({ transaction })
 
-        await os?.update({ description, subject, status })
+        const updatePayload: any = { description, subject, status }
+
+        if (SlaLevelId !== undefined) {
+            if (SlaLevelId) {
+                const slaLevel = await SlaLevel.findByPk(SlaLevelId)
+                if (slaLevel && os?.createdAt) {
+                    const base = new Date(os.createdAt)
+                    updatePayload.SlaLevelId = SlaLevelId
+                    updatePayload.sla_response_deadline = new Date(base.getTime() + slaLevel.response_hours * 3600000)
+                    updatePayload.sla_solution_deadline = new Date(base.getTime() + slaLevel.solution_hours * 3600000)
+                }
+            } else {
+                updatePayload.SlaLevelId = null
+                updatePayload.sla_response_deadline = null
+                updatePayload.sla_solution_deadline = null
+            }
+        }
+
+        await os?.update(updatePayload)
         await os?.save({ transaction })
 
         await transaction.commit()
