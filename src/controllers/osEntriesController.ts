@@ -1,20 +1,27 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
 import Os_entry from '../models/Os_entry'
 import Service_order from '../models/Service_order'
+import Project from '../models/Project'
+import Client from '../models/Client'
 
 type OsEntryRequest = FastifyRequest<{
     Body: any
     Params: { id: string }
-    Querystring: { serviceOrderId: string }
+    Querystring: { serviceOrderId: string; status: string }
 }>
 
 class osEntriesController {
     static async index(req: OsEntryRequest, res: FastifyReply): Promise<FastifyReply> {
-        const { serviceOrderId } = req.query
+        const { serviceOrderId, status } = req.query
         const where: any = {}
         if (serviceOrderId) where.ServiceOrderId = parseInt(serviceOrderId)
+        if (status) where.status = status
 
-        const entries = await Os_entry.findAll({ where, order: [['date', 'DESC']] })
+        const entries = await Os_entry.findAll({
+            where,
+            order: [['date', 'DESC']],
+            include: [{ model: Service_order, include: [{ model: Project, include: [Client] }] }],
+        })
         return res.send(entries)
     }
 

@@ -12,6 +12,8 @@ const dreReport = new Vue({
             'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
         ],
         report: {
+            grossRevenue: 0,
+            totalDiscounts: 0,
             revenue: 0,
             directCosts: {
                 productCosts: 0,

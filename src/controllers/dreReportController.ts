@@ -5,12 +5,13 @@ import moment from 'moment'
 import Protocol from '../models/Protocol'
 import Protocol_product from '../models/Protocol_product'
 import Protocol_register from '../models/Protocol_register'
-import Receipts from '../models/Receipts'
 import Product from '../models/Product'
 import Payable from '../models/Payable'
 import CostCenter from '../models/CostCenter'
 
 type DREVolumes = {
+    grossRevenue: number
+    totalDiscounts: number
     revenue: number
     directCosts: {
         productCosts: number
@@ -32,18 +33,23 @@ class DreReportController {
             const startDate = moment().year(parseInt(year || moment().year().toString())).month(parseInt(month || moment().month().toString()) - 1).startOf('month').toDate()
             const endDate = moment(startDate).endOf('month').toDate()
 
-            // 1. Revenue: Total from Receipts where Protocol.closedAt is in period
-            const receipts = await Receipts.findAll({
-                include: [{
-                    model: Protocol,
-                    where: {
-                        closedAt: { [Op.between]: [startDate, endDate] },
-                        status: 'Fechado'
-                    },
-                    required: true
-                }]
+            // 1. Revenue: Gross from protocol items minus explicit discounts
+            const closedProtocols = await Protocol.findAll({
+                where: {
+                    closedAt: { [Op.between]: [startDate, endDate] },
+                    status: 'Fechado'
+                },
+                include: [Protocol_product, Protocol_register]
             })
-            const totalRevenue = receipts.reduce((sum, r) => sum + parseFloat(r.value.toString()), 0)
+
+            const grossRevenue = closedProtocols.reduce((sum, p) => {
+                const products = (p as any).Protocol_products?.reduce((s: number, v: any) => s + parseFloat(v.value), 0) || 0
+                const registers = (p as any).Protocol_registers?.reduce((s: number, v: any) => s + parseFloat(v.value), 0) || 0
+                return sum + products + registers
+            }, 0)
+
+            const totalDiscounts = closedProtocols.reduce((sum, p) => sum + (Number(p.discount_value) || 0), 0)
+            const totalRevenue = grossRevenue - totalDiscounts
 
             // 2. Direct Costs (CPV)
             // 2a. Product Costs (from Protocols closed in period)
@@ -99,6 +105,8 @@ class DreReportController {
             const netResult = grossProfit - totalOperatingExpenses
 
             const dre: DREVolumes = {
+                grossRevenue,
+                totalDiscounts,
                 revenue: totalRevenue,
                 directCosts: {
                     productCosts: totalProductCosts,

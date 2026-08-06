@@ -46,6 +46,7 @@ const dashboard = new Vue({
         overdueBillings: [],
         upcomingPayables: [],
         upcomingSubscriptions: [],
+        inProgressEntries: [],
         hasChartData: false,
     },
     filters: {
@@ -273,6 +274,15 @@ const dashboard = new Vue({
             .catch((error) => {
                 console.log(error)
                 alert(error.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.')
+            })
+
+        __api__
+            .get('/api/os-entries?status=Em andamento')
+            .then(({ data }) => {
+                this.$data.inProgressEntries = data
+            })
+            .catch((error) => {
+                console.log(error)
             })
     },
 })

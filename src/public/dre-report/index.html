@@ -121,7 +121,15 @@
                     </thead>
                     <tbody>
                         <tr class="table-primary fw-bold">
-                            <td>Faturamento Bruto (Receipts)</td>
+                            <td>Faturamento Bruto</td>
+                            <td class="text-end">{{ report.grossRevenue | currency }}</td>
+                        </tr>
+                        <tr v-if="report.totalDiscounts > 0">
+                            <td>&nbsp;&nbsp;&nbsp;(-) Descontos Concedidos</td>
+                            <td class="text-end text-danger">- {{ report.totalDiscounts | currency }}</td>
+                        </tr>
+                        <tr v-if="report.totalDiscounts > 0" class="fw-semibold">
+                            <td>&nbsp;&nbsp;&nbsp;Receita Líquida</td>
                             <td class="text-end">{{ report.revenue | currency }}</td>
                         </tr>
                         <tr>
