@@ -47,6 +47,7 @@ const dashboard = new Vue({
         upcomingPayables: [],
         upcomingSubscriptions: [],
         inProgressEntries: [],
+        slaAtRiskOs: [],
         hasChartData: false,
     },
     filters: {
@@ -68,6 +69,21 @@ const dashboard = new Vue({
 
                 this.metrics.os.total_open = osResponse.total
                 this.metrics.os.in_progress = osResponse.data.filter((os) => os.status === 'Em correções').length
+
+                // SLA at-risk: breached or within 4h of solution deadline or prazo already past
+                const now = new Date()
+                const fourHoursMs = 4 * 3600000
+                this.slaAtRiskOs = osResponse.data.filter((os) => {
+                    if (os.sla_solution_deadline) {
+                        const diff = new Date(os.sla_solution_deadline) - now
+                        if (diff <= fourHoursMs) return true
+                    }
+                    if (os.prazo) {
+                        const diff = new Date(os.prazo) - now
+                        if (diff <= 0) return true
+                    }
+                    return false
+                }).slice(0, 10)
 
                 // Billings Metrics
                 const { data: billings } = await __api__.get('/api/billings')

@@ -36,6 +36,7 @@ const app = new Vue({
     el: '#app',
     data: {
         reportData: [],
+        comparison: null,
         filters: {
             startDate: '',
             endDate: '',
@@ -54,6 +55,25 @@ const app = new Vue({
                 console.error(error);
                 alert(error.response?.data?.message || 'Ocorreu um erro ao buscar o relatório.');
             }
+        },
+        async fetchComparison() {
+            try {
+                const params = new URLSearchParams({
+                    startDate: this.filters.startDate,
+                    endDate: this.filters.endDate,
+                });
+                const { data } = await __api__.get(`/api/financial-comparison?${params.toString()}`);
+                this.comparison = data;
+            } catch (error) {
+                console.error(error);
+            }
+        },
+        async fetchAll() {
+            await Promise.all([this.fetchReport(), this.fetchComparison()]);
+        },
+        formatCurrency(value) {
+            if (typeof value !== 'number') return 'R$ 0,00';
+            return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
         },
         setDefaultFilters() {
             const startOfMonth = moment().startOf('month').format('YYYY-MM-DD');
@@ -82,6 +102,6 @@ const app = new Vue({
         });
 
         this.setDefaultFilters();
-        this.fetchReport();
+        this.fetchAll();
     },
 });

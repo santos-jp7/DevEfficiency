@@ -29,11 +29,13 @@ import ReimbursementFile from './models/ReimbursementFile'
 import Os_entry from './models/Os_entry'
 import SlaLevel from './models/SlaLevel'
 import seedSlaLevels from './seeds/slaLevelSeed'
+import ClientSlaConfig from './models/ClientSlaConfig'
 
 async function syncModels(): Promise<true> {
     await User.sync()
 
     await Client.sync({ alter: { drop: false } })
+    await ClientSlaConfig.sync({ alter: { drop: false } })
 
     await Product.sync({ alter: { drop: false } })
 

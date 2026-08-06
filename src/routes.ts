@@ -36,6 +36,7 @@ import dreReportController from './controllers/dreReportController'
 import osEntriesController from './controllers/osEntriesController'
 import reimbursementsController from './controllers/reimbursementsController'
 import slaController from './controllers/slaController'
+import clientSlaConfigController from './controllers/clientSlaConfigController'
 
 const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.get('/', helloController.handler)
@@ -51,6 +52,7 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.get('/financial-history', { preHandler: [isAuthed] }, financialsController.index)
     instance.get('/dre-report', { preHandler: [isAuthed] }, dreReportController.index)
     instance.get('/expense-report', { preHandler: [isAuthed] }, expenseReportController.index)
+    instance.get('/financial-comparison', { preHandler: [isAuthed] }, expenseReportController.comparison)
 
     instance.get('/bank-transfers', { preHandler: [isAuthed] }, bankTransferController.index)
     instance.get('/bank-transfers/:id', { preHandler: [isAuthed] }, bankTransferController.show)
@@ -84,6 +86,10 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.get('/clients/:id', { preHandler: [isAuthed] }, clientController.show)
     instance.post('/clients', { preHandler: [isAuthed] }, clientController.store)
     instance.put('/clients/:id', { preHandler: [isAuthed] }, clientController.update)
+
+    instance.get('/clients/:id/sla-configs', { preHandler: [isAuthed] }, clientSlaConfigController.index as any)
+    instance.post('/clients/:id/sla-configs', { preHandler: [isAuthed] }, clientSlaConfigController.store as any)
+    instance.delete('/clients/:id/sla-configs/:configId', { preHandler: [isAuthed] }, clientSlaConfigController.destroy as any)
 
     instance.get('/contacts', { preHandler: [isAuthed] }, contactsController.index)
     instance.get('/contacts/:id', { preHandler: [isAuthed] }, contactsController.show)

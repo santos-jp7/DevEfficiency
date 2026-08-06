@@ -14,6 +14,10 @@ const service_order = new Vue({
         SlaLevel: null,
         sla_response_deadline: null,
         sla_solution_deadline: null,
+        gravidade: null,
+        prazo: null,
+        prazoInput: null,
+        clientSlaConfigs: [],
         slaLevels: [],
         Protocol: {
             id: null,
@@ -88,13 +92,23 @@ const service_order = new Vue({
         slaSolutionStatus() {
             return this._slaDeadlineStatus(this.sla_solution_deadline)
         },
+        prazoStatus() {
+            return this._slaDeadlineStatus(this.prazo)
+        },
+        prazoBadgeClass() {
+            return this.prazoStatus.cls
+        },
+        hasSlaConfig() {
+            if (!this.gravidade || !this.clientSlaConfigs) return false
+            return this.clientSlaConfigs.some((c) => c.gravidade === this.gravidade)
+        },
         slaBannerClass() {
-            if (!this.SlaLevel) return 'sla-banner--none'
-            const sol = this._slaDeadlineStatus(this.sla_solution_deadline)
-            if (sol.cls === 'sla-breach') return 'sla-banner--breach'
-            const res = this._slaDeadlineStatus(this.sla_response_deadline)
-            if (res.cls === 'sla-warn' || sol.cls === 'sla-warn') return 'sla-banner--warn'
-            if (res.cls === 'sla-done' && sol.cls === 'sla-done') return 'sla-banner--none'
+            const checks = [
+                this._slaDeadlineStatus(this.sla_solution_deadline),
+                this._slaDeadlineStatus(this.prazo),
+            ]
+            if (checks.some((c) => c.cls === 'sla-breach')) return 'sla-banner--breach'
+            if (checks.some((c) => c.cls === 'sla-warn')) return 'sla-banner--warn'
             return 'sla-banner--ok'
         },
     },
@@ -126,7 +140,8 @@ const service_order = new Vue({
                     subject: this.$data.subject,
                     description: this.$data.description,
                     status: this.$data.status,
-                    SlaLevelId: this.$data.SlaLevelId || null,
+                    gravidade: this.$data.gravidade || null,
+                    prazo: this.$data.prazoInput || null,
                 })
                 .then(() => {
                     window.location.reload()
@@ -426,6 +441,17 @@ const service_order = new Vue({
                 data.Protocol.Receipts = []
 
                 Object.keys(data).forEach((key) => (this.$data[key] = data[key]))
+
+                if (data.prazo) {
+                    this.prazoInput = moment.utc(data.prazo).format('YYYY-MM-DD')
+                }
+
+                const clientId = data.ClientId || data.Project?.ClientId
+                if (clientId) {
+                    __api__.get('/api/clients/' + clientId + '/sla-configs')
+                        .then(({ data: configs }) => { this.clientSlaConfigs = configs })
+                        .catch(() => {})
+                }
 
                 __api__
                     .get('/api/protocols/' + data.Protocol.id)
