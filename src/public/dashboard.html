@@ -9,6 +9,7 @@
 
     <link href="../assets/css/bootstrap.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css" />
+    <link rel="stylesheet" href="./assets/css/codlinx.css" />
 
     <script src="../assets/js/vue.min.js"></script>
     <script src="../assets/js/jquery-3.6.1.min.js"></script>
@@ -98,154 +99,76 @@
         <hr />
 
         <!-- Row 1: Core KPIs -->
-        <div class="row mb-3">
-            <div class="col-md-3 mb-2">
-                <div class="card bg-dark text-white border-0 shadow-sm">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="card-title text-secondary mb-1">Ordens de Serviço</h6>
-                                <h3 class="mb-0">{{ metrics.os.total_open }}</h3>
-                            </div>
-                            <div class="rounded-circle bg-secondary p-3">
-                                <i class="fa-solid fa-file-invoice fa-xl"></i>
-                            </div>
-                        </div>
-                        <p class="card-text mt-2 small">
-                            <span class="text-info">{{ metrics.os.in_progress }}</span> em progresso
-                        </p>
-                    </div>
+        <div class="row g-3 mb-3">
+            <div class="col-md-3">
+                <div class="cx-kpi cx-kpi--brand">
+                    <div class="cx-kpi__label">Ordens de Serviço</div>
+                    <div class="cx-kpi__value">{{ metrics.os.total_open }}</div>
+                    <div class="cx-kpi__sub">{{ metrics.os.in_progress }} em correções</div>
                 </div>
             </div>
-            <div class="col-md-3 mb-2">
-                <div class="card bg-dark text-white border-0 shadow-sm">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="card-title text-secondary mb-1">Faturas Pendentes</h6>
-                                <h3 class="mb-0">{{ metrics.billings.pending_value | currency }}</h3>
-                            </div>
-                            <div class="rounded-circle bg-danger p-3">
-                                <i class="fa-solid fa-money-bill-wave fa-xl"></i>
-                            </div>
-                        </div>
-                        <p class="card-text mt-2 small">
-                            Total: {{ metrics.billings.total_pending }} faturas
-                        </p>
-                    </div>
+            <div class="col-md-3">
+                <div class="cx-kpi cx-kpi--amber">
+                    <div class="cx-kpi__label">Faturas Pendentes</div>
+                    <div class="cx-kpi__value">{{ metrics.billings.pending_value | currency }}</div>
+                    <div class="cx-kpi__sub">{{ metrics.billings.total_pending }} faturas em aberto</div>
                 </div>
             </div>
-            <div class="col-md-3 mb-2">
-                <div class="card bg-dark text-white border-0 shadow-sm">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="card-title text-secondary mb-1">Recorrência Mensal</h6>
-                                <h3 class="mb-0">{{ metrics.subscriptions.mrr | currency }}</h3>
-                            </div>
-                            <div class="rounded-circle bg-primary p-3">
-                                <i class="fa-solid fa-arrows-rotate fa-xl"></i>
-                            </div>
-                        </div>
-                        <p class="card-text mt-2 small">
-                            {{ metrics.subscriptions.total_active }} assinaturas ativas
-                        </p>
-                    </div>
+            <div class="col-md-3">
+                <div class="cx-kpi cx-kpi--cyan">
+                    <div class="cx-kpi__label">Recorrência Mensal</div>
+                    <div class="cx-kpi__value">{{ metrics.subscriptions.mrr | currency }}</div>
+                    <div class="cx-kpi__sub">{{ metrics.subscriptions.total_active }} assinaturas ativas</div>
                 </div>
             </div>
-            <div class="col-md-3 mb-2">
-                <div class="card bg-dark text-white border-0 shadow-sm">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="card-title text-secondary mb-1">Fluxo de Caixa (Mês)</h6>
-                                <h3 class="mb-0"
-                                    :class="metrics.cashFlow.balance >= 0 ? 'text-success' : 'text-danger'">
-                                    {{ metrics.cashFlow.balance | currency }}
-                                </h3>
-                            </div>
-                            <div class="rounded-circle bg-success p-3">
-                                <i class="fa-solid fa-chart-line fa-xl"></i>
-                            </div>
-                        </div>
-                        <p class="card-text mt-2 small">
-                            <span class="text-success">+{{ metrics.cashFlow.inflow | currency }}</span> /
-                            <span class="text-danger">-{{ metrics.cashFlow.outflow | currency }}</span>
-                        </p>
+            <div class="col-md-3">
+                <div class="cx-kpi" :class="metrics.cashFlow.balance >= 0 ? 'cx-kpi--green' : 'cx-kpi--red'">
+                    <div class="cx-kpi__label">Fluxo de Caixa (Mês)</div>
+                    <div class="cx-kpi__value" :class="metrics.cashFlow.balance >= 0 ? 'text-cx-green' : 'text-cx-red'">{{ metrics.cashFlow.balance | currency }}</div>
+                    <div class="cx-kpi__sub">
+                        <span class="text-cx-green">+{{ metrics.cashFlow.inflow | currency }}</span>
+                        &nbsp;/&nbsp;
+                        <span class="text-cx-red">-{{ metrics.cashFlow.outflow | currency }}</span>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Row 2: Urgency / Balance KPIs -->
-        <div class="row mb-4">
-            <div class="col mb-2">
-                <div class="card border-start border-primary border-3 shadow-sm">
-                    <div class="card-body py-2">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <div class="small text-muted">Saldo em Conta</div>
-                                <div class="fw-semibold fs-5">{{ metrics.bankBalance | currency }}</div>
-                            </div>
-                            <i class="fa-solid fa-landmark text-primary fa-lg"></i>
-                        </div>
-                    </div>
+        <div class="row g-3 mb-4">
+            <div class="col">
+                <div class="cx-tile">
+                    <div class="cx-tile__label">Saldo em Conta</div>
+                    <div class="cx-tile__value">{{ metrics.bankBalance | currency }}</div>
+                    <div class="cx-tile__sub">saldo consolidado</div>
                 </div>
             </div>
-            <div class="col mb-2">
-                <div class="card border-start border-danger border-3 shadow-sm">
-                    <div class="card-body py-2">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <div class="small text-muted">Cobranças Atrasadas</div>
-                                <div class="fw-semibold fs-5 text-danger">{{ metrics.overdueBillingsValue | currency }}</div>
-                            </div>
-                            <i class="fa-solid fa-triangle-exclamation text-danger fa-lg"></i>
-                        </div>
-                        <div class="small text-muted">{{ metrics.overdueBillingsCount }} fatura(s)</div>
-                    </div>
+            <div class="col">
+                <div class="cx-tile" style="border-left: 3px solid var(--cx-red)">
+                    <div class="cx-tile__label">Cobranças Atrasadas</div>
+                    <div class="cx-tile__value text-cx-red">{{ metrics.overdueBillingsValue | currency }}</div>
+                    <div class="cx-tile__sub">{{ metrics.overdueBillingsCount }} fatura(s) vencidas</div>
                 </div>
             </div>
-            <div class="col mb-2">
-                <div class="card border-start border-warning border-3 shadow-sm">
-                    <div class="card-body py-2">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <div class="small text-muted">Contas Vencendo (3d)</div>
-                                <div class="fw-semibold fs-5 text-warning">{{ metrics.upcomingPayablesValue | currency }}</div>
-                            </div>
-                            <i class="fa-solid fa-clock text-warning fa-lg"></i>
-                        </div>
-                        <div class="small text-muted">{{ metrics.upcomingPayablesCount }} conta(s)</div>
-                    </div>
+            <div class="col">
+                <div class="cx-tile" style="border-left: 3px solid var(--cx-amber)">
+                    <div class="cx-tile__label">A Pagar nos próximos 3 dias</div>
+                    <div class="cx-tile__value text-cx-amber">{{ metrics.upcomingPayablesValue | currency }}</div>
+                    <div class="cx-tile__sub">{{ metrics.upcomingPayablesCount }} conta(s)</div>
                 </div>
             </div>
-            <div class="col mb-2">
-                <div class="card border-start border-secondary border-3 shadow-sm">
-                    <div class="card-body py-2">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <div class="small text-muted">Gastos Previstos (Mês)</div>
-                                <div class="fw-semibold fs-5">{{ metrics.monthlyExpenses | currency }}</div>
-                            </div>
-                            <i class="fa-solid fa-calendar-days text-secondary fa-lg"></i>
-                        </div>
-                        <div class="small text-muted">a pagar este mês</div>
-                    </div>
+            <div class="col">
+                <div class="cx-tile">
+                    <div class="cx-tile__label">Gastos do Mês</div>
+                    <div class="cx-tile__value">{{ metrics.monthlyExpenses | currency }}</div>
+                    <div class="cx-tile__sub">contas a pagar este mês</div>
                 </div>
             </div>
-            <div class="col mb-2">
-                <div class="card border-start border-info border-3 shadow-sm">
-                    <div class="card-body py-2">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <div class="small text-muted">Assinaturas Vencendo (7d)</div>
-                                <div class="fw-semibold fs-5 text-info">{{ metrics.upcomingSubscriptionsCount }}</div>
-                            </div>
-                            <i class="fa-solid fa-arrows-rotate text-info fa-lg"></i>
-                        </div>
-                        <div class="small text-muted">nos próximos 7 dias</div>
-                    </div>
+            <div class="col">
+                <div class="cx-tile" style="border-left: 3px solid var(--cx-cyan)">
+                    <div class="cx-tile__label">Assinaturas Vencendo em 7 dias</div>
+                    <div class="cx-tile__value text-cx-brand">{{ metrics.upcomingSubscriptionsCount }}</div>
+                    <div class="cx-tile__sub">renovações próximas</div>
                 </div>
             </div>
         </div>
