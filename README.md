@@ -175,14 +175,16 @@ claude mcp add --transport http devefficiency https://seu-dominio/api/mcp \
 
 | Tipo | Ferramentas |
 |---|---|
-| CRUD por recurso (`action`: list/get/create/update/delete) | `clients`, `contacts`, `addresses`, `credentials`, `projects`, `subprojects`, `service_orders`, `os_entries`, `protocols`, `protocol_registers`, `protocol_products`, `protocol_receipts`, `subscriptions`, `billings`, `billing_protocols`, `products`, `suppliers`, `cost_centers`, `bank_accounts`, `bank_transfers`, `payables`, `reimbursements`, `checks`, `servers`, `sla_levels`, `client_sla_configs`, `config` |
+| CRUD por recurso (`action`: list/get/create/update/delete) | `clients`, `contacts`, `addresses`, `projects`, `subprojects`, `service_orders`, `os_entries`, `protocols`, `protocol_registers`, `protocol_products`, `protocol_receipts`, `subscriptions`, `billings`, `billing_protocols`, `products`, `suppliers`, `cost_centers`, `bank_accounts`, `bank_transfers`, `payables`, `reimbursements`, `checks`, `sla_levels`, `client_sla_configs`, `config` |
 | Relatórios | `financial_history`, `dre_report`, `expense_report`, `financial_comparison`, `current_os` |
 | Ações | `billing_send_email`, `billing_receipt` |
 | PDFs (retornados em base64) | `service_order_pdf`, `service_order_invoice_pdf`, `billing_pdf`, `protocols_pdf` |
 
-Para desativar ferramentas, liste-as em `MCP_DISABLE` (ex.: `MCP_DISABLE=credentials,billing_send_email`). Uploads de arquivos (NF/boleto, comprovantes de reembolso) não estão disponíveis via MCP.
+Para desativar ferramentas, liste-as em `MCP_DISABLE` (ex.: `MCP_DISABLE=billing_send_email`). Uploads de arquivos (NF/boleto, comprovantes de reembolso) não estão disponíveis via MCP.
 
-> ⚠️ A chave dá acesso total ao sistema, incluindo exclusões, envio de e-mails e credenciais de clientes. Use uma chave longa, sirva o endpoint apenas via HTTPS e considere desativar `credentials`.
+Credenciais e servidores (senhas, chaves RSA) não são expostos via MCP, nem mesmo dentro de outras respostas (ex.: detalhes do cliente).
+
+> ⚠️ A chave dá acesso ao restante do sistema, incluindo exclusões e envio de e-mails. Use uma chave longa e sirva o endpoint apenas via HTTPS.
 
 ---
 

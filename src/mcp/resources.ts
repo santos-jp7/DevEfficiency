@@ -9,7 +9,6 @@ import Check from '../models/Check'
 import Client from '../models/Client'
 import Contact from '../models/Contact'
 import CostCenter from '../models/CostCenter'
-import Credential from '../models/Credential'
 import Os_entry from '../models/Os_entry'
 import Payable from '../models/Payable'
 import Product from '../models/Product'
@@ -19,7 +18,6 @@ import Protocol_product from '../models/Protocol_product'
 import Protocol_register from '../models/Protocol_register'
 import Receipts from '../models/Receipts'
 import Reimbursement from '../models/Reimbursement'
-import Server from '../models/Server'
 import Service_order from '../models/Service_order'
 import SlaLevel from '../models/SlaLevel'
 import Subproject from '../models/Subproject'
@@ -44,13 +42,6 @@ export const resources: Resource[] = [
     { name: 'clients', path: '/clients', description: 'Clientes', actions: NO_DELETE, model: Client },
     { name: 'contacts', path: '/contacts', description: 'Contatos de clientes', actions: CRUD, model: Contact },
     { name: 'addresses', path: '/addresses', description: 'Endereços de clientes', actions: CRUD, model: Address },
-    {
-        name: 'credentials',
-        path: '/credentials',
-        description: 'Credenciais de acesso dos clientes (contém senhas — dados sensíveis)',
-        actions: CRUD,
-        model: Credential,
-    },
     {
         name: 'projects',
         path: '/projects',
@@ -167,7 +158,6 @@ export const resources: Resource[] = [
         model: Reimbursement,
     },
     { name: 'checks', path: '/checks', description: 'Checagens', actions: CRUD, model: Check },
-    { name: 'servers', path: '/servers', description: 'Servidores e licenças', actions: CRUD, model: Server },
     {
         name: 'sla_levels',
         path: '/sla-levels',

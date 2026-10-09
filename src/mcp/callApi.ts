@@ -12,6 +12,23 @@ export type ApiResult = {
     buffer?: Buffer
 }
 
+// Senhas de credenciais e servidores nunca são expostas à IA, nem quando vêm em includes (ex.: GET /clients/:id)
+const SENSITIVE_KEYS = ['Credentials', 'Credential', 'Servers', 'Server']
+
+export function stripSensitive(value: any): any {
+    if (Array.isArray(value)) return value.map(stripSensitive)
+    if (!value || typeof value !== 'object') return value
+
+    const result: Record<string, any> = {}
+
+    for (const [key, item] of Object.entries(value)) {
+        if (SENSITIVE_KEYS.includes(key)) continue
+        result[key] = stripSensitive(item)
+    }
+
+    return result
+}
+
 function serviceToken(): string {
     return jsonwebtoken.sign({ user: { id: 0, username: 'mcp' } }, String(process.env.SECRET), { expiresIn: '5m' })
 }
@@ -54,7 +71,7 @@ export default async function callApi(
 
     if (contentType.includes('application/json')) {
         try {
-            result.json = response.json()
+            result.json = stripSensitive(response.json())
         } catch {
             result.text = response.body
         }
