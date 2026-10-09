@@ -110,6 +110,10 @@ EMAIL_USER=usuario@smtp.com
 EMAIL_PASS=senha_smtp
 EMAIL_HOST=smtp.suaempresa.com
 EMAIL_CC=admin@suaempresa.com
+
+# MCP (controle por IA) — vazio desliga o endpoint /api/mcp
+MCP_API_KEY=uma_chave_longa_e_aleatoria
+MCP_DISABLE=
 ```
 
 ---
@@ -150,6 +154,35 @@ Os PDFs são renderizados server-side via Puppeteer + EJS sem dependências exte
 | Orçamento de OS | `GET /api/os/:id/pdf` | `budget.ejs` |
 | Fatura de cobrança | `GET /api/billings/:id/pdf` | `billing.ejs` |
 | Invoice Internacional | `GET /api/os/:id/invoice-pdf?currency=USD&BankAccountId=X` | `invoice_exterior.ejs` |
+
+---
+
+## Controle por IA (MCP)
+
+O sistema expõe um servidor [MCP](https://modelcontextprotocol.io) em `POST /api/mcp` (Streamable HTTP, stateless), permitindo que assistentes de IA (Claude Code, Claude Desktop, claude.ai, n8n etc.) consultem e operem o sistema.
+
+As ferramentas chamam internamente as mesmas rotas da API REST (`app.inject`), então toda regra de negócio, hook e validação continua valendo.
+
+**Ativação:** defina `MCP_API_KEY` no `.env`. Sem ela o endpoint responde `404`. Toda requisição precisa do header `Authorization: Bearer <MCP_API_KEY>`.
+
+```bash
+# Claude Code
+claude mcp add --transport http devefficiency https://seu-dominio/api/mcp \
+    --header "Authorization: Bearer <MCP_API_KEY>"
+```
+
+**Ferramentas disponíveis:**
+
+| Tipo | Ferramentas |
+|---|---|
+| CRUD por recurso (`action`: list/get/create/update/delete) | `clients`, `contacts`, `addresses`, `credentials`, `projects`, `subprojects`, `service_orders`, `os_entries`, `protocols`, `protocol_registers`, `protocol_products`, `protocol_receipts`, `subscriptions`, `billings`, `billing_protocols`, `products`, `suppliers`, `cost_centers`, `bank_accounts`, `bank_transfers`, `payables`, `reimbursements`, `checks`, `servers`, `sla_levels`, `client_sla_configs`, `config` |
+| Relatórios | `financial_history`, `dre_report`, `expense_report`, `financial_comparison`, `current_os` |
+| Ações | `billing_send_email`, `billing_receipt` |
+| PDFs (retornados em base64) | `service_order_pdf`, `service_order_invoice_pdf`, `billing_pdf`, `protocols_pdf` |
+
+Para desativar ferramentas, liste-as em `MCP_DISABLE` (ex.: `MCP_DISABLE=credentials,billing_send_email`). Uploads de arquivos (NF/boleto, comprovantes de reembolso) não estão disponíveis via MCP.
+
+> ⚠️ A chave dá acesso total ao sistema, incluindo exclusões, envio de e-mails e credenciais de clientes. Use uma chave longa, sirva o endpoint apenas via HTTPS e considere desativar `credentials`.
 
 ---
 

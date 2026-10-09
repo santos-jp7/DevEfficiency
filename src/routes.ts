@@ -37,9 +37,12 @@ import osEntriesController from './controllers/osEntriesController'
 import reimbursementsController from './controllers/reimbursementsController'
 import slaController from './controllers/slaController'
 import clientSlaConfigController from './controllers/clientSlaConfigController'
+import mcp from './mcp/server'
 
 const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.get('/', helloController.handler)
+
+    instance.register(mcp)
 
     instance.post('/auth', authController.auth)
     instance.post('/auth/refresh', authController.auth)
