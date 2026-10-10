@@ -114,6 +114,9 @@ EMAIL_CC=admin@suaempresa.com
 # MCP (controle por IA) — vazio desliga o endpoint /api/mcp
 MCP_API_KEY=uma_chave_longa_e_aleatoria
 MCP_DISABLE=
+CF_ACCESS_TEAM_DOMAIN=suaempresa.cloudflareaccess.com
+CF_ACCESS_AUD=application_audience_tag
+CF_ACCESS_ALLOWED_EMAILS=voce@suaempresa.com
 ```
 
 ---
@@ -163,7 +166,12 @@ O sistema expõe um servidor [MCP](https://modelcontextprotocol.io) em `POST /ap
 
 As ferramentas chamam internamente as mesmas rotas da API REST (`app.inject`), então toda regra de negócio, hook e validação continua valendo.
 
-**Ativação:** defina `MCP_API_KEY` no `.env`. Sem ela o endpoint responde `404`. Toda requisição precisa do header `Authorization: Bearer <MCP_API_KEY>`.
+**Ativação:** o endpoint responde `404` até que uma das formas de autenticação abaixo esteja configurada.
+
+- **Chave de API:** defina `MCP_API_KEY` e envie `Authorization: Bearer <MCP_API_KEY>`. Serve para Claude Code, Claude Desktop (via `mcp-remote`) e n8n.
+- **Cloudflare Access:** defina `CF_ACCESS_TEAM_DOMAIN` (ex.: `suaempresa.cloudflareaccess.com`) e `CF_ACCESS_AUD` (*Application Audience (AUD) Tag* da aplicação no Access). O app valida o JWT `Cf-Access-Jwt-Assertion` que o Access injeta nas requisições liberadas. Use `CF_ACCESS_ALLOWED_EMAILS` para restringir quais usuários podem usar o MCP. Service Tokens do Access também são aceitos.
+
+Com o Access configurado, o conector personalizado do claude.ai funciona no navegador e no app do celular: em **Configurações → Conectores → Adicionar conector personalizado**, informe `https://seu-dominio/api/mcp` e faça login na tela do Cloudflare Access. É preciso que o login OAuth para MCP esteja habilitado na aplicação do Access.
 
 ```bash
 # Claude Code
