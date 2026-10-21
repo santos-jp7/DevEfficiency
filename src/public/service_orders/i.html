@@ -99,7 +99,10 @@
         <hr />
 
         <div class="d-flex justify-content-between">
-            <h5>Os #{{id}}</h5>
+            <h5>
+                Os #{{id}}
+                <span v-if="isPartner" class="badge bg-success ms-2">Cliente parceiro · {{ pct(partnerPercent) }}</span>
+            </h5>
             <div class="text-end">
                 <h6 v-if="ProjectId">Projeto: <a :href="'../projects/i?id='+ProjectId">{{Project.name}}</a></h6>
                 <h6 v-if="ProjectId">
@@ -304,6 +307,15 @@
                 <div class="col-lg mt-2 border rounded p-2">
                     <h5>Valores</h5>
 
+                    <div v-if="Protocol.pricing && (Protocol.pricing.is_partner || Protocol.pricing.total_partner_discount > 0)" class="mb-3 p-2 border rounded bg-light">
+                        <div class="d-flex justify-content-between"><span>Subtotal (serviços sem desconto)</span><span>{{ brl(Protocol.pricing.total_gross) }}</span></div>
+                        <div class="d-flex justify-content-between text-success" v-if="Protocol.pricing.total_partner_discount > 0">
+                            <span>Desconto parceiro ({{ pct(Protocol.pricing.partner_discount_percent) }})</span><span>– {{ brl(Protocol.pricing.total_partner_discount) }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between text-success"><span>Desconto comercial</span><span>– {{ brl(Protocol.pricing.total_commercial_discount) }}</span></div>
+                        <div class="d-flex justify-content-between fw-bold border-top mt-1 pt-1"><span>Total</span><span>{{ brl(Protocol.pricing.total_net) }}</span></div>
+                    </div>
+
                     <ul>
                         <li>
                             <span>Total: {{((Protocol?.Protocol_registers?.reduce((sum, v) => sum + v.value, 0)) +
@@ -360,8 +372,12 @@
                                 <tr>
                                     <th scope="col">#</th>
                                     <th scope="col">Descrição</th>
-                                    <th scope="col">Valor</th>
                                     <th scope="col">Tipo</th>
+                                    <th scope="col" class="text-end">Horas</th>
+                                    <th scope="col" class="text-end">Valor hora</th>
+                                    <th scope="col" class="text-end">Bruto</th>
+                                    <th scope="col" class="text-end">Desc. parceiro</th>
+                                    <th scope="col" class="text-end">Final</th>
                                     <th scope="col">Editar</th>
                                     <th scope="col">Excluir</th>
                                 </tr>
@@ -369,12 +385,13 @@
                             <tbody>
                                 <tr v-for="protocol_register of Protocol.Protocol_registers">
                                     <th scope="row">{{protocol_register.id}}</th>
-                                    <td>{{protocol_register.description}}</td>
-                                    <td>
-                                        {{protocol_register.value.toLocaleString('pt-br',{style: 'currency',
-                                        currency: 'BRL'})}}
-                                    </td>
+                                    <td>{{protocol_register.description}} <span v-if="protocol_register.manual_override" class="badge bg-warning text-dark" title="Valor final ajustado manualmente">ajustado</span></td>
                                     <td>{{protocol_register.type}}</td>
+                                    <td class="text-end">{{ protocol_register.estimated_hours != null ? hoursFmt(protocol_register.estimated_hours) : '—' }}</td>
+                                    <td class="text-end">{{ protocol_register.hourly_rate != null ? brl(protocol_register.hourly_rate) : '—' }}</td>
+                                    <td class="text-end">{{ protocol_register.gross_value != null ? brl(protocol_register.gross_value) : '—' }}</td>
+                                    <td class="text-end">{{ protocol_register.partner_discount_value > 0 ? '– ' + brl(protocol_register.partner_discount_value) + ' (' + pct(protocol_register.partner_discount_percent) + ')' : '—' }}</td>
+                                    <td class="text-end">{{ brl(protocol_register.value) }}</td>
                                     <td>
                                         <i class="fa-solid fa-pen-to-square"
                                             v-on:click="handlerEditProtocolRegister(protocol_register.id)"
@@ -584,26 +601,65 @@
                     </div>
                     <div class="modal-body">
                         <form @submit="handlerProtocolRegisterSubmit">
+                            <div class="alert alert-info py-2" v-if="isPartner">
+                                <i class="fa-solid fa-circle-info"></i>
+                                <strong>Cliente parceiro: {{ pct(partnerPercent) }} de desconto aplicado automaticamente em serviços.</strong>
+                            </div>
+
+                            <div class="row mb-3">
+                                <label class="form-label" for="type">Tipo</label>
+                                <select class="form-control" id="type" v-model="payloads.protocolRegister.type" required>
+                                    <option disabled value="">Selecione uma opção</option>
+                                    <option value="Serviço">Serviço</option>
+                                    <option value="Despesa">Despesa</option>
+                                </select>
+                            </div>
+
                             <div class="row mb-3">
                                 <label class="form-label" for="description">Descrição</label>
                                 <input type="text" class="form-control" id="description"
                                     v-model="payloads.protocolRegister.description" required />
                             </div>
 
-                            <div class="row mb-3">
-                                <label class="form-label" for="value">Valor</label>
-                                <input type="number" class="form-control" id="value"
-                                    v-model="payloads.protocolRegister.value" step="0.01" required />
-                            </div>
+                            <template v-if="payloads.protocolRegister.type === 'Serviço'">
+                                <div class="row mb-3">
+                                    <div class="col">
+                                        <label class="form-label" for="estimated_hours">Horas estimadas</label>
+                                        <input type="number" class="form-control" id="estimated_hours" step="0.25" min="0.25"
+                                            v-model.number="payloads.protocolRegister.estimated_hours" :required="!isLegacyService" />
+                                    </div>
+                                    <div class="col">
+                                        <label class="form-label" for="hourly_rate">Valor hora (R$)</label>
+                                        <input type="number" class="form-control" id="hourly_rate" step="0.01" min="0.01"
+                                            v-model.number="payloads.protocolRegister.hourly_rate" />
+                                    </div>
+                                </div>
 
-                            <div class="row mb-3">
-                                <label class="form-label" for="type">Tipo</label>
-                                <select class="form-control" id="type" v-model="payloads.protocolRegister.type"
-                                    required>
-                                    <option disabled value="">Selecione uma opção</option>
-                                    <option value="Serviço">Serviço</option>
-                                    <option value="Despesa">Despesa</option>
-                                </select>
+                                <div class="border rounded p-2 mb-3 bg-light" v-if="registerPreview">
+                                    <div class="d-flex justify-content-between">
+                                        <span>{{ hoursFmt(registerPreview.hours) }} h × {{ brl(registerPreview.rate) }}</span>
+                                        <span>{{ brl(registerPreview.gross) }}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between text-success" v-if="registerPartnerPercent > 0">
+                                        <span>Desconto parceiro ({{ pct(registerPartnerPercent) }})</span>
+                                        <span>– {{ brl(registerPreview.discount) }}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between fw-bold border-top mt-1 pt-1">
+                                        <span>Valor final</span><span>{{ brl(registerPreview.net) }}</span>
+                                    </div>
+                                </div>
+
+                                <div class="form-check mb-2" v-if="registerPreview">
+                                    <input class="form-check-input" type="checkbox" id="manual_override"
+                                        v-model="payloads.protocolRegister.manual_override" />
+                                    <label class="form-check-label" for="manual_override">Ajustar valor final manualmente (excepcional)</label>
+                                </div>
+                            </template>
+
+                            <div class="row mb-3" v-if="showRegisterValue">
+                                <label class="form-label" for="value">Valor{{ payloads.protocolRegister.manual_override ? ' final' : '' }}</label>
+                                <input type="number" class="form-control" id="value" v-model="payloads.protocolRegister.value"
+                                    step="0.01" required />
                             </div>
 
                             <div class="row mb-3">
@@ -728,6 +784,7 @@
         </div>
     </div>
 
+    <script src="../assets/js/pricing.js"></script>
     <script src="../assets/js/service_orders/i.js"></script>
     <script src="../assets/js/nav.js"></script>
 </body>

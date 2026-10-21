@@ -19,6 +19,7 @@ import Config from '../models/Config'
 import BankAccount from '../models/BankAccount'
 
 import db from '../db'
+import { pricingView, summarizeProtocol } from '../utils/pricing'
 
 type serviceOrdersRequest = FastifyRequest<{
     Body: Service_order
@@ -71,11 +72,22 @@ class serviceOrdersController {
     }
 
     static async show(req: serviceOrdersRequest, res: FastifyReply): Promise<FastifyReply> {
-        return res.send(
-            await Service_order.findByPk(req.params.id, {
-                include: [Protocol, { model: Project, include: [Client] }, Client, { model: SlaLevel, as: 'SlaLevel' }],
-            }),
-        )
+        const os = await Service_order.findByPk(req.params.id, {
+            include: [
+                { model: Protocol, include: [Protocol_register, Protocol_product] },
+                { model: Project, include: [Client] },
+                Client,
+                { model: SlaLevel, as: 'SlaLevel' },
+            ],
+        })
+
+        if (!os) return res.send(os)
+
+        const client = (os as any).Client || (os as any).Project?.Client
+        const json: any = os.toJSON()
+        if (json.Protocol) json.Protocol.pricing = summarizeProtocol((os as any).Protocol, client)
+
+        return res.send(json)
     }
 
     static async store(req: serviceOrdersRequest, res: FastifyReply): Promise<FastifyReply> {
@@ -210,7 +222,8 @@ class serviceOrdersController {
         })
 
         const template = fs.readFileSync(path.resolve('src', 'views', 'budget.ejs'), 'utf-8')
-        const html = ejs.render(template, { os, configMap })
+        const pricing = summarizeProtocol((os as any)?.Protocol, (os as any)?.Client)
+        const html = ejs.render(template, { os, configMap, pricing, pv: pricingView })
 
         const browser = await puppeteer.launch({
             headless: 'new',
@@ -266,7 +279,8 @@ class serviceOrdersController {
         })
 
         const template = fs.readFileSync(path.resolve('src', 'views', 'invoice_exterior.ejs'), 'utf-8')
-        const html = ejs.render(template, { os, configMap, currency, bankAccount })
+        const pricing = summarizeProtocol((os as any)?.Protocol, (os as any)?.Client)
+        const html = ejs.render(template, { os, configMap, currency, bankAccount, pricing })
 
         const browser = await puppeteer.launch({
             headless: 'new',

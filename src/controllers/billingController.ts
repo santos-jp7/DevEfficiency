@@ -21,6 +21,7 @@ import Config from '../models/Config'
 
 import puppeteer from 'puppeteer'
 import CloudFlareR2 from '../providers/CloudFlareR2'
+import { pricingView, summarizeProtocol, sumSummaries } from '../utils/pricing'
 
 type billingRequest = FastifyRequest<{
     Body: Billing
@@ -32,6 +33,15 @@ type billingRequest = FastifyRequest<{
         limit: string
     }
 }>
+
+// Agregados de desconto somando os protocolos da cobrança (requer Protocol_registers/Protocol_products carregados).
+export function billingPricing(billing: any, client?: any) {
+    const protocols = (billing?.BillingProtocols || []).map((bp: any) => bp.Protocol).filter(Boolean)
+    return sumSummaries(
+        protocols.map((p: any) => summarizeProtocol(p, client)),
+        client,
+    )
+}
 
 class billingController {
     static async index(req: billingRequest, res: FastifyReply): Promise<FastifyReply> {
@@ -78,13 +88,18 @@ class billingController {
                                     include: [Project],
                                 },
                                 Subscription,
+                                Protocol_register,
+                                { model: Protocol_product, include: [Product] },
                             ],
                         },
                     ],
                 },
             ],
         })
-        return res.send(billing)
+
+        if (!billing) return res.send(billing)
+
+        return res.send({ ...billing.toJSON(), pricing: billingPricing(billing, (billing as any).Client) })
     }
 
     static async upload(req: FastifyRequest<{ Params: { id: string } }>, res: FastifyReply): Promise<FastifyReply> {
@@ -221,7 +236,8 @@ class billingController {
         })
 
         const template = fs.readFileSync(path.resolve('src', 'views', 'billing.ejs'), 'utf-8')
-        const html = ejs.render(template, { billing, client, configMap })
+        const pricing = billingPricing(billing, client)
+        const html = ejs.render(template, { billing, client, configMap, pricing, pv: pricingView })
 
         const browser = await puppeteer.launch({
             headless: 'new',

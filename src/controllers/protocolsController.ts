@@ -18,6 +18,7 @@ import Subscription from '../models/Subscription'
 import Config from '../models/Config'
 import Billing from '../models/Billing'
 import BillingProtocol from '../models/BillingProtocol'
+import { getClientByProtocol, summarizeProtocol, sumSummaries, withPricing, pricingView } from '../utils/pricing'
 
 type protocolsRequest = FastifyRequest<{
     Body: Protocol
@@ -71,8 +72,13 @@ class protocolsController {
 
         const { count, rows } = await Protocol.findAndCountAll(opts)
 
+        const data = rows.map((protocol) => {
+            const client = (protocol as any).Service_order?.Client || (protocol as any).Subscription?.Client
+            return withPricing(protocol, client)
+        })
+
         return res.send({
-            data: rows,
+            data,
             total: count,
             page: parseInt(page),
             limit: parseInt(limit),
@@ -80,11 +86,23 @@ class protocolsController {
     }
 
     static async show(req: protocolsRequest, res: FastifyReply): Promise<FastifyReply> {
-        return res.send(
-            await Protocol.findByPk(req.params.id, {
-                include: [Protocol_register, { model: Protocol_product, include: [Product] }, Receipts],
-            }),
-        )
+        const protocol = await Protocol.findByPk(req.params.id, {
+            include: [Protocol_register, { model: Protocol_product, include: [Product] }, Receipts],
+        })
+
+        if (!protocol) return res.send(protocol)
+
+        const client = await getClientByProtocol(protocol)
+
+        return res.send({
+            ...withPricing(protocol, client),
+            Client: client && {
+                id: client.id,
+                name: client.name,
+                is_partner: client.is_partner,
+                partner_discount_percent: client.partner_discount_percent,
+            },
+        })
     }
 
     static async update(req: protocolsRequest, res: FastifyReply): Promise<FastifyReply> {
@@ -178,8 +196,17 @@ class protocolsController {
             } else configMap[cfg.type] = cfg.value
         })
 
+        const protocols = [
+            ...(oss || []).map((os) => (os as any).Protocol),
+            ...(subscriptions || []).flatMap((sub) => (sub as any).Protocols || []),
+        ].filter(Boolean)
+        const pricing = sumSummaries(
+            protocols.map((p) => summarizeProtocol(p, client)),
+            client,
+        )
+
         const template = fs.readFileSync(path.resolve('src', 'views', 'budget_multi.ejs'), 'utf-8')
-        const html = ejs.render(template, { oss, subscriptions, client, type, configMap })
+        const html = ejs.render(template, { oss, subscriptions, client, type, configMap, pricing, pv: pricingView })
 
         // return res.send(html)
 

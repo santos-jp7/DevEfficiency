@@ -41,6 +41,9 @@ const service_order = new Vue({
                 description: null,
                 value: null,
                 type: null,
+                estimated_hours: null,
+                hourly_rate: null,
+                manual_override: false,
             },
             protocolProduct: {
                 charge_type: null,
@@ -65,6 +68,7 @@ const service_order = new Vue({
                 BankAccountId: '',
             },
         },
+        hourlyRate: 120,
         references: {
             products: [],
             bankAccounts: [],
@@ -72,6 +76,36 @@ const service_order = new Vue({
         protocolDiscountPct: null,
     },
     computed: {
+        partnerClient() {
+            const c = this.Protocol?.Client || this.Client || this.Project?.Client
+            return c?.is_partner ? c : null
+        },
+        isPartner() {
+            return !!this.partnerClient
+        },
+        partnerPercent() {
+            return this.isPartner ? Number(this.partnerClient.partner_discount_percent) || 0 : 0
+        },
+        // % do snapshot do item em edição; senão o % atual do cliente.
+        registerPartnerPercent() {
+            const r = this.payloads.protocolRegister
+            if (r.id && r.estimated_hours != null && r.gross_value != null) return Number(r.partner_discount_percent) || 0
+            return this.partnerPercent
+        },
+        registerPreview() {
+            const r = this.payloads.protocolRegister
+            if (r.type !== 'Serviço' || !(Number(r.estimated_hours) > 0)) return null
+            return Pricing.calc(r.estimated_hours, r.hourly_rate || this.hourlyRate, this.registerPartnerPercent)
+        },
+        // Serviço lançado antes do cálculo por horas: continua com valor direto.
+        isLegacyService() {
+            const r = this.payloads.protocolRegister
+            return !!r.id && r.type === 'Serviço' && r.gross_value == null
+        },
+        showRegisterValue() {
+            const r = this.payloads.protocolRegister
+            return r.type !== 'Serviço' || this.isLegacyService || !!r.manual_override
+        },
         protocolGross() {
             return (
                 (this.Protocol?.Protocol_registers?.reduce((s, v) => s + v.value, 0) || 0) +
@@ -113,6 +147,9 @@ const service_order = new Vue({
         },
     },
     methods: {
+        brl: (v) => Pricing.brl(v),
+        pct: (v) => Pricing.percent(v),
+        hoursFmt: (v) => Pricing.hours(v),
         _slaDeadlineStatus(deadline) {
             if (!deadline) return { cls: 'sla-done', label: '—' }
             const now = new Date()
@@ -230,14 +267,20 @@ const service_order = new Vue({
                 description: null,
                 value: null,
                 type: null,
+                estimated_hours: null,
+                hourly_rate: this.hourlyRate,
+                manual_override: false,
             }
 
             $('#protocolRegisterModal').modal('toggle')
         },
         handlerEditProtocolRegister(protocolRegisterId) {
-            this.$data.payloads.protocolRegister = this.Protocol.Protocol_registers.find(
-                (v) => v.id == protocolRegisterId,
-            )
+            const register = this.Protocol.Protocol_registers.find((v) => v.id == protocolRegisterId)
+
+            this.$data.payloads.protocolRegister = {
+                ...register,
+                hourly_rate: register.hourly_rate ?? this.hourlyRate,
+            }
 
             $('#protocolRegisterModal').modal('toggle')
         },
@@ -255,11 +298,21 @@ const service_order = new Vue({
                 ? '/api/protocols/registers/' + this.$data.payloads.protocolRegister.id
                 : '/api/protocols/registers'
 
+            const r = this.$data.payloads.protocolRegister
+            const priced = r.type === 'Serviço' && Number(r.estimated_hours) > 0
+
             method(url, {
-                description: this.$data.payloads.protocolRegister.description,
-                value: this.$data.payloads.protocolRegister.value,
-                type: this.$data.payloads.protocolRegister.type,
+                description: r.description,
+                type: r.type,
                 ProtocolId: this.$data.Protocol.id,
+                ...(priced
+                    ? {
+                          estimated_hours: r.estimated_hours,
+                          hourly_rate: r.hourly_rate,
+                          manual_override: !!r.manual_override,
+                          ...(r.manual_override ? { value: r.value } : {}),
+                      }
+                    : { value: r.value }),
             })
                 .then(() => {
                     window.location.reload()
@@ -467,6 +520,13 @@ const service_order = new Vue({
                 console.log(error)
                 alert(error.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.')
             })
+
+        __api__
+            .get('/api/config/hourly_rate')
+            .then(({ data }) => {
+                if (Number(data?.value) > 0) this.hourlyRate = Number(data.value)
+            })
+            .catch(() => {})
 
         __api__
             .get('/api/sla-levels')

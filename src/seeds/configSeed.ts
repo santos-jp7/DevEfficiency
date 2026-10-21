@@ -13,6 +13,7 @@ async function seedConfigs(): Promise<void> {
         { type: 'contact', value: '(XX) XXXX-XXXX', upload: false },
         { type: 'email', value: 'contato@minhaempresa.com.br', upload: false },
         { type: 'default_day_due', value: '20', upload: false },
+        { type: 'hourly_rate', value: '120.00', upload: false },
     ]
 
     for (const configData of defaultConfigs) {

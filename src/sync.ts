@@ -24,6 +24,7 @@ import Payable from './models/Payable'
 import BankTransfer from './models/BankTransfer'
 import Config from './models/Config'
 import seedConfigs from './seeds/configSeed'
+import seedPartnerClients from './seeds/partnerClientSeed'
 import Reimbursement from './models/Reimbursement'
 import ReimbursementFile from './models/ReimbursementFile'
 import Os_entry from './models/Os_entry'
@@ -59,7 +60,7 @@ async function syncModels(): Promise<true> {
     await License.sync({ alter: { drop: false } })
 
     await Protocol.sync({ alter: { drop: false } })
-    await Protocol_register.sync()
+    await Protocol_register.sync({ alter: { drop: false } })
     await Protocol_product.sync({ alter: { drop: false } })
 
     await BankAccount.sync({ alter: { drop: false } })
@@ -76,6 +77,7 @@ async function syncModels(): Promise<true> {
 
     await Config.sync({ alter: { drop: false } })
     await seedConfigs()
+    await seedPartnerClients()
 
     await Reimbursement.sync({ alter: { drop: false } })
     await ReimbursementFile.sync({ alter: { drop: false } })

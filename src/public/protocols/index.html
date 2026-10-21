@@ -132,7 +132,14 @@
                     <tr v-for="protocol of protocols">
                         <th scope="row">{{protocol.id}}</th>
                         <td>{{ protocol.Service_order ? protocol.Service_order.Client.name :
-                            protocol.Subscription.Client.name }}</td>
+                            protocol.Subscription.Client.name }}
+                            <span v-if="protocol.pricing && protocol.pricing.is_partner" class="badge bg-success ms-1">
+                                Parceiro · {{ new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 }).format(protocol.pricing.partner_discount_percent) }}%
+                            </span>
+                            <div v-if="protocol.pricing && protocol.pricing.total_partner_discount > 0" class="small text-success">
+                                Desc. parceiro – {{ protocol.pricing.total_partner_discount.toLocaleString('pt-br', {style: 'currency', currency: 'BRL'}) }}
+                            </div>
+                        </td>
                         <td><span :class="'badge bg-' + statusColor(protocol.status)">{{protocol.status}}</span></td>
                         <td>
                             <a

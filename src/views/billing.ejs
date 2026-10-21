@@ -204,6 +204,12 @@
         </div>
     </div>
 
+    <% if (client?.is_partner) { %>
+    <div style="margin:10px 0; padding:8px 12px; border:1px solid #27ae60; background:#eafaf1; color:#1e8449; border-radius:6px; font-size:13px; font-weight:600;">
+        <%= pv.partnerSeal(client) %>
+    </div>
+    <% } %>
+
     <div class="section-label">Detalhamento dos Serviços</div>
 
     <% for(let item of billing.BillingProtocols){ %>
@@ -240,6 +246,9 @@
                                         <tr>
                                             <td>
                                                 <%= reg.description %>
+                                                <% if (pv.registerDetail(reg)) { %>
+                                                <br><small class="text-muted"><%= pv.registerDetail(reg) %></small>
+                                                <% } %>
                                             </td>
                                             <td class="text-right">
                                                 <%= reg.type %>
@@ -286,6 +295,31 @@
                         <div class="section-label">Resumo Financeiro</div>
 
                         <% let totalBruto=billing.total_value; let totalDescontos=0; %>
+
+                            <% if (pricing.total_partner_discount > 0 || pricing.total_commercial_discount > 0) { %>
+                            <div class="summary-line">
+                                <span>Subtotal (sem descontos):</span>
+                                <span><%= pv.brl(pricing.total_gross) %></span>
+                            </div>
+                            <% if (pricing.total_partner_discount > 0) { %>
+                            <div class="summary-line" style="color: #27ae60;">
+                                <span>Desconto parceiro (<%= pv.percent(pricing.partner_discount_percent) %>):</span>
+                                <span>– <%= pv.brl(pricing.total_partner_discount) %></span>
+                            </div>
+                            <% } %>
+                            <% if (pricing.total_commercial_discount > 0) { %>
+                            <div class="summary-line" style="color: #27ae60;">
+                                <span>Desconto comercial:</span>
+                                <span>– <%= pv.brl(pricing.total_commercial_discount) %></span>
+                            </div>
+                            <% } %>
+                            <% if (pricing.total_net - totalBruto > 0.009) { %>
+                            <div class="summary-line" style="color: #27ae60;">
+                                <span>Recebimentos anteriores:</span>
+                                <span>– <%= pv.brl(pricing.total_net - totalBruto) %></span>
+                            </div>
+                            <% } %>
+                            <% } %>
 
                             <div class="summary-line">
                                 <span>Total Bruto:</span>

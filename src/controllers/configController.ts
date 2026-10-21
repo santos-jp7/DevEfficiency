@@ -45,6 +45,12 @@ class configController {
             return res.status(400).send({ message: 'Value is required.' })
         }
 
+        if (type === 'hourly_rate') {
+            const rate = Number(String(value).replace(',', '.'))
+            if (!(rate > 0)) return res.status(400).send({ message: 'Valor por hora deve ser maior que zero.' })
+            value = rate.toFixed(2)
+        }
+
         if (upload) {
             // Check if value is a base64 string
             const matches = value.match(/^data:(.+);base64,(.+)$/);

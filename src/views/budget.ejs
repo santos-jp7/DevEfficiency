@@ -192,6 +192,18 @@
         </p>
     </section>
 
+    <% if (os.Client?.is_partner) { %>
+        <div style="margin:0 0 20px; padding:8px 12px; border:1px solid #27ae60; background:#eafaf1; color:#1e8449; border-radius:6px; font-size:13px; font-weight:600;">
+            <%= pv.partnerSeal(os.Client) %>
+        </div>
+    <% } %>
+
+    <% if (os.Protocol?.status == 'Em aberto' && pv.estimate(os.Protocol?.Protocol_registers)) { %>
+        <div style="margin:0 0 20px; padding:8px 12px; background:#f4f7fc; border-radius:6px; font-size:13px;">
+            <%= pv.estimate(os.Protocol?.Protocol_registers) %>
+        </div>
+    <% } %>
+
     <% if(os.Protocol?.Protocol_registers?.length> 0){ %>
         <section>
             <h2>Serviços e Despesas</h2>
@@ -208,6 +220,9 @@
                         <tr>
                             <td>
                                 <%= register.description %>
+                                <% if (pv.registerDetail(register)) { %>
+                                <br><small style="color:#777;"><%= pv.registerDetail(register) %></small>
+                                <% } %>
                             </td>
                             <td><small>
                                     <%= register.type %>
@@ -258,6 +273,16 @@
 
                     <div class="summary-container">
                         <div class="summary-box">
+                            <% if (pricing.total_partner_discount > 0) { %>
+                            <div class="summary-line">
+                                <span>Subtotal (sem desconto):</span>
+                                <span><%= pv.brl(pricing.total_gross) %></span>
+                            </div>
+                            <div class="summary-line" style="color: #27ae60;">
+                                <span>Desconto parceiro (<%= pv.percent(pricing.partner_discount_percent) %>):</span>
+                                <span>– <%= pv.brl(pricing.total_partner_discount) %></span>
+                            </div>
+                            <% } %>
                             <div class="summary-line">
                                 <span>Subtotal:</span>
                                 <span>

@@ -32,6 +32,10 @@ class Client extends Model<InferAttributes<Client>, InferCreationAttributes<Clie
     declare email: CreationOptional<string>
     declare due_day: CreationOptional<number>
 
+    declare is_partner: CreationOptional<boolean>
+    declare partner_discount_percent: CreationOptional<number | null>
+    declare partner_since: CreationOptional<string | null>
+
     declare createdAt: CreationOptional<Date>
     declare updatedAt: CreationOptional<Date>
 
@@ -105,6 +109,23 @@ Client.init(
             type: DataTypes.INTEGER,
             allowNull: false,
             defaultValue: 20,
+        },
+        is_partner: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+        },
+        partner_discount_percent: {
+            type: DataTypes.DECIMAL(5, 2),
+            allowNull: true,
+            get() {
+                const v = this.getDataValue('partner_discount_percent')
+                return v === null || v === undefined ? null : Number(v)
+            },
+        },
+        partner_since: {
+            type: DataTypes.DATEONLY,
+            allowNull: true,
         },
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,

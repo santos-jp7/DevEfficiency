@@ -165,6 +165,13 @@
         </span>
     </div>
 
+    <% const money = (v) => Number(v).toLocaleString('en-US', { style: 'currency', currency }) %>
+    <% if (os.Client?.is_partner) { %>
+    <div style="margin:10px 0; padding:8px 12px; border:1px solid #27ae60; background:#eafaf1; color:#1e8449; border-radius:6px; font-size:13px; font-weight:600;">
+        Codlinx partner client · <%= Number(os.Client.partner_discount_percent) %>% discount on services
+    </div>
+    <% } %>
+
     <div class="services-box">
         <table>
             <thead>
@@ -178,6 +185,14 @@
                     <tr>
                         <td>
                             <%= register.description %>
+                            <% if (register.type === 'Serviço' && register.estimated_hours != null) { %>
+                            <br><small style="color:#777;">
+                                <%= Number(register.estimated_hours) %> h × <%= money(register.hourly_rate) %> = <%= money(register.gross_value) %>
+                                <% if (Number(register.partner_discount_value) > 0) { %>
+                                · Partner discount <%= Number(register.partner_discount_percent) %>%: – <%= money(register.partner_discount_value) %>
+                                <% } %>
+                            </small>
+                            <% } %>
                         </td>
                         <td class="text-right">
                             <%= Number(register.value).toLocaleString('en-US', { style: 'currency', currency }) %>
@@ -196,6 +211,16 @@
                             </tr>
                             <% } %>
 
+                                <% if (pricing.total_partner_discount > 0) { %>
+                                <tr>
+                                    <td>Subtotal (before partner discount)</td>
+                                    <td class="text-right"><%= money(pricing.total_gross) %></td>
+                                </tr>
+                                <tr>
+                                    <td>Partner discount (<%= Number(pricing.partner_discount_percent) %>%)</td>
+                                    <td class="text-right">– <%= money(pricing.total_partner_discount) %></td>
+                                </tr>
+                                <% } %>
                                 <tr class="total-row">
                                     <td>Total (<%= currency %>)</td>
                                     <td class="text-right">

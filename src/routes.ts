@@ -32,6 +32,7 @@ import expenseReportController from './controllers/expenseReportController'
 import bankTransferController from './controllers/bankTransferController'
 import addressController from './controllers/addressController'
 import configController from './controllers/configController' // Import the new controller
+import pricingController from './controllers/pricingController'
 import dreReportController from './controllers/dreReportController'
 import osEntriesController from './controllers/osEntriesController'
 import reimbursementsController from './controllers/reimbursementsController'
@@ -47,6 +48,8 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.post('/auth', authController.auth)
     instance.post('/auth/refresh', authController.auth)
     instance.get('/auth/verify', { preHandler: [isAuthed] }, authController.verify)
+
+    instance.get('/pricing/preview', { preHandler: [isAuthed] }, pricingController.preview as any)
 
     instance.get('/config', { preHandler: [isAuthed] }, configController.index)
     instance.get('/config/:type', { preHandler: [isAuthed] }, configController.show)

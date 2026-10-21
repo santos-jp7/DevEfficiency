@@ -99,7 +99,12 @@
         <hr />
 
         <div class="d-flex justify-content-between">
-            <h5>Assinatura #{{id}}</h5>
+            <h5>
+                Assinatura #{{id}}
+                <span v-if="Client && Client.is_partner" class="badge bg-success ms-2">
+                    Cliente parceiro · {{ pct(Client.partner_discount_percent) }}
+                </span>
+            </h5>
             <div class="text-end">
                 <h6 v-if="ProjectId">Projeto: <a :href="'../projects/i?id='+ProjectId">{{Project.name}}</a></h6>
                 <h6 v-if="ClientId">Cliente: <a :href="'../clients/i?id='+ClientId">{{Client.name}}</a></h6>
@@ -107,6 +112,15 @@
                 <br>
                 <small>Expira em: {{moment(dueAt).format('DD/MM/YYYY')}}</small>
             </div>
+        </div>
+
+        <div v-if="pricing && (pricing.is_partner || pricing.total_partner_discount > 0)" class="mb-3 p-2 border rounded bg-light" style="max-width: 460px">
+            <div class="d-flex justify-content-between"><span>Subtotal (serviços sem desconto)</span><span>{{ brl(pricing.total_gross) }}</span></div>
+            <div class="d-flex justify-content-between text-success" v-if="pricing.total_partner_discount > 0">
+                <span>Desconto parceiro ({{ pct(pricing.partner_discount_percent) }})</span><span>– {{ brl(pricing.total_partner_discount) }}</span>
+            </div>
+            <div class="d-flex justify-content-between text-success"><span>Desconto comercial</span><span>– {{ brl(pricing.total_commercial_discount) }}</span></div>
+            <div class="d-flex justify-content-between fw-bold border-top mt-1 pt-1"><span>Total</span><span>{{ brl(pricing.total_net) }}</span></div>
         </div>
 
         <form v-on:submit="handlerSubmit">
@@ -185,6 +199,7 @@
                                     <th scope="col">Status</th>
                                     <th scope="col">Criado em</th>
                                     <th scope="col">Fechado em</th>
+                                    <th scope="col" class="text-end">Desc. parceiro</th>
                                     <th scope="col">Abrir</th>
                                 </tr>
                             </thead>
@@ -195,6 +210,7 @@
                                     <td>{{moment(protocol.createdAt).format('DD/MM/YYYY HH:mm')}}</td>
                                     <td>{{(protocol.closedAt ? moment(protocol.closedAt).format('DD/MM/YYYY HH:mm') :
                                         "-")}}</td>
+                                    <td class="text-end">{{ protocol.pricing && protocol.pricing.total_partner_discount > 0 ? '– ' + brl(protocol.pricing.total_partner_discount) : '—' }}</td>
                                     <td>
                                         <i class="fa-solid fa-arrow-right" v-on:click="handlerOpenProtocol(protocol.id)"
                                             style="cursor: pointer"></i>
@@ -360,6 +376,7 @@
         </div>
     </div>
 
+    <script src="../assets/js/pricing.js"></script>
     <script src="../assets/js/subscriptions/i.js"></script>
     <script src="../assets/js/nav.js"></script>
 </body>

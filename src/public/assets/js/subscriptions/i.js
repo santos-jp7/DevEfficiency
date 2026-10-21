@@ -19,6 +19,7 @@ const service_order = new Vue({
             name: null,
         },
         Protocols: [],
+        pricing: null,
         Protocol: {
             id: null,
             status: null,
@@ -43,6 +44,8 @@ const service_order = new Vue({
         },
     },
     methods: {
+        brl: (v) => Pricing.brl(v),
+        pct: (v) => Pricing.percent(v),
         handlerSubmit(e) {
             e.preventDefault()
 
