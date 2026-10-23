@@ -11,6 +11,9 @@ const client = new Vue({
         document: null,
         email: null,
         due_day: 20,
+        is_partner: false,
+        partner_discount_percent: null,
+        partner_since: null,
         Credentials: [],
         Billings: [],
         Subscriptions: [],
@@ -89,6 +92,9 @@ const client = new Vue({
                 document: this.$data.document,
                 email: this.$data.email,
                 due_day: this.$data.due_day,
+                is_partner: this.$data.is_partner,
+                partner_discount_percent: this.$data.is_partner ? this.$data.partner_discount_percent : null,
+                partner_since: this.$data.is_partner ? this.$data.partner_since || null : null,
             })
                 .then(({ data }) => {
                     window.location.href = '/clients/i?id=' + data.id

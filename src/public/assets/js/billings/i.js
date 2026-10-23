@@ -92,6 +92,8 @@ const app = new Vue({
                     })
             }
         },
+        brl: (v) => Pricing.brl(v),
+        pct: (v) => Pricing.percent(v),
         formatCurrency(value) {
             return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
         },

@@ -13,6 +13,7 @@ import Protocol_product from '../models/Protocol_product'
 import Product from '../models/Product'
 import Client from '../models/Client'
 import Contact from '../models/Contact'
+import { pricingView, summarizeProtocol, sumSummaries } from './pricing'
 
 const resend = new Resend(process.env.RESEND_API_KEY!)
 const FROM = process.env.RESEND_FROM || 'fatura@codlinx.com.br'
@@ -50,15 +51,19 @@ export async function sendBillingEmail(billingId: number): Promise<void> {
     const contacts: any[] = (client?.Contacts || []).filter((c: any) => c.email)
     if (contacts.length === 0) throw new Error('Nenhum contato com email cadastrado')
 
-    const items: { description: string; installment: string | null; value: string }[] = []
+    const items: { description: string; detail: string; installment: string | null; value: string }[] = []
+    const summaries = []
 
     for (const bp of (billing as any).BillingProtocols || []) {
         const protocol = bp.Protocol
         if (!protocol) continue
 
+        summaries.push(summarizeProtocol(protocol, client))
+
         for (const reg of protocol.Protocol_registers || []) {
             items.push({
                 description: reg.description,
+                detail: pricingView.registerDetail(reg),
                 installment: null,
                 value: formatCurrency(reg.value),
             })
@@ -71,6 +76,7 @@ export async function sendBillingEmail(billingId: number): Promise<void> {
                     : null
             items.push({
                 description: prod.Product?.description || `Produto #${prod.ProductId}`,
+                detail: '',
                 installment,
                 value: formatCurrency(prod.value),
             })
@@ -85,12 +91,24 @@ export async function sendBillingEmail(billingId: number): Promise<void> {
     const notaFiscalFile = billingFiles.filter((f) => f.type === 'nota_fiscal').sort((a, b) => b.id - a.id)[0]
     const hasAttachments = !!(boletoFile || notaFiscalFile)
 
+    const pricing = sumSummaries(summaries, client)
+
     const html = ejs.render(template, {
         clientName: client?.corporate_name || client?.name,
         totalValue: formatCurrency(Number(billing.total_value)),
         dueDate: billing.due_date ? moment.utc(billing.due_date as any).format('DD/MM/YYYY') : '-',
         items,
         hasAttachments,
+        partnerSeal: pricingView.partnerSeal(client),
+        partnerSentence: pricingView.partnerSentence(pricing),
+        pricing: {
+            show: pricing.total_partner_discount > 0 || pricing.total_commercial_discount > 0,
+            percent: pricingView.percent(pricing.partner_discount_percent),
+            gross: formatCurrency(pricing.total_gross),
+            partnerDiscount: pricing.total_partner_discount > 0 ? formatCurrency(pricing.total_partner_discount) : '',
+            commercialDiscount:
+                pricing.total_commercial_discount > 0 ? formatCurrency(pricing.total_commercial_discount) : '',
+        },
     })
 
     const attachments: { filename: string; content: Buffer }[] = []

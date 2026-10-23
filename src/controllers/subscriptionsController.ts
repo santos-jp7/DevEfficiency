@@ -7,6 +7,8 @@ import License from '../models/License'
 import Project from '../models/Project'
 import Client from '../models/Client'
 import Protocol_product from '../models/Protocol_product'
+import Protocol_register from '../models/Protocol_register'
+import { summarizeProtocol, sumSummaries } from '../utils/pricing'
 
 type subscriptionsRequest = FastifyRequest<{
     Body: Subscription
@@ -32,12 +34,28 @@ class subscriptionController {
     }
 
     static async show(req: subscriptionsRequest, res: FastifyReply): Promise<FastifyReply> {
-        return res.send(
-            await Subscription.findByPk(req.params.id, {
-                include: [Protocol, License, Project, Client],
-                order: [[Protocol, 'createdAt', 'desc']],
-            }),
-        )
+        const subscription = await Subscription.findByPk(req.params.id, {
+            include: [{ model: Protocol, include: [Protocol_register, Protocol_product] }, License, Project, Client],
+            order: [[Protocol, 'createdAt', 'desc']],
+        })
+
+        if (!subscription) return res.send(subscription)
+
+        const client = (subscription as any).Client
+        const json: any = subscription.toJSON()
+        const protocols = (subscription as any).Protocols || []
+        json.Protocols = (json.Protocols || []).map((p: any, i: number) => ({
+            ...p,
+            pricing: summarizeProtocol(protocols[i], client),
+        }))
+
+        return res.send({
+            ...json,
+            pricing: sumSummaries(
+                protocols.map((p: any) => summarizeProtocol(p, client)),
+                client,
+            ),
+        })
     }
 
     static async store(req: subscriptionsRequest, res: FastifyReply): Promise<FastifyReply> {

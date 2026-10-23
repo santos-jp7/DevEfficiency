@@ -121,8 +121,13 @@
                 <label class="form-check-label" for="isUpload">É um arquivo (upload)?</label>
             </div>
 
+            <div class="mb-3 alert alert-info py-2" v-if="config.type === 'hourly_rate'">
+                <strong>Valor por hora (R$)</strong> &mdash; usado no cálculo automático de itens de serviço
+                (horas estimadas &times; valor hora). Alterações não afetam itens já lançados.
+            </div>
+
             <div class="mb-3">
-                <label for="configValue" class="form-label">Valor</label>
+                <label for="configValue" class="form-label">{{ config.type === 'hourly_rate' ? 'Valor por hora (R$)' : 'Valor' }}</label>
                 <textarea v-if="!config.upload" class="form-control" id="configValue" rows="5"
                     v-model="config.value"></textarea>
                 <input v-else type="file" class="form-control" id="configValueFile" @change="handleFileUpload">

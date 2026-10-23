@@ -191,6 +191,13 @@
         </div>
     </div>
 
+
+    <% if (client?.is_partner) { %>
+    <div style="margin:10px 0; padding:8px 12px; border:1px solid #27ae60; background:#eafaf1; color:#1e8449; border-radius:6px; font-size:13px; font-weight:600;">
+        <%= pv.partnerSeal(client) %>
+    </div>
+    <% } %>
+
     <span class="text-muted">Data de Emissão: <%= new Date().toLocaleDateString('pt-BR') %></span>
 
     <% for(let os of oss){ %>
@@ -221,6 +228,9 @@
                             <tr>
                                 <td>
                                     <%= register.description %>
+                                    <% if (pv.registerDetail(register)) { %>
+                                    <br><small class="text-muted"><%= pv.registerDetail(register) %></small>
+                                    <% } %>
                                 </td>
                                 <td><small>
                                         <%= register.type %>
@@ -321,6 +331,24 @@
                 <% } %>
                     <div class="total-container">
                         <div class="total-box">
+                            <% if (pricing.total_partner_discount > 0 || pricing.total_commercial_discount > 0) { %>
+                            <div class="total-line">
+                                <span>Subtotal (sem descontos):</span>
+                                <span><%= pv.brl(pricing.total_gross) %></span>
+                            </div>
+                            <% } %>
+                            <% if (pricing.total_partner_discount > 0) { %>
+                            <div class="total-line" style="color: #27ae60;">
+                                <span>Desconto parceiro (<%= pv.percent(pricing.partner_discount_percent) %>):</span>
+                                <span>– <%= pv.brl(pricing.total_partner_discount) %></span>
+                            </div>
+                            <% } %>
+                            <% if (pricing.total_commercial_discount > 0) { %>
+                            <div class="total-line" style="color: #27ae60;">
+                                <span>Desconto comercial:</span>
+                                <span>– <%= pv.brl(pricing.total_commercial_discount) %></span>
+                            </div>
+                            <% } %>
                             <div class="total-line">
                                 <span>Subtotal Consolidado:</span>
                                 <span>

@@ -122,7 +122,10 @@
                 <tbody>
                     <tr v-for="client of clients">
                         <th scope="row">{{client.id}}</th>
-                        <td>{{client.name}}</td>
+                        <td>
+                            {{client.name}}
+                            <span v-if="client.is_partner" class="badge bg-success ms-1">Parceiro · {{ client.partner_discount_percent }}%</span>
+                        </td>
                         <td>{{maskDocument(client.document)}}</td>
                         <td>
                             <a :href="'../clients/i?id='+client.id"><i class="fa-solid fa-arrow-right"></i></a>

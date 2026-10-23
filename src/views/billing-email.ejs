@@ -26,6 +26,9 @@
     <div class="container">
         <div class="header">Fatura Disponível</div>
         <div class="content">
+            <% if (partnerSeal) { %>
+            <p style="margin:0 0 12px; padding:8px 12px; background:#eafaf1; border:1px solid #27ae60; border-radius:5px; color:#1e8449; font-size:14px; font-weight:bold;"><%= partnerSeal %></p>
+            <% } %>
             <p>Prezado(a) <strong><%= clientName %></strong>,</p>
             <p>Informamos que sua fatura já está disponível.<% if (hasAttachments) { %> Em anexo, seguem a <strong>nota fiscal</strong> e o <strong>boleto</strong> para pagamento.<% } %></p>
 
@@ -49,13 +52,35 @@
                 <tbody>
                     <% for (const item of items) { %>
                     <tr>
-                        <td><%= item.description %></td>
+                        <td>
+                            <%= item.description %>
+                            <% if (item.detail) { %><br><small style="color:#777;"><%= item.detail %></small><% } %>
+                        </td>
                         <td><%= item.installment || '-' %></td>
                         <td><%= item.value %></td>
                     </tr>
                     <% } %>
                 </tbody>
             </table>
+
+            <% if (pricing.show) { %>
+            <table class="services-table" style="margin-top:10px;">
+                <tbody>
+                    <tr><td>Subtotal (sem descontos)</td><td style="text-align:right;"><%= pricing.gross %></td></tr>
+                    <% if (pricing.partnerDiscount) { %>
+                    <tr><td>Desconto parceiro (<%= pricing.percent %>)</td><td style="text-align:right; color:#1e8449;">– <%= pricing.partnerDiscount %></td></tr>
+                    <% } %>
+                    <% if (pricing.commercialDiscount) { %>
+                    <tr><td>Desconto comercial</td><td style="text-align:right; color:#1e8449;">– <%= pricing.commercialDiscount %></td></tr>
+                    <% } %>
+                    <tr><td><strong>Total</strong></td><td style="text-align:right;"><strong><%= totalValue %></strong></td></tr>
+                </tbody>
+            </table>
+            <% } %>
+
+            <% if (partnerSentence) { %>
+            <p><%- partnerSentence %></p>
+            <% } %>
 
             <p>Para qualquer dúvida ou necessidade de suporte, estamos à disposição.</p>
 
