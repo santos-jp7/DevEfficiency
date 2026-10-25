@@ -8,6 +8,7 @@ const kanban = new Vue({
     data: {
         loading: false,
         statuses: [
+            'Backlog',
             'Em avaliação',
             'Orçamento enviado',
             'Na fila',
@@ -17,6 +18,7 @@ const kanban = new Vue({
             'Cancelado',
         ],
         statusColors: {
+            'Backlog': '#adb5bd',
             'Em avaliação': '#6c757d',
             'Orçamento enviado': '#17a2b8',
             'Na fila': '#ffc107',
@@ -26,6 +28,7 @@ const kanban = new Vue({
             'Cancelado': '#dc3545',
         },
         columns: {
+            'Backlog': [],
             'Em avaliação': [],
             'Orçamento enviado': [],
             'Na fila': [],

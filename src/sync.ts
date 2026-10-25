@@ -1,3 +1,4 @@
+import db from './db'
 import User from './models/User'
 import Client from './models/Client'
 import Credential from './models/Credential'
@@ -39,6 +40,25 @@ import TicketMessage from './models/TicketMessage'
 import BankStatementImport from './models/BankStatementImport'
 import BankStatementEntry from './models/BankStatementEntry'
 
+// O `sync({ alter })` do Sequelize não amplia ENUMs já existentes no MySQL. Quando um valor novo é
+// acrescentado ao model, esta função (idempotente) atualiza a coluna sem mexer em nulidade/default.
+async function ensureEnumValues(table: string, column: string, values: readonly string[]) {
+    const [rows] = (await db.query(`SHOW COLUMNS FROM \`${table}\` LIKE '${column}'`)) as any[]
+    const current = rows?.[0]
+    if (!current) return
+
+    const existing = [...String(current.Type).matchAll(/'((?:[^']|'')*)'/g)].map((m) => m[1].replace(/''/g, "'"))
+    if (values.every((v) => existing.includes(v))) return
+
+    // Mantém os valores atuais (ordem preservada) e acrescenta os novos.
+    const merged = [...existing, ...values.filter((v) => !existing.includes(v))]
+    const list = merged.map((v) => db.escape(v)).join(', ')
+    const nullable = current.Null === 'YES' ? 'NULL' : 'NOT NULL'
+    const fallback = current.Default !== null && current.Default !== undefined ? ` DEFAULT ${db.escape(current.Default)}` : ''
+
+    await db.query(`ALTER TABLE \`${table}\` MODIFY \`${column}\` ENUM(${list}) ${nullable}${fallback}`)
+}
+
 async function syncModels(): Promise<true> {
     await User.sync()
 
@@ -60,6 +80,7 @@ async function syncModels(): Promise<true> {
     await seedSlaLevels()
 
     await Service_order.sync({ alter: { drop: false } })
+    await ensureEnumValues('service_orders', 'status', ['Backlog'])
     await Os_entry.sync({ alter: { drop: false } })
 
     await Subscription.sync({ alter: { drop: false } })

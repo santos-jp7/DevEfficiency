@@ -115,7 +115,7 @@
                 <div class="cx-kpi cx-kpi--brand">
                     <div class="cx-kpi__label">Ordens de Serviço</div>
                     <div class="cx-kpi__value">{{ metrics.os.total_open }}</div>
-                    <div class="cx-kpi__sub">{{ metrics.os.in_progress }} em correções</div>
+                    <div class="cx-kpi__sub">{{ metrics.os.in_progress }} em correções<span v-if="metrics.os.backlog"> · {{ metrics.os.backlog }} em backlog</span></div>
                 </div>
             </div>
             <div class="col-md-3">

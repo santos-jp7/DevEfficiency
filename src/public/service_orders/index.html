@@ -110,7 +110,8 @@
                 <select class="form-select" v-model="currentStatus" id="currentStatus" size="4" multiple
                     v-on:change="fetchServiceOrders">
                     <option value="">Todos</option>
-                    <option value="Em avaliação">Em avaliação</option>
+                    <option value="Backlog">Backlog (segundo plano)</option>
+                        <option value="Em avaliação">Em avaliação</option>
                     <option value="Orçamento enviado">Orçamento enviado</option>
                     <option value="Na fila">Na fila</option>
                     <option value="Em correções">Em correções</option>

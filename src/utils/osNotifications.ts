@@ -14,6 +14,13 @@ const STAGES: Record<string, Stage> = {
         subject: 'Ordem de serviço aberta',
         message: 'Registramos sua solicitação e ela já está em avaliação pela nossa equipe. Avisaremos a cada nova etapa.',
     },
+    Backlog: {
+        title: 'Solicitação registrada no backlog',
+        subject: 'Registrada no backlog',
+        message:
+            'Registramos sua solicitação no nosso backlog: ela será tratada em segundo plano, sem prazo imediato. Avisaremos quando iniciarmos o atendimento.',
+        accent: '#6c757d',
+    },
     'Em avaliação': {
         title: 'Solicitação em avaliação',
         subject: 'Em avaliação',

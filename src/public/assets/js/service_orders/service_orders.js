@@ -59,6 +59,7 @@ const service_orders = new Vue({
 
         osStatusBadge(status) {
             const map = {
+                'Backlog': 'bg-light text-dark border',
                 'Em avaliação': 'bg-secondary',
                 'Orçamento enviado': 'bg-info text-dark',
                 'Na fila': 'bg-warning text-dark',

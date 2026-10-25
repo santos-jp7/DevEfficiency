@@ -22,6 +22,7 @@ const dashboard = new Vue({
             os: {
                 total_open: 0,
                 in_progress: 0,
+                backlog: 0,
             },
             billings: {
                 pending_value: 0,
@@ -75,6 +76,12 @@ const dashboard = new Vue({
 
                 this.metrics.os.total_open = osResponse.total
                 this.metrics.os.in_progress = osResponse.data.filter((os) => os.status === 'Em correções').length
+
+                // Backlog é trabalho em segundo plano: fica fora de "abertas" e dos alertas de SLA, só contabilizado à parte.
+                __api__
+                    .get('/api/os?status=Backlog&limit=1')
+                    .then(({ data }) => (this.metrics.os.backlog = data.total))
+                    .catch(() => {})
 
                 // SLA at-risk: breached or within 4h of solution deadline or prazo already past
                 const now = new Date()
@@ -212,6 +219,7 @@ const dashboard = new Vue({
             }, {})
 
             const colors = {
+                'Backlog': '#adb5bd',
                 'Em avaliação': '#6c757d',
                 'Orçamento enviado': '#17a2b8',
                 'Na fila': '#ffc107',
