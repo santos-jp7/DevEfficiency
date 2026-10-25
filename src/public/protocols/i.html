@@ -119,6 +119,16 @@
                 </div>
             </div>
             <div class="row">
+                <div class="mb-3 col-md-6">
+                    <label class="form-label">Vendedor</label>
+                    <select class="form-control" v-model="protocol.SellerId" :disabled="protocol.status === 'Fechado'">
+                        <option :value="null">Sem vendedor</option>
+                        <option v-for="seller in references.sellers" :value="seller.id">{{ seller.name }} ({{ seller.commission_percent }}%){{ seller.active ? "" : " - inativo" }}</option>
+                    </select>
+                    <div class="form-text">A comissão vira conta a pagar quando o protocolo é finalizado.</div>
+                </div>
+            </div>
+            <div class="row">
                 <div class="mb-3 col">
                     <label class="form-label">Observações</label>
                     <textarea class="form-control" v-model="protocol.notes" rows="3"></textarea>
@@ -166,6 +176,10 @@
 
             <button type="submit" class="btn btn-dark">Salvar Alterações</button>
 
+            <div v-if="!protocol.SubscriptionId && !protocol.ServiceOrderId && protocol.Client">
+                <hr>
+                &bull; Lançamento avulso &mdash; Cliente: <a :href="'../clients/i.html?id=' + protocol.Client.id">{{ protocol.Client.name }}</a>
+            </div>
             <div v-if="protocol.SubscriptionId">
                 <hr>
                 &bull; Vinculado a: <a :href="'../subscriptions/i?id=' + protocol.SubscriptionId">Assinatura

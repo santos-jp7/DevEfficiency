@@ -33,6 +33,7 @@ const app = new Vue({
         references: {
             products: [],
             bankAccounts: [],
+            sellers: [],
         },
     },
     mounted() {
@@ -78,6 +79,13 @@ const app = new Vue({
 
                 alert(error.response.data.message || 'Ocorreu um erro. Tente novamente mais tarde.')
             })
+
+        __api__
+            .get('/api/sellers')
+            .then(({ data }) => {
+                this.$data.references.sellers = data || []
+            })
+            .catch(() => {})
 
         __api__
             .get('/api/bank-accounts')
@@ -147,6 +155,7 @@ const app = new Vue({
                 current_installment: this.protocol.current_installment || null,
                 total_installments: this.protocol.total_installments || null,
                 discount_value: this.protocol.discount_value || null,
+                SellerId: this.protocol.SellerId || null,
             })
                 .then((res) => {
                     alert('Protocolo atualizado com sucesso!')

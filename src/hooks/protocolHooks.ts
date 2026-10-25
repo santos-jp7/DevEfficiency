@@ -7,9 +7,79 @@ import Billing from '../models/Billing'
 import BillingProtocol from '../models/BillingProtocol'
 import { InstanceUpdateOptions } from 'sequelize/types/model'
 import Client from '../models/Client'
+import Seller from '../models/Seller'
+import Payable from '../models/Payable'
+import { computeCommission } from '../utils/sellerCommission'
+import { getReleaseDays, isWithinReleaseWindow, nextDueDate } from '../utils/subscriptionRelease'
 
 function calcDiscount(discountValue: number): number {
     return Number(discountValue) || 0
+}
+
+// Cria o protocolo do próximo ciclo da assinatura. Se o vencimento já está dentro da janela de liberação, o
+// protocolo nasce "Liberado para pagamento" e a cobrança é gerada na hora (sem precisar marcar manualmente).
+// Tudo roda na mesma transação do fechamento: a cobrança nova precisa enxergar o pagamento ainda não commitado.
+async function createRenewalProtocol(
+    subscription: Subscription,
+    protocol_products: Protocol_product[],
+    options: InstanceUpdateOptions,
+): Promise<boolean> {
+    const newProtocol = await Protocol.create(
+        { SubscriptionId: subscription.id, status: 'Em aberto' },
+        { transaction: options.transaction },
+    )
+
+    for (const protocol_product of protocol_products) {
+        if (!['Mensal', 'Anual'].includes(protocol_product.charge_type)) continue
+
+        await Protocol_product.create(
+            {
+                ProductId: protocol_product.ProductId,
+                value: protocol_product.value,
+                charge_type: protocol_product.charge_type,
+                ProtocolId: newProtocol.id,
+            },
+            { transaction: options.transaction },
+        )
+    }
+
+    if (!isWithinReleaseWindow(subscription.dueAt, await getReleaseDays())) return false
+
+    await newProtocol.update({ status: 'Liberado para pagamento' }, { transaction: options.transaction })
+    return true
+}
+
+// Gera a conta a pagar da comissão quando o protocolo é finalizado. Idempotente por protocolo.
+async function createSellerPayable(protocol: Protocol, options: InstanceUpdateOptions) {
+    if (!protocol.SellerId) return
+
+    const existing = await Payable.findOne({
+        where: { ProtocolId: protocol.id, SellerId: protocol.SellerId },
+        transaction: options.transaction,
+    })
+    if (existing) return
+
+    const seller = await Seller.findByPk(protocol.SellerId, { transaction: options.transaction })
+    if (!seller) return
+
+    const registers = await protocol.getProtocol_registers({ transaction: options.transaction })
+    const products = await protocol.getProtocol_products({ transaction: options.transaction })
+
+    const result = computeCommission(seller, registers, products, protocol.discount_value)
+    if (!result.eligible || result.commission <= 0) return
+
+    await Payable.create(
+        {
+            description: `Comissão ${seller.name} - Protocolo #${protocol.id}`,
+            value: result.commission,
+            dueDate: moment().add(seller.payment_delay_days || 0, 'days').format('YYYY-MM-DD') as any,
+            status: 'pendente',
+            SellerId: seller.id,
+            ProtocolId: protocol.id,
+            CostCenterId: seller.CostCenterId as any,
+        },
+        { transaction: options.transaction },
+    )
 }
 
 class protocolHooks {
@@ -41,35 +111,16 @@ class protocolHooks {
                 if (protocol_products.find((v) => v.charge_type == 'Mensal')) charge_type = 'Mensal'
                 if (protocol_products.find((v) => v.charge_type == 'Anual')) charge_type = 'Anual'
 
-                let dueAt: Date | false = false
-
-                if (charge_type == 'Mensal')
-                    dueAt = moment()
-                        .set('date', client?.due_day || 1)
-                        .add(1, 'month')
-                        .toDate()
-                if (charge_type == 'Anual')
-                    dueAt = moment()
-                        .set('date', client?.due_day || 1)
-                        .add(1, 'year')
-                        .toDate()
-
-                if (dueAt) {
-                    const newProtocol = await subscription.createProtocol()
-
-                    for await (let protocol_product of protocol_products) {
-                        if (['Mensal', 'Anual'].includes(protocol_product.charge_type))
-                            await newProtocol?.createProtocol_product({
-                                ProductId: protocol_product.ProductId,
-                                value: protocol_product.value,
-                                charge_type: protocol_product.charge_type,
-                            })
-                        else continue
-                    }
+                if (charge_type == 'Mensal' || charge_type == 'Anual') {
+                    const dueAt = nextDueDate(subscription.dueAt, charge_type, client?.due_day)
 
                     subscription.dueAt = dueAt
-                    subscription.status = 'Pago'
-                    await subscription.save()
+
+                    const released = await createRenewalProtocol(subscription, protocol_products, options)
+
+                    // Renovação liberada = cobrança nova pendente; senão a assinatura está em dia até a janela abrir.
+                    subscription.status = released ? 'Pendente' : 'Pago'
+                    await subscription.save({ transaction: options.transaction })
                 }
             }
 
@@ -82,48 +133,33 @@ class protocolHooks {
                 if (protocol_products.find((v) => v.charge_type == 'Anual')) charge_type = 'Anual'
 
                 if (charge_type) {
-                    let dueAt: Date | false = false
+                    const dueAt = nextDueDate(moment().toDate(), charge_type, client?.due_day)
 
-                    if (charge_type == 'Mensal')
-                        dueAt = moment()
-                            .set('date', client?.due_day || 1)
-                            .add(1, 'month')
-                            .toDate()
-                    if (charge_type == 'Anual')
-                        dueAt = moment()
-                            .set('date', client?.due_day || 1)
-                            .add(1, 'year')
-                            .toDate()
-
-                    if (!dueAt)
-                        throw new Error('Não foi possivel criar assinatura. Divergência com tipos de cobranças.')
-
-                    const subscription = await Subscription.create({
-                        dueAt,
-                        ClientId: service_order.ClientId,
-                        ProjectId: service_order.ProjectId,
-                        status: 'Pago',
-                    })
+                    const subscription = await Subscription.create(
+                        {
+                            dueAt,
+                            ClientId: service_order.ClientId,
+                            ProjectId: service_order.ProjectId,
+                            status: 'Pago',
+                        },
+                        { transaction: options.transaction },
+                    )
 
                     protocol.SubscriptionId = subscription.id
 
-                    const newProtocol = await subscription.createProtocol()
+                    const released = await createRenewalProtocol(subscription, protocol_products, options)
 
-                    for await (let protocol_product of protocol_products) {
-                        await newProtocol?.createProtocol_product({
-                            ProductId: protocol_product.ProductId,
-                            value: protocol_product.value,
-                            charge_type: protocol_product.charge_type,
-                        })
-
+                    for (const protocol_product of protocol_products) {
                         if (!protocol_product.LicenseId) continue
 
                         const license = await protocol_product.getLicense()
 
                         license.SubscriptionId = subscription.id
 
-                        await license.save()
+                        await license.save({ transaction: options.transaction })
                     }
+
+                    if (released) await subscription.update({ status: 'Pendente' }, { transaction: options.transaction })
                 }
             }
 
@@ -139,11 +175,15 @@ class protocolHooks {
         const previousStatus = protocol.previous('status')
         const currentStatus = protocol.get('status')
 
+        if (currentStatus === 'Fechado' && previousStatus !== 'Fechado') await createSellerPayable(protocol, options)
+
         if (currentStatus === 'Liberado para pagamento' && previousStatus !== 'Liberado para pagamento') {
             const client = protocol.SubscriptionId
                 ? await (await protocol.getSubscription({ transaction: options.transaction }))?.getClient()
                 : protocol.ServiceOrderId
                 ? await (await protocol.getService_order({ transaction: options.transaction }))?.getClient()
+                : protocol.ClientId
+                ? await Client.findByPk(protocol.ClientId, { transaction: options.transaction })
                 : null
 
             if (!client) return

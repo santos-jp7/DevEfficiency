@@ -126,6 +126,29 @@
                 (horas estimadas &times; valor hora). Alterações não afetam itens já lançados.
             </div>
 
+            <div class="mb-3 alert alert-info py-2" v-if="config.type === 'payables_alert_email'">
+                <strong>E-mail do aviso de contas a pagar</strong> &mdash; recebe, uma vez por dia (a partir das 8h),
+                a lista de contas atrasadas, que vencem hoje e dos próximos dias. Para mais de um destinatário,
+                separe por vírgula.
+                <div class="mt-2">
+                    <button type="button" class="btn btn-sm btn-outline-dark" :disabled="sendingAlert" @click="sendTestAlert">
+                        <i class="fa-solid fa-paper-plane"></i> {{ sendingAlert ? 'Enviando…' : 'Enviar aviso agora (usa o e-mail salvo)' }}
+                    </button>
+                </div>
+            </div>
+            <div class="mb-3 alert alert-info py-2" v-if="config.type === 'payables_alert_days'">
+                <strong>Antecedência do aviso (dias)</strong> &mdash; além das contas atrasadas e de hoje, o aviso inclui
+                as que vencem nos próximos N dias.
+            </div>
+            <div class="mb-3 alert alert-info py-2" v-if="config.type === 'payables_alert_enabled'">
+                Use <code>true</code> para manter o aviso diário ligado ou <code>false</code> para desligar.
+            </div>
+            <div class="mb-3 alert alert-info py-2" v-if="config.type === 'subscription_release_days'">
+                <strong>Liberação da cobrança de assinaturas (dias)</strong> &mdash; a cobrança do próximo ciclo é gerada
+                automaticamente quando faltam até N dias para o vencimento. Com 45, assinaturas <em>mensais</em> geram a
+                nova cobrança assim que a anterior é paga; <em>anuais</em> geram 45 dias antes do vencimento.
+            </div>
+
             <div class="mb-3">
                 <label for="configValue" class="form-label">{{ config.type === 'hourly_rate' ? 'Valor por hora (R$)' : 'Valor' }}</label>
                 <textarea v-if="!config.upload" class="form-control" id="configValue" rows="5"

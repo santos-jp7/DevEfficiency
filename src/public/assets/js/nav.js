@@ -27,6 +27,8 @@
             items: [
                 { label: 'Contas a Pagar', href: '/payables' },
                 { label: 'Contas Bancárias', href: '/bank-accounts' },
+                { label: 'Conciliação Bancária', href: '/reconciliation' },
+                { label: 'Vendedores', href: '/sellers' },
                 { label: 'Transferências', href: '/bank-transfers' },
                 { label: 'Centros de Custo', href: '/cost-centers' },
             ],

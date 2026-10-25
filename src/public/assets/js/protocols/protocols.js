@@ -34,13 +34,15 @@ const app = new Vue({
                     this.totalPages = Math.ceil(this.total / this.limit)
                 })
         },
+        // OS e assinatura trazem o cliente; no lançamento avulso o cliente está direto no protocolo.
+        clientName(protocol) {
+            const client = protocol.Service_order?.Client || protocol.Subscription?.Client || protocol.Client
+            return client ? client.name : ''
+        },
         handlerSearch() {
-            this.protocols = this.allProtocols.filter((protocol) => {
-                const clientName = protocol.Service_order
-                    ? protocol.Service_order.Client.name
-                    : protocol.Subscription.Client.name
-                return clientName.toLowerCase().includes(this.q.toLowerCase())
-            })
+            this.protocols = this.allProtocols.filter((protocol) =>
+                this.clientName(protocol).toLowerCase().includes(this.q.toLowerCase()),
+            )
         },
         formatDate(date) {
             return moment(date).format('DD/MM/YYYY')

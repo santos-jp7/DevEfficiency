@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Codlinx - Vendedor</title>
+    <link href="../assets/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/codlinx.css">
+    <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css">
+
+    <script src="../assets/js/vue.min.js"></script>
+    <script src="../assets/js/jquery-3.6.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2/dist/umd/popper.min.js"></script>
+    <script src="../assets/js/bootstrap.min.js"></script>
+    <script src="../assets/js/axios.min.js"></script>
+    <script src="../assets/js/moment.min.js"></script>
+</head>
+
+<body>
+    <nav class="navbar bg-light">
+        <div class="container">
+            <a class="navbar-brand" href="/dashboard">
+                <img src="../assets/img/logo_cabecalho.png" alt="Codlinx" width="40" height="40">
+            </a>
+        </div>
+    </nav>
+
+    <div class="container p-4" id="app">
+        <div class="d-flex flex-wrap justify-content-between align-items-center">
+            <h5>{{ id ? 'Vendedor #' + id : 'Novo vendedor' }}</h5>
+            <a href="./index.html" class="btn btn-secondary btn-sm">Voltar</a>
+        </div>
+        <hr>
+
+        <ul class="nav nav-tabs mb-3" v-if="id">
+            <li class="nav-item"><a class="nav-link" :class="{ active: tab === 'dados' }" href="#" @click.prevent="tab = 'dados'">Dados e regras</a></li>
+            <li class="nav-item"><a class="nav-link" :class="{ active: tab === 'pagamentos' }" href="#" @click.prevent="tab = 'pagamentos'">Próximos pagamentos</a></li>
+            <li class="nav-item"><a class="nav-link" :class="{ active: tab === 'relatorio' }" href="#" @click.prevent="tab = 'relatorio'">Relatório</a></li>
+        </ul>
+
+        <!-- Dados e regras -->
+        <form v-show="tab === 'dados'" @submit.prevent="save">
+            <div class="row">
+                <div class="mb-3 col-md-6">
+                    <label class="form-label">Nome</label>
+                    <input type="text" class="form-control" v-model="seller.name" required>
+                </div>
+                <div class="mb-3 col-md-3">
+                    <label class="form-label">CPF / CNPJ</label>
+                    <input type="text" class="form-control" v-model="seller.document">
+                </div>
+                <div class="mb-3 col-md-3">
+                    <label class="form-label">Chave PIX</label>
+                    <input type="text" class="form-control" v-model="seller.pix_key">
+                </div>
+            </div>
+            <div class="row">
+                <div class="mb-3 col-md-6">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-control" v-model="seller.email">
+                </div>
+                <div class="mb-3 col-md-3">
+                    <label class="form-label">Telefone</label>
+                    <input type="text" class="form-control" v-model="seller.phone">
+                </div>
+                <div class="mb-3 col-md-3 d-flex align-items-end">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="active" v-model="seller.active">
+                        <label class="form-check-label" for="active">Vendedor ativo</label>
+                    </div>
+                </div>
+            </div>
+
+            <h6 class="mt-2">Regras de comissão</h6>
+            <div class="alert alert-info py-2 small">
+                A comissão vira uma <strong>conta a pagar</strong> automaticamente quando o protocolo vinculado é
+                <strong>finalizado</strong>. Alterar as regras vale só para protocolos finalizados daqui em diante.
+            </div>
+            <div class="row">
+                <div class="mb-3 col-md-3">
+                    <label class="form-label">Comissão (%)</label>
+                    <input type="number" step="0.01" min="0" max="100" class="form-control" v-model="seller.commission_percent" required>
+                </div>
+                <div class="mb-3 col-md-3">
+                    <label class="form-label">Base de cálculo</label>
+                    <select class="form-select" v-model="seller.commission_base">
+                        <option value="liquido">Líquido (após descontos)</option>
+                        <option value="bruto">Bruto (antes dos descontos)</option>
+                    </select>
+                </div>
+                <div class="mb-3 col-md-3">
+                    <label class="form-label">Comissiona sobre</label>
+                    <select class="form-select" v-model="seller.applies_to">
+                        <option value="ambos">Serviços e produtos</option>
+                        <option value="servicos">Somente serviços</option>
+                        <option value="produtos">Somente produtos</option>
+                    </select>
+                    <div class="form-text">Despesas repassadas nunca comissionam.</div>
+                </div>
+                <div class="mb-3 col-md-3">
+                    <label class="form-label">Valor mínimo do protocolo</label>
+                    <input type="number" step="0.01" min="0" class="form-control" v-model="seller.min_protocol_value" placeholder="Sem mínimo">
+                </div>
+            </div>
+            <div class="row">
+                <div class="mb-3 col-md-3">
+                    <label class="form-label">Pagar em (dias após finalizar)</label>
+                    <input type="number" min="0" class="form-control" v-model="seller.payment_delay_days">
+                </div>
+                <div class="mb-3 col-md-3">
+                    <label class="form-label">Centro de custo</label>
+                    <select class="form-select" v-model="seller.CostCenterId">
+                        <option :value="null">-</option>
+                        <option v-for="c in costCenters" :value="c.id">{{ c.name }}</option>
+                    </select>
+                </div>
+                <div class="mb-3 col-md-6">
+                    <label class="form-label">Observações</label>
+                    <input type="text" class="form-control" v-model="seller.notes">
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-dark">Salvar vendedor</button>
+            <button type="button" v-if="id" @click="remove" class="btn btn-outline-danger ms-2">Excluir</button>
+        </form>
+
+        <!-- Próximos pagamentos -->
+        <div v-if="id" v-show="tab === 'pagamentos'">
+            <div class="row g-3 mb-3">
+                <div class="col-md-4"><div class="cx-kpi cx-kpi--amber"><div class="cx-kpi__label">Total a pagar</div><div class="cx-kpi__value">{{ brl(upcoming.total) }}</div></div></div>
+                <div class="col-md-4"><div class="cx-kpi cx-kpi--red"><div class="cx-kpi__label">Em atraso</div><div class="cx-kpi__value">{{ brl(upcoming.overdue) }}</div></div></div>
+                <div class="col-md-4"><div class="cx-kpi cx-kpi--cyan"><div class="cx-kpi__label">Próximos 30 dias</div><div class="cx-kpi__value">{{ brl(upcoming.next_30_days) }}</div></div></div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-striped border">
+                    <thead><tr><th>Vencimento</th><th>Descrição</th><th>Protocolo</th><th class="text-end">Valor</th><th></th></tr></thead>
+                    <tbody>
+                        <tr v-for="item in upcoming.items">
+                            <td>{{ date(item.dueDate) }} <span v-if="item.overdue" class="badge bg-danger">Atrasado</span></td>
+                            <td>{{ item.description }}</td>
+                            <td><a v-if="item.ProtocolId" :href="'../protocols/i.html?id=' + item.ProtocolId">#{{ item.ProtocolId }}</a></td>
+                            <td class="text-end">{{ brl(item.value) }}</td>
+                            <td><a :href="'../payables/i.html?id=' + item.id"><i class="fa-solid fa-arrow-right"></i></a></td>
+                        </tr>
+                        <tr v-if="!upcoming.items.length"><td colspan="5" class="text-center text-muted py-4">Nenhum pagamento pendente.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Relatório -->
+        <div v-if="id" v-show="tab === 'relatorio'">
+            <div class="row g-2 align-items-end mb-3">
+                <div class="col-auto"><label class="form-label small mb-0">De</label><input type="date" class="form-control form-control-sm" v-model="filter.startDate"></div>
+                <div class="col-auto"><label class="form-label small mb-0">Até</label><input type="date" class="form-control form-control-sm" v-model="filter.endDate"></div>
+                <div class="col-auto"><button class="btn btn-dark btn-sm" @click="loadReport">Filtrar</button></div>
+                <div class="col-auto"><button class="btn btn-outline-secondary btn-sm" @click="clearFilter">Limpar</button></div>
+            </div>
+
+            <div v-if="report" class="row g-3 mb-3">
+                <div class="col-6 col-md-3"><div class="cx-kpi cx-kpi--brand"><div class="cx-kpi__label">Protocolos</div><div class="cx-kpi__value">{{ report.totals.protocols }}</div><div class="cx-kpi__sub">{{ report.totals.closed }} finalizados · {{ report.totals.in_progress }} em andamento</div></div></div>
+                <div class="col-6 col-md-3"><div class="cx-kpi cx-kpi--cyan"><div class="cx-kpi__label">Vendas finalizadas</div><div class="cx-kpi__value">{{ brl(report.totals.sales_closed) }}</div></div></div>
+                <div class="col-6 col-md-3"><div class="cx-kpi cx-kpi--green"><div class="cx-kpi__label">Comissão paga</div><div class="cx-kpi__value">{{ brl(report.totals.commission_paid) }}</div><div class="cx-kpi__sub">Gerada: {{ brl(report.totals.commission_generated) }}</div></div></div>
+                <div class="col-6 col-md-3"><div class="cx-kpi cx-kpi--amber"><div class="cx-kpi__label">A pagar</div><div class="cx-kpi__value">{{ brl(report.totals.commission_pending) }}</div><div class="cx-kpi__sub">Previsão em andamento: {{ brl(report.totals.commission_forecast) }}</div></div></div>
+            </div>
+
+            <h6 v-if="report && report.monthly.length">Comissão por mês</h6>
+            <div class="table-responsive mb-3" v-if="report && report.monthly.length">
+                <table class="table table-sm table-striped border">
+                    <thead><tr><th>Mês</th><th class="text-end">Gerada</th><th class="text-end">Paga</th></tr></thead>
+                    <tbody><tr v-for="m in report.monthly"><td>{{ m.month }}</td><td class="text-end">{{ brl(m.generated) }}</td><td class="text-end">{{ brl(m.paid) }}</td></tr></tbody>
+                </table>
+            </div>
+
+            <h6>Protocolos vinculados</h6>
+            <div class="table-responsive" v-if="report">
+                <table class="table table-striped border">
+                    <thead><tr><th>#</th><th>Cliente</th><th>Origem</th><th>Status</th><th class="text-end">Total</th><th class="text-end">Comissão</th><th>Pagamento</th></tr></thead>
+                    <tbody>
+                        <tr v-for="p in report.protocols">
+                            <td><a :href="'../protocols/i.html?id=' + p.id">{{ p.id }}</a></td>
+                            <td>{{ p.client }}</td>
+                            <td>{{ p.origin }}</td>
+                            <td><span :class="'badge bg-' + statusColor(p.status)">{{ p.status }}</span></td>
+                            <td class="text-end">{{ brl(p.protocol_total) }}</td>
+                            <td class="text-end">{{ brl(p.commission) }} <span v-if="p.estimated" class="small text-muted">(previsto)</span></td>
+                            <td class="small">
+                                <span v-if="p.payable"><span :class="'badge bg-' + (p.payable.status === 'pago' ? 'success' : 'warning')">{{ p.payable.status }}</span> {{ date(p.payable.status === 'pago' ? p.payable.paymentDate : p.payable.dueDate) }}</span>
+                            </td>
+                        </tr>
+                        <tr v-if="!report.protocols.length"><td colspan="7" class="text-center text-muted py-4">Nenhum protocolo vinculado.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="../assets/js/sellers/common.js"></script>
+    <script src="../assets/js/sellers/i.js"></script>
+    <script src="../assets/js/nav.js"></script>
+</body>
+
+</html>

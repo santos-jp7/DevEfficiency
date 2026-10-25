@@ -14,6 +14,12 @@ async function seedConfigs(): Promise<void> {
         { type: 'email', value: 'contato@minhaempresa.com.br', upload: false },
         { type: 'default_day_due', value: '20', upload: false },
         { type: 'hourly_rate', value: '120.00', upload: false },
+        // Aviso diário de contas a pagar (vários e-mails separados por vírgula).
+        { type: 'payables_alert_email', value: 'jean.pierre@codlinx.com.br', upload: false },
+        { type: 'payables_alert_days', value: '3', upload: false },
+        { type: 'payables_alert_enabled', value: 'true', upload: false },
+        // Dias antes do vencimento para liberar a cobrança da assinatura (padrão 45: mensais liberam na renovação).
+        { type: 'subscription_release_days', value: '45', upload: false },
     ]
 
     for (const configData of defaultConfigs) {

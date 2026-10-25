@@ -38,6 +38,9 @@ import osEntriesController from './controllers/osEntriesController'
 import reimbursementsController from './controllers/reimbursementsController'
 import slaController from './controllers/slaController'
 import clientSlaConfigController from './controllers/clientSlaConfigController'
+import sellersController from './controllers/sellersController'
+import reconciliationController from './controllers/reconciliationController'
+import payablesAlertController from './controllers/payablesAlertController'
 import mcp from './mcp/server'
 
 const routes: FastifyPluginCallback = (instance, opts, next) => {
@@ -87,6 +90,28 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.post('/payables', { preHandler: [isAuthed] }, payablesController.store)
     instance.put('/payables/:id', { preHandler: [isAuthed] }, payablesController.update)
     instance.delete('/payables/:id', { preHandler: [isAuthed] }, payablesController.destroy)
+
+    instance.get('/sellers', { preHandler: [isAuthed] }, sellersController.index as any)
+    instance.get('/sellers/:id', { preHandler: [isAuthed] }, sellersController.show as any)
+    instance.get('/sellers/:id/report', { preHandler: [isAuthed] }, sellersController.report as any)
+    instance.get('/sellers/:id/upcoming', { preHandler: [isAuthed] }, sellersController.upcoming as any)
+    instance.post('/sellers', { preHandler: [isAuthed] }, sellersController.store as any)
+    instance.put('/sellers/:id', { preHandler: [isAuthed] }, sellersController.update as any)
+    instance.delete('/sellers/:id', { preHandler: [isAuthed] }, sellersController.destroy as any)
+
+    instance.get('/reconciliation/entries', { preHandler: [isAuthed] }, reconciliationController.entries as any)
+    instance.get('/reconciliation/summary', { preHandler: [isAuthed] }, reconciliationController.summary as any)
+    instance.get('/reconciliation/imports', { preHandler: [isAuthed] }, reconciliationController.imports as any)
+    instance.get('/reconciliation/unreconciled', { preHandler: [isAuthed] }, reconciliationController.unreconciled as any)
+    instance.get('/reconciliation/status', { preHandler: [isAuthed] }, reconciliationController.status as any)
+    instance.post('/reconciliation/import', { preHandler: [isAuthed] }, reconciliationController.import as any)
+    instance.post('/reconciliation/auto-match', { preHandler: [isAuthed] }, reconciliationController.autoMatch as any)
+    instance.post('/reconciliation/entries/:id/match', { preHandler: [isAuthed] }, reconciliationController.match as any)
+    instance.post('/reconciliation/entries/:id/unmatch', { preHandler: [isAuthed] }, reconciliationController.unmatch as any)
+    instance.post('/reconciliation/entries/:id/ignore', { preHandler: [isAuthed] }, reconciliationController.ignore as any)
+    instance.post('/reconciliation/entries/:id/unignore', { preHandler: [isAuthed] }, reconciliationController.unignore as any)
+
+    instance.post('/payables-alert/send', { preHandler: [isAuthed] }, payablesAlertController.send)
 
     instance.get('/clients', { preHandler: [isAuthed] }, clientController.index)
     instance.get('/clients/:id', { preHandler: [isAuthed] }, clientController.show)
@@ -140,6 +165,7 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.get('/os/:id/invoice-pdf', serviceOrdersController.invoicePdf)
 
     instance.get('/protocols', { preHandler: [isAuthed] }, protocolsController.index)
+    instance.post('/protocols/standalone', { preHandler: [isAuthed] }, protocolsController.storeStandalone)
     instance.get('/protocols/:id', { preHandler: [isAuthed] }, protocolsController.show)
     instance.put('/protocols/:id', { preHandler: [isAuthed] }, protocolsController.update)
 

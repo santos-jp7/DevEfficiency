@@ -31,6 +31,9 @@ import Os_entry from './models/Os_entry'
 import SlaLevel from './models/SlaLevel'
 import seedSlaLevels from './seeds/slaLevelSeed'
 import ClientSlaConfig from './models/ClientSlaConfig'
+import Seller from './models/Seller'
+import BankStatementImport from './models/BankStatementImport'
+import BankStatementEntry from './models/BankStatementEntry'
 
 async function syncModels(): Promise<true> {
     await User.sync()
@@ -59,6 +62,10 @@ async function syncModels(): Promise<true> {
 
     await License.sync({ alter: { drop: false } })
 
+    // Vendedor referencia centro de custo; protocolo e contas a pagar referenciam vendedor.
+    await CostCenter.sync()
+    await Seller.sync({ alter: { drop: false } })
+
     await Protocol.sync({ alter: { drop: false } })
     await Protocol_register.sync({ alter: { drop: false } })
     await Protocol_product.sync({ alter: { drop: false } })
@@ -73,11 +80,14 @@ async function syncModels(): Promise<true> {
     await Supplier.sync()
 
     await Receipts.sync({ alter: { drop: false } })
-    await Payable.sync()
+    await Payable.sync({ alter: { drop: false } })
 
     await Config.sync({ alter: { drop: false } })
     await seedConfigs()
     await seedPartnerClients()
+
+    await BankStatementImport.sync({ alter: { drop: false } })
+    await BankStatementEntry.sync({ alter: { drop: false } })
 
     await Reimbursement.sync({ alter: { drop: false } })
     await ReimbursementFile.sync({ alter: { drop: false } })

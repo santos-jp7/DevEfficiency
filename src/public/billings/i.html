@@ -130,6 +130,12 @@
                         <option value="pago">Pago</option>
                         <option value="cancelado">Cancelado</option>
                     </select>
+                    <div v-if="billing.status === 'pago'" class="form-text">
+                        <a href="../reconciliation" :class="billing.reconciled ? 'text-success' : 'text-muted'">
+                            <i :class="'fa-solid ' + (billing.reconciled ? 'fa-link' : 'fa-link-slash')"></i>
+                            {{ billing.reconciled ? 'Conciliado com o extrato' : 'Ainda sem correspondência no extrato' }}
+                        </a>
+                    </div>
                 </div>
                 <div class="mb-3 col">
                     <label class="form-label">Valor Total</label>

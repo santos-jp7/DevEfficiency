@@ -9,6 +9,20 @@ import { InstanceUpdateOptions } from 'sequelize/types/model'
 import Client from '../models/Client'
 import Receipts from '../models/Receipts'
 
+// Marca a assinatura como paga, exceto quando a renovação já foi liberada (cobrança nova pendente).
+async function markSubscriptionPaid(subscriptionId: number, transaction?: any) {
+    const subscription = await Subscription.findByPk(subscriptionId, { transaction })
+    if (!subscription) return
+
+    const released = await Protocol.count({
+        where: { SubscriptionId: subscriptionId, status: 'Liberado para pagamento' },
+        transaction,
+    })
+    if (released > 0) return
+
+    await subscription.update({ status: 'Pago' }, { transaction })
+}
+
 class billingHooks {
     static async afterUpdate(billing: Billing, options: InstanceUpdateOptions) {
         if (billing.status === 'pago' && billing.previous('status') !== 'pago') {
@@ -47,11 +61,7 @@ class billingHooks {
                             if (serviceOrder)
                                 await serviceOrder.update({ status: 'Finalizado' }, { transaction: options.transaction })
                         }
-                        if (protocol.SubscriptionId) {
-                            const subscription = await Subscription.findByPk(protocol.SubscriptionId)
-                            if (subscription)
-                                await subscription.update({ status: 'Pago' }, { transaction: options.transaction })
-                        }
+                        if (protocol.SubscriptionId) await markSubscriptionPaid(protocol.SubscriptionId, options.transaction)
                     } else {
                         await protocol.update(
                             { current_installment: currentInstallment + 1 },
@@ -90,12 +100,7 @@ class billingHooks {
                         }
                     }
 
-                    if (protocol.SubscriptionId) {
-                        const subscription = await Subscription.findByPk(protocol.SubscriptionId)
-                        if (subscription) {
-                            await subscription.update({ status: 'Pago' }, { transaction: options.transaction })
-                        }
-                    }
+                    if (protocol.SubscriptionId) await markSubscriptionPaid(protocol.SubscriptionId, options.transaction)
                 } else {
                     const client = await Client.findByPk(billing.ClientId, { transaction: options.transaction })
 

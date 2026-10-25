@@ -217,13 +217,15 @@
             <div class="protocol-row">
                 <div class="protocol-header">
                     <span class="protocol-subject">
-                        <%= p.Service_order?.subject || p.Subscription?.name || 'Serviços Diversos' %>
+                        <%= p.Service_order?.subject || p.Subscription?.name || 'Lançamento avulso' %>
                     </span>
                     <span class="protocol-id">Protocolo #<%= p.id %> &bull;
                             <% if(p.Service_order?.id){ %>
                                 Ordem de Serviço #<%= p.Service_order.id %>
                                     <% } else if(p.Subscription?.id){ %>
                                         Assinatura #<%= p.Subscription.id %>
+                                            <% } else { %>
+                                                Lançamento avulso
                                             <% } %>
                     </span>
                 </div>

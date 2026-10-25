@@ -7,7 +7,9 @@ import CostCenter from '../models/CostCenter'
 import Reimbursement from '../models/Reimbursement'
 import ReimbursementFile from '../models/ReimbursementFile'
 import User from '../models/User'
+import Seller from '../models/Seller'
 import db from '../db'
+import { alreadyMatched, reconcileTarget, releaseTarget } from '../utils/reconciliation'
 
 // Define a type for the request to ensure type safety
 type PayableRequest = FastifyRequest<{
@@ -44,10 +46,14 @@ class PayablesController {
 
             const payables = await Payable.findAll({
                 where,
-                include: [supplierInclude, BankAccount, costCenterInclude, { model: Reimbursement, attributes: ['id', 'value'] }],
+                include: [supplierInclude, BankAccount, costCenterInclude, Seller, { model: Reimbursement, attributes: ['id', 'value'] }],
                 order: [['dueDate', 'DESC']],
             })
-            return res.send(payables)
+
+            // Pagas: indica se já foram encontradas no extrato bancário.
+            const reconciled = await alreadyMatched('payable', payables.filter((p) => p.status === 'pago').map((p) => p.id))
+
+            return res.send(payables.map((p) => ({ ...p.toJSON(), reconciled: reconciled.has(p.id) })))
         } catch (error) {
             console.error(error)
             return res.status(500).send({ error: 'Internal Server Error' })
@@ -58,7 +64,7 @@ class PayablesController {
         try {
             const { id } = req.params
             const payable = await Payable.findByPk(id, {
-                include: [Supplier, BankAccount, CostCenter, {
+                include: [Supplier, BankAccount, CostCenter, Seller, {
                     model: Reimbursement,
                     include: [Supplier, BankAccount, { model: User, attributes: ['id', 'username'] }, ReimbursementFile],
                 }],
@@ -80,6 +86,7 @@ class PayablesController {
         try {
             const newPayable = await Payable.create(req.body, { transaction: t })
             await t.commit()
+            if (newPayable.status === 'pago') await reconcileTarget('payable', newPayable.id)
             return res.status(201).send(newPayable)
         } catch (error) {
             await t.rollback()
@@ -102,6 +109,11 @@ class PayablesController {
             await payable.update(req.body, { transaction: t })
 
             await t.commit()
+
+            // Marcar como pago (ou alterar valor/conta/data) reavalia a conciliação com o extrato.
+            await releaseTarget('payable', payable.id)
+            if (payable.status === 'pago') await reconcileTarget('payable', payable.id)
+
             return res.send(payable)
         } catch (error) {
             await t.rollback()
@@ -124,6 +136,7 @@ class PayablesController {
             await payable.destroy({ transaction: t })
 
             await t.commit()
+            await releaseTarget('payable', payable.id)
             return res.status(204).send()
         } catch (error) {
             await t.rollback()

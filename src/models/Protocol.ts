@@ -20,6 +20,9 @@ import Receipts from './Receipts'
 import Service_order from './Service_order'
 import Subscription from './Subscription'
 import BillingProtocol from './BillingProtocol'
+import Client from './Client'
+import Seller from './Seller'
+import Payable from './Payable'
 
 import protocolHooks from '../hooks/protocolHooks'
 
@@ -31,6 +34,9 @@ class Protocol extends Model<InferAttributes<Protocol>, InferCreationAttributes<
 
     declare ServiceOrderId: ForeignKey<Service_order['id']>
     declare SubscriptionId: ForeignKey<Subscription['id']>
+    // Lançamento avulso: sem OS/assinatura, o cliente fica direto no protocolo.
+    declare ClientId: CreationOptional<ForeignKey<Client['id']> | null>
+    declare SellerId: CreationOptional<ForeignKey<Seller['id']> | null>
 
     declare getService_order: HasOneGetAssociationMixin<Service_order>
     declare getSubscription: HasOneGetAssociationMixin<Subscription>
@@ -133,6 +139,12 @@ Protocol.hasMany(BillingProtocol, {
 })
 
 BillingProtocol.belongsTo(Protocol)
+
+// Protocol.belongsTo(Client) fica em Client.ts (evita dependência circular na carga dos modelos)
+Protocol.belongsTo(Seller)
+
+Protocol.hasMany(Payable)
+Payable.belongsTo(Protocol)
 
 Protocol.beforeSave(protocolHooks.beforeSave)
 Protocol.afterUpdate(protocolHooks.afterUpdate)

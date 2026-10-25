@@ -18,6 +18,9 @@ import Subscription from '../models/Subscription'
 import Config from '../models/Config'
 import Billing from '../models/Billing'
 import BillingProtocol from '../models/BillingProtocol'
+import db from '../db'
+import Seller from '../models/Seller'
+import { PricingError, buildRegisterData } from './protocolsRegisterController'
 import { getClientByProtocol, summarizeProtocol, sumSummaries, withPricing, pricingView } from '../utils/pricing'
 
 type protocolsRequest = FastifyRequest<{
@@ -36,6 +39,8 @@ class protocolsController {
                 Protocol_register,
                 { model: Protocol_product, include: [Product] },
                 Receipts,
+                Client,
+                Seller,
                 {
                     model: Service_order,
                     include: [Client],
@@ -45,6 +50,8 @@ class protocolsController {
                     include: [Client],
                 },
             ],
+            order: [['id', 'DESC']],
+            distinct: true,
             ...(limit != -1 && { limit: parseInt(limit) }),
             ...(limit != -1 && { offset: (page - 1) * limit }),
         }
@@ -57,6 +64,7 @@ class protocolsController {
                 [Op.or]: {
                     SubscriptionId: subscription_ids,
                     ServiceOrderId: os_ids,
+                    ClientId,
                 },
             }
         }
@@ -73,7 +81,10 @@ class protocolsController {
         const { count, rows } = await Protocol.findAndCountAll(opts)
 
         const data = rows.map((protocol) => {
-            const client = (protocol as any).Service_order?.Client || (protocol as any).Subscription?.Client
+            const client =
+                (protocol as any).Service_order?.Client ||
+                (protocol as any).Subscription?.Client ||
+                (protocol as any).Client
             return withPricing(protocol, client)
         })
 
@@ -87,7 +98,7 @@ class protocolsController {
 
     static async show(req: protocolsRequest, res: FastifyReply): Promise<FastifyReply> {
         const protocol = await Protocol.findByPk(req.params.id, {
-            include: [Protocol_register, { model: Protocol_product, include: [Product] }, Receipts],
+            include: [Protocol_register, { model: Protocol_product, include: [Product] }, Receipts, Seller],
         })
 
         if (!protocol) return res.send(protocol)
@@ -105,6 +116,98 @@ class protocolsController {
         })
     }
 
+    // Lançamento avulso: cria o protocolo direto para um cliente (sem OS/assinatura), lança serviços/despesas e
+    // produtos e já libera para pagamento, o que gera/atualiza a cobrança pendente do cliente pelas regras de sempre.
+    static async storeStandalone(req: FastifyRequest, res: FastifyReply): Promise<FastifyReply> {
+        const { ClientId, SellerId, notes, discount_value, registers, products } = (req.body || {}) as any
+
+        const client = ClientId ? await Client.findByPk(ClientId) : null
+        if (!client) return res.status(400).send({ message: 'Selecione o cliente.' })
+
+        const registerList: any[] = Array.isArray(registers) ? registers : []
+        const productList: any[] = Array.isArray(products) ? products : []
+
+        if (registerList.length + productList.length === 0)
+            return res.status(400).send({ message: 'Lance ao menos um registro ou produto.' })
+
+        if (SellerId && !(await Seller.findByPk(SellerId)))
+            return res.status(404).send({ message: 'Vendedor não encontrado.' })
+
+        for (const r of registerList) {
+            if (!r.description || !['Serviço', 'Despesa'].includes(r.type))
+                return res.status(400).send({ message: 'Todo registro precisa de descrição e tipo (Serviço ou Despesa).' })
+        }
+
+        for (const p of productList) {
+            if (!p.ProductId || !(Number(p.value) >= 0))
+                return res.status(400).send({ message: 'Todo produto precisa de produto e valor.' })
+            // Produto recorrente depende de assinatura; no avulso a cobrança é sempre única.
+            if (p.charge_type && p.charge_type !== 'Único')
+                return res.status(400).send({ message: 'Lançamento avulso aceita apenas produtos de cobrança única.' })
+        }
+
+        const t = await db.transaction()
+        let protocol: Protocol
+
+        try {
+            protocol = await Protocol.create(
+                { status: 'Em aberto', ClientId: client.id, SellerId: SellerId || null, notes: notes || null } as any,
+                { transaction: t },
+            )
+
+            let gross = 0
+
+            for (const r of registerList) {
+                const data = await buildRegisterData(protocol, r)
+                const created = await Protocol_register.create({ ...(data as any), ProtocolId: protocol.id }, { transaction: t })
+                gross += Number(created.value)
+            }
+
+            for (const p of productList) {
+                const created = await Protocol_product.create(
+                    { ProductId: p.ProductId, charge_type: 'Único', value: Number(p.value), ProtocolId: protocol.id },
+                    { transaction: t },
+                )
+                gross += Number(created.value)
+            }
+
+            const discount = Number(discount_value) || 0
+            if (discount < 0 || discount > gross) throw new PricingError('Desconto inválido para o total lançado.')
+
+            if (discount > 0) await protocol.update({ discount_value: discount }, { transaction: t })
+
+            await t.commit()
+        } catch (e) {
+            await t.rollback()
+            if (e instanceof PricingError) return res.status(400).send({ message: e.message })
+            throw e
+        }
+
+        // Libera depois de gravar tudo: a transição para "Liberado para pagamento" gera a cobrança.
+        try {
+            await protocol.update({ status: 'Liberado para pagamento' })
+        } catch (e: any) {
+            console.error('[avulso] falha ao liberar protocolo', protocol.id, e)
+            return res.status(500).send({
+                message: `Protocolo #${protocol.id} foi criado, mas não foi possível liberá-lo para pagamento: ${e.message}`,
+                ProtocolId: protocol.id,
+            })
+        }
+
+        const created = await Protocol.findByPk(protocol.id, {
+            include: [Protocol_register, { model: Protocol_product, include: [Product] }, Receipts, Client, Seller],
+        })
+        const billingProtocol = await BillingProtocol.findOne({
+            where: { ProtocolId: protocol.id },
+            order: [['id', 'DESC']],
+        })
+
+        return res.status(201).send({
+            ...withPricing(created as Protocol, client),
+            BillingId: billingProtocol?.BillingId || null,
+        })
+    }
+
     static async update(req: protocolsRequest, res: FastifyReply): Promise<FastifyReply> {
         const { id } = req.params
         const { status, notes, current_installment, total_installments, discount_value } = req.body as any
@@ -112,7 +215,29 @@ class protocolsController {
         const protocol = await Protocol.findByPk(id)
         if (!protocol) throw new Error('Protocolo não existe.')
 
-        await protocol.update({ status, notes, current_installment, total_installments, discount_value: discount_value ?? null })
+        // Vendedor só pode ser trocado enquanto a comissão não foi gerada (protocolo não finalizado).
+        const sellerPatch: any = {}
+        if ('SellerId' in (req.body as any)) {
+            const SellerId = (req.body as any).SellerId || null
+
+            if (SellerId !== (protocol.SellerId || null)) {
+                if (protocol.status === 'Fechado')
+                    return res.status(400).send({ message: 'Protocolo finalizado: não é possível alterar o vendedor.' })
+                if (SellerId && !(await Seller.findByPk(SellerId)))
+                    return res.status(404).send({ message: 'Vendedor não encontrado.' })
+
+                sellerPatch.SellerId = SellerId
+            }
+        }
+
+        await protocol.update({
+            status,
+            notes,
+            current_installment,
+            total_installments,
+            discount_value: discount_value ?? null,
+            ...sellerPatch,
+        })
 
         // When releasing for payment, create a new billing if current billing is already faturada
         if (status === 'Liberado para pagamento') {

@@ -99,8 +99,11 @@
         <hr />
 
         <div class="d-flex flex-wrap justify-content-between">
-            <div class="w-80">
-                <h5>Protocolos</h5>
+            <div class="w-80 d-flex align-items-center" style="gap:.75rem">
+                <h5 class="mb-0">Protocolos</h5>
+                <button type="button" class="btn btn-dark btn-sm" onclick="StandaloneLaunch.open()">
+                    <i class="fa-solid fa-bolt"></i> Lançamento avulso
+                </button>
             </div>
             <div class="w-15 d-flex" style="gap: 5px">
                 <select class="form-select" v-model="currentStatus" id="currentStatus" size="4" multiple
@@ -131,8 +134,7 @@
                 <tbody>
                     <tr v-for="protocol of protocols">
                         <th scope="row">{{protocol.id}}</th>
-                        <td>{{ protocol.Service_order ? protocol.Service_order.Client.name :
-                            protocol.Subscription.Client.name }}
+                        <td>{{ clientName(protocol) }}
                             <span v-if="protocol.pricing && protocol.pricing.is_partner" class="badge bg-success ms-1">
                                 Parceiro · {{ new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 }).format(protocol.pricing.partner_discount_percent) }}%
                             </span>
@@ -142,13 +144,15 @@
                         </td>
                         <td><span :class="'badge bg-' + statusColor(protocol.status)">{{protocol.status}}</span></td>
                         <td>
-                            <a
+                            <a v-if="protocol.ServiceOrderId || protocol.SubscriptionId"
                                 :href="
                                 protocol.ServiceOrderId ? 
                                 '../service_orders/i.html?id=' + protocol.ServiceOrderId : '../subscriptions/i.html?id=' + protocol.SubscriptionId ">{{
                                 protocol.ServiceOrderId ?
                                 'OS #' + protocol.ServiceOrderId :
                                 'Assinatura #' + protocol.SubscriptionId }}</a>
+                            <span v-else class="badge bg-dark">Avulso</span>
+                            <div v-if="protocol.Seller" class="small text-muted">Vendedor: {{ protocol.Seller.name }}</div>
                         </td>
                         <td>{{formatDate(protocol.createdAt)}}</td>
                         <td>
@@ -176,6 +180,8 @@
         </div>
     </div>
 
+    <script src="../assets/js/pricing.js"></script>
+    <script src="../assets/js/standalone.js"></script>
     <script src="../assets/js/protocols/protocols.js"></script>
     <script src="../assets/js/nav.js"></script>
 </body>

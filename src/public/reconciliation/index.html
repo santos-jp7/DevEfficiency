@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Codlinx - Conciliação Bancária</title>
+    <link href="../assets/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/codlinx.css">
+    <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css">
+
+    <script src="../assets/js/vue.min.js"></script>
+    <script src="../assets/js/jquery-3.6.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2/dist/umd/popper.min.js"></script>
+    <script src="../assets/js/bootstrap.min.js"></script>
+    <script src="../assets/js/axios.min.js"></script>
+    <script src="../assets/js/moment.min.js"></script>
+</head>
+
+<body>
+    <nav class="navbar bg-light">
+        <div class="container">
+            <a class="navbar-brand" href="/dashboard">
+                <img src="../assets/img/logo_cabecalho.png" alt="Codlinx" width="40" height="40">
+            </a>
+        </div>
+    </nav>
+
+    <div class="container p-4" id="app">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
+            <h5 class="mb-0">Conciliação bancária</h5>
+        </div>
+
+        <!-- Conta + importação -->
+        <div class="row g-2 align-items-end mb-3">
+            <div class="col-md-4">
+                <label class="form-label small mb-0">Conta bancária</label>
+                <select class="form-select" v-model="accountId" @change="loadAll">
+                    <option :value="null" disabled>Selecione…</option>
+                    <option v-for="a in accounts" :value="a.id">{{ a.name }}</option>
+                </select>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label small mb-0">Extrato (OFX ou CSV)</label>
+                <input type="file" class="form-control" accept=".ofx,.csv,.txt" ref="file" :disabled="!accountId || importing">
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-dark w-100" :disabled="!accountId || importing" @click="importFile">
+                    <i class="fa-solid fa-file-import"></i> {{ importing ? 'Importando…' : 'Importar extrato' }}
+                </button>
+            </div>
+        </div>
+
+        <div v-if="result" class="alert alert-success alert-dismissible py-2">
+            <strong>{{ result.import.filename }}</strong>
+            ({{ result.format.toUpperCase() }}): {{ result.total }} lançamento(s) lido(s) —
+            <strong>{{ result.inserted }} novo(s)</strong>,
+            {{ result.duplicates }} já existente(s) ignorado(s),
+            {{ result.auto_matched }} conciliado(s) automaticamente.
+            <span v-if="result.already_imported_file" class="d-block small">Este mesmo arquivo já havia sido importado antes; nada foi duplicado.</span>
+            <button type="button" class="btn-close" @click="result = null"></button>
+        </div>
+
+        <div v-if="accountId">
+            <div class="row g-3 mb-3">
+                <div class="col-6 col-md-3"><div class="cx-kpi cx-kpi--amber"><div class="cx-kpi__label">Pendentes</div><div class="cx-kpi__value">{{ summary.pendente.count }}</div><div class="cx-kpi__sub">+{{ brl(summary.pendente.in) }} / -{{ brl(summary.pendente.out) }}</div></div></div>
+                <div class="col-6 col-md-3"><div class="cx-kpi cx-kpi--green"><div class="cx-kpi__label">Conciliados</div><div class="cx-kpi__value">{{ summary.conciliado.count }}</div><div class="cx-kpi__sub">+{{ brl(summary.conciliado.in) }} / -{{ brl(summary.conciliado.out) }}</div></div></div>
+                <div class="col-6 col-md-3"><div class="cx-kpi cx-kpi--brand"><div class="cx-kpi__label">Ignorados</div><div class="cx-kpi__value">{{ summary.ignorado.count }}</div></div></div>
+                <div class="col-6 col-md-3"><div class="cx-kpi cx-kpi--cyan"><div class="cx-kpi__label">Saldo no sistema</div><div class="cx-kpi__value">{{ brl(summary.system_balance) }}</div></div></div>
+            </div>
+
+            <ul class="nav nav-tabs mb-3">
+                <li class="nav-item"><a class="nav-link" :class="{ active: tab === 'extrato' }" href="#" @click.prevent="tab = 'extrato'">Extrato</a></li>
+                <li class="nav-item"><a class="nav-link" :class="{ active: tab === 'sistema' }" href="#" @click.prevent="tab = 'sistema'; loadUnreconciled()">Lançados sem extrato</a></li>
+                <li class="nav-item"><a class="nav-link" :class="{ active: tab === 'importacoes' }" href="#" @click.prevent="tab = 'importacoes'">Importações</a></li>
+            </ul>
+
+            <!-- Extrato -->
+            <div v-show="tab === 'extrato'">
+                <div class="row g-2 align-items-end mb-2">
+                    <div class="col-auto">
+                        <label class="form-label small mb-0">Situação</label>
+                        <select class="form-select form-select-sm" v-model="filter.status" @change="loadEntries">
+                            <option value="">Todas</option>
+                            <option value="pendente">Pendentes</option>
+                            <option value="conciliado">Conciliados</option>
+                            <option value="ignorado">Ignorados</option>
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <label class="form-label small mb-0">Tipo</label>
+                        <select class="form-select form-select-sm" v-model="filter.direction" @change="loadEntries">
+                            <option value="">Entradas e saídas</option>
+                            <option value="in">Entradas</option>
+                            <option value="out">Saídas</option>
+                        </select>
+                    </div>
+                    <div class="col-auto"><label class="form-label small mb-0">De</label><input type="date" class="form-control form-control-sm" v-model="filter.startDate" @change="loadEntries"></div>
+                    <div class="col-auto"><label class="form-label small mb-0">Até</label><input type="date" class="form-control form-control-sm" v-model="filter.endDate" @change="loadEntries"></div>
+                    <div class="col-auto"><button class="btn btn-outline-dark btn-sm" @click="autoMatch"><i class="fa-solid fa-wand-magic-sparkles"></i> Conciliar automaticamente</button></div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-striped border align-middle">
+                        <thead><tr><th>Data</th><th>Descrição</th><th class="text-end">Valor</th><th>Situação</th><th>Vínculo / sugestão</th><th></th></tr></thead>
+                        <tbody>
+                            <tr v-for="e in entries" :key="e.id">
+                                <td>{{ date(e.date) }}</td>
+                                <td class="small">{{ e.description }}</td>
+                                <td class="text-end" :class="e.amount >= 0 ? 'text-success' : 'text-danger'">{{ brl(e.amount) }}</td>
+                                <td><span :class="'badge bg-' + statusColor(e.status)">{{ e.status }}</span></td>
+                                <td class="small">
+                                    <span v-if="e.status === 'conciliado'">{{ e.matched_label || (e.matched_type + ' #' + e.matched_id) }}</span>
+                                    <div v-else-if="e.status === 'pendente'">
+                                        <div v-for="s in (e.suggestions || [])" class="mb-1">
+                                            <button class="btn btn-sm btn-outline-success py-0" @click="match(e, s)" title="Conciliar">
+                                                <i class="fa-solid fa-link"></i> {{ s.label }} <span class="text-muted">· {{ date(s.date) }}</span>
+                                            </button>
+                                        </div>
+                                        <span v-if="!(e.suggestions || []).length" class="text-muted">Sem correspondência no sistema</span>
+                                    </div>
+                                </td>
+                                <td class="text-nowrap">
+                                    <button v-if="e.status === 'pendente'" class="btn btn-sm btn-outline-secondary" @click="openManual(e)" title="Vincular manualmente"><i class="fa-solid fa-magnifying-glass"></i></button>
+                                    <button v-if="e.status === 'pendente'" class="btn btn-sm btn-outline-secondary" @click="act(e, 'ignore')" title="Ignorar"><i class="fa-solid fa-eye-slash"></i></button>
+                                    <button v-if="e.status === 'ignorado'" class="btn btn-sm btn-outline-secondary" @click="act(e, 'unignore')" title="Voltar para pendente"><i class="fa-solid fa-rotate-left"></i></button>
+                                    <button v-if="e.status === 'conciliado'" class="btn btn-sm btn-outline-danger" @click="act(e, 'unmatch')" title="Desfazer conciliação"><i class="fa-solid fa-link-slash"></i></button>
+                                </td>
+                            </tr>
+                            <tr v-if="!entries.length"><td colspan="6" class="text-center text-muted py-4">Nenhum lançamento. Importe um extrato OFX ou CSV.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Sistema sem extrato -->
+            <div v-show="tab === 'sistema'">
+                <p class="small text-muted">Pagamentos e recebimentos registrados no sistema (últimos 60 dias) que ainda não foram encontrados no extrato desta conta.</p>
+                <div class="table-responsive">
+                    <table class="table table-striped border">
+                        <thead><tr><th>Data</th><th>Tipo</th><th>Lançamento</th><th class="text-end">Valor</th></tr></thead>
+                        <tbody>
+                            <tr v-for="i in unreconciledList"><td>{{ date(i.date) }}</td><td>{{ typeLabel(i.type) }}</td><td>{{ i.label }}</td>
+                                <td class="text-end" :class="i.type === 'payable' ? 'text-danger' : 'text-success'">{{ i.type === 'payable' ? '-' : '' }}{{ brl(i.value) }}</td></tr>
+                            <tr v-if="!unreconciledList.length"><td colspan="4" class="text-center text-muted py-4">Tudo conciliado.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Importações -->
+            <div v-show="tab === 'importacoes'">
+                <div class="table-responsive">
+                    <table class="table table-striped border">
+                        <thead><tr><th>Quando</th><th>Arquivo</th><th>Período</th><th class="text-end">Lidos</th><th class="text-end">Novos</th><th class="text-end">Duplicados</th></tr></thead>
+                        <tbody>
+                            <tr v-for="i in imports"><td>{{ moment(i.createdAt).format('DD/MM/YYYY HH:mm') }}</td><td>{{ i.filename }}</td>
+                                <td>{{ date(i.period_start) }} – {{ date(i.period_end) }}</td>
+                                <td class="text-end">{{ i.total_entries }}</td><td class="text-end">{{ i.inserted_entries }}</td><td class="text-end">{{ i.duplicate_entries }}</td></tr>
+                            <tr v-if="!imports.length"><td colspan="6" class="text-center text-muted py-4">Nenhuma importação.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div v-else class="text-muted py-4">Selecione uma conta bancária para importar e conciliar o extrato.</div>
+
+        <!-- Vínculo manual -->
+        <div class="modal fade" id="manualModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h6 class="modal-title" v-if="manual">Vincular {{ date(manual.date) }} · {{ brl(manual.amount) }} · {{ manual.description }}</h6>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="small text-muted">Lançamentos do sistema ainda sem vínculo com o extrato (mesma conta, {{ manual && manual.amount > 0 ? 'entradas' : 'saídas' }}). Valores divergentes pedem confirmação.</p>
+                        <table class="table table-sm">
+                            <tbody>
+                                <tr v-for="i in manualOptions">
+                                    <td>{{ date(i.date) }}</td><td>{{ i.label }}</td><td class="text-end">{{ brl(i.value) }}</td>
+                                    <td class="text-end"><button class="btn btn-sm btn-dark" @click="match(manual, i)">Vincular</button></td>
+                                </tr>
+                                <tr v-if="!manualOptions.length"><td class="text-muted text-center py-3">Nenhum lançamento disponível.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../assets/js/reconciliation/reconciliation.js"></script>
+    <script src="../assets/js/nav.js"></script>
+</body>
+
+</html>

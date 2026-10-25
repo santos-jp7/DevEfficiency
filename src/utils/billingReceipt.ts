@@ -7,6 +7,7 @@ import BillingProtocol from '../models/BillingProtocol'
 import Protocol from '../models/Protocol'
 import Protocol_register from '../models/Protocol_register'
 import Protocol_product from '../models/Protocol_product'
+import { reconcileTarget } from './reconciliation'
 
 export default async function billingReceipt(req: FastifyRequest, res: FastifyReply): Promise<FastifyReply> {
     const { id, method, BankAccountId } = req.body as {
@@ -62,6 +63,9 @@ export default async function billingReceipt(req: FastifyRequest, res: FastifyRe
         await billing.update({ status: 'pago', payment_date: new Date(), BankAccountId, method }, { transaction: trx })
 
         await trx.commit()
+
+        // Avalia o recebimento contra o extrato já importado (não interfere no resultado do pagamento).
+        await reconcileTarget('billing', billing.id)
 
         return res.send({ error: false })
     } catch (err) {

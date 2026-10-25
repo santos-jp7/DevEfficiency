@@ -23,7 +23,9 @@ Sistema de gestão operacional e financeira voltado para agências, prestadores 
 ### Financeiro
 | Módulo | Descrição |
 |---|---|
-| **Protocolos** | Acordo financeiro por OS ou assinatura com itens de serviço, produtos, recibos, parcelamento e desconto |
+| **Protocolos** | Acordo financeiro por OS ou assinatura com itens de serviço, produtos, recibos, parcelamento e desconto. Também aceita **lançamento avulso** (direto para um cliente, sem OS/assinatura) que já vai para cobrança |
+| **Vendedores** | Cadastro com percentual e regras de comissão (base líquida/bruta, serviços/produtos, mínimo, prazo). Vinculado ao protocolo; ao finalizar gera a conta a pagar da comissão. Relatório e próximos pagamentos por vendedor |
+| **Conciliação Bancária** | Importa extrato OFX/CSV (sem duplicar lançamentos) e concilia com cobranças pagas, recibos e contas pagas |
 | **Cobranças** | Consolidação de protocolos em faturas por cliente; ciclo `pendente → faturada → pago` |
 | **Contas a Pagar** | Controle de despesas e pagamentos com categorias por centro de custo |
 | **Contas Bancárias** | Saldo em tempo real, transferências entre contas, suporte a IBAN/SWIFT para pagamentos internacionais |
@@ -111,6 +113,12 @@ EMAIL_PASS=senha_smtp
 EMAIL_HOST=smtp.suaempresa.com
 EMAIL_CC=admin@suaempresa.com
 
+# E-mail (Resend) — faturas, avisos de queda dos checks e aviso de contas a pagar
+RESEND_API_KEY=re_xxx
+RESEND_FROM=fatura@suaempresa.com
+RESEND_ALERT_FROM=alerta@suaempresa.com   # opcional; padrão = RESEND_FROM
+PAYABLES_ALERT_HOUR=8                     # opcional; hora (America/Sao_Paulo) do aviso diário de contas a pagar
+
 # MCP (controle por IA) — vazio desliga o endpoint /api/mcp
 MCP_API_KEY=uma_chave_longa_e_aleatoria
 MCP_DISABLE=
@@ -126,6 +134,15 @@ CF_ACCESS_ALLOWED_EMAILS=voce@suaempresa.com
 Após iniciar o servidor, acesse `http://localhost:3002`.
 
 As configurações da empresa (nome, CNPJ, endereço, logo) são definidas em **Gestão → Configurações** após o primeiro login. Os valores padrão são populados automaticamente no startup via seed.
+
+Configurações operacionais (também em **Configurações**):
+
+| Chave | Padrão | Função |
+|---|---|---|
+| `payables_alert_email` | `jean.pierre@codlinx.com.br` | Destinatário(s) do aviso diário de contas a pagar (separe por vírgula) |
+| `payables_alert_days` | `3` | Além de atrasadas e de hoje, inclui as que vencem nos próximos N dias |
+| `payables_alert_enabled` | `true` | `false` desliga o aviso |
+| `subscription_release_days` | `45` | A cobrança do próximo ciclo da assinatura é liberada quando faltam até N dias para o vencimento |
 
 ---
 
