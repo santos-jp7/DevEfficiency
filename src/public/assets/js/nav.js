@@ -5,6 +5,7 @@
             label: 'Operações',
             icon: 'fa-solid fa-clipboard-list',
             items: [
+                { label: 'Chamados', href: '/tickets' },
                 { label: 'Ordens de Serviço', href: '/service_orders' },
                 { label: 'Assinaturas', href: '/subscriptions' },
                 { label: 'Protocolos', href: '/protocols' },

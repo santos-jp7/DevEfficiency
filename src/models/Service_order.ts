@@ -34,6 +34,8 @@ class Service_order extends Model<InferAttributes<Service_order>, InferCreationA
     declare sla_solution_deadline: CreationOptional<Date | null>
     declare gravidade: CreationOptional<'Crítico' | 'Alto' | 'Médio' | 'Baixo' | null>
     declare prazo: CreationOptional<Date | null>
+    // false = OS interna: não envia e-mails de andamento ao cliente.
+    declare notify_client: CreationOptional<boolean>
 
     declare getProtocol: HasOneGetAssociationMixin<Protocol>
     declare createProtocol: HasOneCreateAssociationMixin<Protocol>
@@ -103,6 +105,11 @@ Service_order.init(
             type: DataTypes.DATE,
             allowNull: true,
         },
+        notify_client: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: true,
+        },
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
     },
@@ -113,6 +120,8 @@ Service_order.init(
 )
 
 Service_order.beforeSave(serviceOrderHooks.beforeSave)
+Service_order.afterCreate(serviceOrderHooks.afterCreate)
+Service_order.afterUpdate(serviceOrderHooks.afterUpdate)
 
 Service_order.hasOne(Protocol, {
     onDelete: 'RESTRICT',

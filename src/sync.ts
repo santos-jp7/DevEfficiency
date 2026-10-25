@@ -32,6 +32,10 @@ import SlaLevel from './models/SlaLevel'
 import seedSlaLevels from './seeds/slaLevelSeed'
 import ClientSlaConfig from './models/ClientSlaConfig'
 import Seller from './models/Seller'
+import BillingFile from './models/BillingFile'
+import EmailLog from './models/EmailLog'
+import Ticket from './models/Ticket'
+import TicketMessage from './models/TicketMessage'
 import BankStatementImport from './models/BankStatementImport'
 import BankStatementEntry from './models/BankStatementEntry'
 
@@ -75,6 +79,7 @@ async function syncModels(): Promise<true> {
 
     await Billing.sync({ alter: { drop: false } })
     await BillingProtocol.sync({ alter: { drop: false } })
+    await BillingFile.sync({ alter: { drop: false } })
 
     await CostCenter.sync()
     await Supplier.sync()
@@ -88,6 +93,10 @@ async function syncModels(): Promise<true> {
 
     await BankStatementImport.sync({ alter: { drop: false } })
     await BankStatementEntry.sync({ alter: { drop: false } })
+
+    await EmailLog.sync({ alter: { drop: false } })
+    await Ticket.sync({ alter: { drop: false } })
+    await TicketMessage.sync({ alter: { drop: false } })
 
     await Reimbursement.sync({ alter: { drop: false } })
     await ReimbursementFile.sync({ alter: { drop: false } })

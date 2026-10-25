@@ -17,6 +17,8 @@ const service_order = new Vue({
         gravidade: null,
         prazo: null,
         prazoInput: null,
+        notify_client: true,
+        Ticket: null,
         clientSlaConfigs: [],
         slaLevels: [],
         Protocol: {
@@ -179,6 +181,7 @@ const service_order = new Vue({
                     status: this.$data.status,
                     gravidade: this.$data.gravidade || null,
                     prazo: this.$data.prazoInput || null,
+                    notify_client: this.$data.notify_client,
                 })
                 .then(() => {
                     window.location.reload()

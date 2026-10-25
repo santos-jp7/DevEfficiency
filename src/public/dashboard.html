@@ -102,6 +102,10 @@
             <button type="button" class="btn btn-dark btn-sm" onclick="StandaloneLaunch.open()">
                 <i class="fa-solid fa-bolt"></i> Lançamento avulso
             </button>
+            <a class="btn btn-outline-dark btn-sm" href="../tickets?needs=1">
+                <i class="fa-solid fa-headset"></i> Chamados
+                <span v-if="ticketsAttention > 0" class="badge bg-danger ms-1">{{ ticketsAttention }}</span>
+            </a>
             <a class="btn btn-outline-dark btn-sm" href="../reconciliation"><i class="fa-solid fa-scale-balanced"></i> Conciliação bancária</a>
         </div>
 

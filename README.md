@@ -18,6 +18,7 @@ Sistema de gestão operacional e financeira voltado para agências, prestadores 
 | Módulo | Descrição |
 |---|---|
 | **Ordens de Serviço** | Criação, acompanhamento e controle de status; apontamentos de horas; geração de orçamento/fatura/recibo em PDF |
+| **Chamados** | Requisições dos clientes (dúvida, validação, problema, solicitação) com conversa por e-mail, notas internas e conversão em OS quando exige trabalho/cobrança. Preparado para abertura pelo painel do cliente e por e-mail |
 | **Assinaturas** | Cobranças recorrentes (mensal/anual) com renovação automática de protocolos |
 
 ### Financeiro
@@ -117,6 +118,7 @@ EMAIL_CC=admin@suaempresa.com
 RESEND_API_KEY=re_xxx
 RESEND_FROM=fatura@suaempresa.com
 RESEND_ALERT_FROM=alerta@suaempresa.com   # opcional; padrão = RESEND_FROM
+BILLING_REMINDER_HOUR=9                   # opcional; hora (America/Sao_Paulo) a partir da qual saem os lembretes de cobrança
 PAYABLES_ALERT_HOUR=8                     # opcional; hora (America/Sao_Paulo) do aviso diário de contas a pagar
 
 # MCP (controle por IA) — vazio desliga o endpoint /api/mcp
@@ -142,6 +144,9 @@ Configurações operacionais (também em **Configurações**):
 | `payables_alert_email` | `jean.pierre@codlinx.com.br` | Destinatário(s) do aviso diário de contas a pagar (separe por vírgula) |
 | `payables_alert_days` | `3` | Além de atrasadas e de hoje, inclui as que vencem nos próximos N dias |
 | `payables_alert_enabled` | `true` | `false` desliga o aviso |
+| `billing_reminders_enabled` / `billing_reminder_schedule` | `true` / `-3,0,1,7,15` | Lembretes automáticos de cobrança faturada (dias em relação ao vencimento; cada etapa sai uma vez) |
+| `os_email_enabled` | `true` | E-mail ao cliente na abertura e a cada etapa da OS (desligável por OS) |
+| `tickets_email_enabled` / `tickets_notify_email` | `true` / `jean.pierre@codlinx.com.br` | E-mails do chamado ao solicitante / aviso interno de novo chamado e resposta do cliente |
 | `subscription_release_days` | `45` | A cobrança do próximo ciclo da assinatura é liberada quando faltam até N dias para o vencimento |
 
 ---

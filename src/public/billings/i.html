@@ -197,6 +197,13 @@
                 <i class="fa-solid fa-envelope"></i>
                 {{ sendingEmail ? 'Enviando...' : 'Enviar Email' }}
             </button>
+            <template v-if="billing.status === 'faturada'">
+                &bull;
+                <button type="button" class="btn btn-warning mt-2" @click="sendReminder" :disabled="sendingReminder"
+                    title="Envia agora um lembrete de vencimento/atraso aos contatos do cliente">
+                    <i class="fa-solid fa-bell"></i> {{ sendingReminder ? 'Enviando...' : 'Enviar lembrete' }}
+                </button>
+            </template>
         </form>
 
         <hr />

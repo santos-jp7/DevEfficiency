@@ -3,6 +3,7 @@ let __api__ = null
 const dashboard = new Vue({
     el: '#dashboard',
     data: {
+        ticketsAttention: 0,
         currentOs: {
             id: null,
             subject: null,
@@ -62,6 +63,11 @@ const dashboard = new Vue({
     },
     methods: {
         async fetchMetrics() {
+            __api__
+                .get('/api/tickets/summary')
+                .then(({ data }) => (this.ticketsAttention = data.needs_attention))
+                .catch(() => {})
+
             try {
                 // OS Metrics - Fetching non-finalized OS
                 const openStatuses = ['Em avaliação', 'Orçamento enviado', 'Na fila', 'Em correções', 'Pendente']

@@ -41,6 +41,9 @@ import clientSlaConfigController from './controllers/clientSlaConfigController'
 import sellersController from './controllers/sellersController'
 import reconciliationController from './controllers/reconciliationController'
 import payablesAlertController from './controllers/payablesAlertController'
+import ticketsController from './controllers/ticketsController'
+import { runBillingReminders, sendBillingReminder } from './utils/billingReminders'
+import Billing from './models/Billing'
 import mcp from './mcp/server'
 
 const routes: FastifyPluginCallback = (instance, opts, next) => {
@@ -112,6 +115,15 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.post('/reconciliation/entries/:id/unignore', { preHandler: [isAuthed] }, reconciliationController.unignore as any)
 
     instance.post('/payables-alert/send', { preHandler: [isAuthed] }, payablesAlertController.send)
+
+    instance.get('/tickets', { preHandler: [isAuthed] }, ticketsController.index as any)
+    instance.get('/tickets/summary', { preHandler: [isAuthed] }, ticketsController.summary as any)
+    instance.get('/tickets/:id', { preHandler: [isAuthed] }, ticketsController.show as any)
+    instance.post('/tickets', { preHandler: [isAuthed] }, ticketsController.store as any)
+    instance.put('/tickets/:id', { preHandler: [isAuthed] }, ticketsController.update as any)
+    instance.post('/tickets/:id/messages', { preHandler: [isAuthed] }, ticketsController.message as any)
+    instance.post('/tickets/:id/status', { preHandler: [isAuthed] }, ticketsController.status as any)
+    instance.post('/tickets/:id/convert', { preHandler: [isAuthed] }, ticketsController.convert as any)
 
     instance.get('/clients', { preHandler: [isAuthed] }, clientController.index)
     instance.get('/clients/:id', { preHandler: [isAuthed] }, clientController.show)
@@ -221,6 +233,19 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
             return res.status(400).send({ message: err.message || 'Erro ao enviar email' })
         }
     })
+
+    instance.post('/billings/:id/send-reminder', { preHandler: [isAuthed] }, async (req: any, res) => {
+        const billing = await Billing.findByPk(parseInt(req.params.id))
+        if (!billing) return res.status(404).send({ message: 'Cobrança não encontrada' })
+        if (billing.status !== 'faturada') return res.status(400).send({ message: 'Só cobranças faturadas recebem lembrete.' })
+
+        const diff = billing.due_date ? Math.floor((Date.now() - new Date(billing.due_date as any).getTime()) / 86400000) : 0
+        const result = await sendBillingReminder(billing.id, 'manual', diff)
+
+        if (result === 'enviado') return res.send({ message: 'Lembrete enviado' })
+        return res.status(400).send({ message: result === 'ignorado' ? 'Cliente sem e-mail cadastrado.' : 'Não foi possível enviar o lembrete.' })
+    })
+    instance.post('/billing-reminders/run', { preHandler: [isAuthed] }, async (req, res) => res.send(await runBillingReminders({ force: true })))
 
     instance.post('/billing-receipt', { preHandler: [isAuthed] }, billingReceipt)
 

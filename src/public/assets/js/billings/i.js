@@ -8,6 +8,7 @@ const app = new Vue({
         currentProtocolId: null,
         currentValue: 0,
         sendingEmail: false,
+        sendingReminder: false,
 
         bankAccounts: [],
     },
@@ -143,6 +144,18 @@ const app = new Vue({
                 console.error(err)
             }
             event.target.value = ''
+        },
+        async sendReminder() {
+            if (!confirm('Enviar um lembrete desta cobrança agora aos contatos do cliente?')) return
+            this.sendingReminder = true
+            try {
+                await __api__.post(`/api/billings/${this.id}/send-reminder`)
+                alert('Lembrete enviado com sucesso!')
+            } catch (err) {
+                alert(err.response?.data?.message || 'Erro ao enviar lembrete.')
+            } finally {
+                this.sendingReminder = false
+            }
         },
         async sendEmail() {
             if (!confirm('Enviar email com a fatura para todos os contatos do cliente?')) return

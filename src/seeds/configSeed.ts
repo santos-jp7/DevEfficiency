@@ -18,6 +18,13 @@ async function seedConfigs(): Promise<void> {
         { type: 'payables_alert_email', value: 'jean.pierre@codlinx.com.br', upload: false },
         { type: 'payables_alert_days', value: '3', upload: false },
         { type: 'payables_alert_enabled', value: 'true', upload: false },
+        // Lembretes automáticos de cobrança: dias em relação ao vencimento (negativo = antes, positivo = atraso).
+        { type: 'billing_reminders_enabled', value: 'true', upload: false },
+        { type: 'billing_reminder_schedule', value: '-3,0,1,7,15', upload: false },
+        // E-mails ao cliente a cada etapa da OS e nos chamados.
+        { type: 'os_email_enabled', value: 'true', upload: false },
+        { type: 'tickets_email_enabled', value: 'true', upload: false },
+        { type: 'tickets_notify_email', value: 'jean.pierre@codlinx.com.br', upload: false },
         // Dias antes do vencimento para liberar a cobrança da assinatura (padrão 45: mensais liberam na renovação).
         { type: 'subscription_release_days', value: '45', upload: false },
     ]

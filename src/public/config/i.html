@@ -143,6 +143,25 @@
             <div class="mb-3 alert alert-info py-2" v-if="config.type === 'payables_alert_enabled'">
                 Use <code>true</code> para manter o aviso diário ligado ou <code>false</code> para desligar.
             </div>
+            <div class="mb-3 alert alert-info py-2" v-if="config.type === 'billing_reminders_enabled'">
+                Use <code>true</code> para enviar lembretes automáticos de cobrança ao cliente ou <code>false</code> para desligar.
+                Só cobranças <strong>faturadas</strong> recebem lembrete.
+            </div>
+            <div class="mb-3 alert alert-info py-2" v-if="config.type === 'billing_reminder_schedule'">
+                <strong>Cronograma dos lembretes</strong> &mdash; dias em relação ao vencimento, separados por vírgula.
+                Negativo = antes, <code>0</code> = no dia, positivo = atraso. Exemplo padrão:
+                <code>-3,0,1,7,15</code> (3 dias antes, no dia, e 1, 7 e 15 dias depois). Cada etapa é enviada uma única vez por cobrança.
+            </div>
+            <div class="mb-3 alert alert-info py-2" v-if="config.type === 'os_email_enabled'">
+                <code>true</code>/<code>false</code> &mdash; e-mail ao cliente na abertura e a cada mudança de etapa da OS.
+                Cada OS pode desligar individualmente o aviso na própria tela.
+            </div>
+            <div class="mb-3 alert alert-info py-2" v-if="config.type === 'tickets_email_enabled'">
+                <code>true</code>/<code>false</code> &mdash; e-mails ao solicitante do chamado (recebido, respostas, resolvido).
+            </div>
+            <div class="mb-3 alert alert-info py-2" v-if="config.type === 'tickets_notify_email'">
+                Quem na equipe é avisado de novo chamado e de resposta do cliente (vários e-mails separados por vírgula).
+            </div>
             <div class="mb-3 alert alert-info py-2" v-if="config.type === 'subscription_release_days'">
                 <strong>Liberação da cobrança de assinaturas (dias)</strong> &mdash; a cobrança do próximo ciclo é gerada
                 automaticamente quando faltam até N dias para o vencimento. Com 45, assinaturas <em>mensais</em> geram a

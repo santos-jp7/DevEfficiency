@@ -15,10 +15,12 @@ import Service_order from '../models/Service_order'
 import SlaLevel from '../models/SlaLevel'
 import ClientSlaConfig from '../models/ClientSlaConfig'
 import Product from '../models/Product'
+import Ticket from '../models/Ticket'
 import Config from '../models/Config'
 import BankAccount from '../models/BankAccount'
 
 import db from '../db'
+import { createServiceOrder } from '../utils/serviceOrderFactory'
 import { pricingView, summarizeProtocol } from '../utils/pricing'
 
 type serviceOrdersRequest = FastifyRequest<{
@@ -78,6 +80,7 @@ class serviceOrdersController {
                 { model: Project, include: [Client] },
                 Client,
                 { model: SlaLevel, as: 'SlaLevel' },
+                { model: Ticket, attributes: ['id', 'subject'] },
             ],
         })
 
@@ -91,51 +94,25 @@ class serviceOrdersController {
     }
 
     static async store(req: serviceOrdersRequest, res: FastifyReply): Promise<FastifyReply> {
-        const { subject, description, ProjectId, ClientId, SlaLevelId, gravidade, prazo } = req.body as any
+        const { subject, description, ProjectId, ClientId, SlaLevelId, gravidade, prazo, notify_client } = req.body as any
 
-        let project = ProjectId ? await Project.findByPk(ProjectId) : undefined
-        const resolvedClientId = project?.ClientId ?? ClientId ?? null
-
-        const os = await Service_order.create({
+        const os = await createServiceOrder({
             subject,
             description,
             ProjectId,
-            ClientId: resolvedClientId,
-            gravidade: gravidade || null,
-            prazo: prazo ? new Date(prazo) : null,
+            ClientId,
+            SlaLevelId,
+            gravidade,
+            prazo,
+            notify_client: notify_client === undefined ? undefined : !!notify_client,
         })
-
-        await os?.createProtocol()
-
-        const updatePayload: any = {}
-
-        if (gravidade && resolvedClientId) {
-            const slaConfig = await ClientSlaConfig.findOne({ where: { ClientId: resolvedClientId, gravidade } })
-            if (slaConfig && os.createdAt) {
-                const base = new Date(os.createdAt)
-                updatePayload.sla_response_deadline = new Date(base.getTime() + slaConfig.response_hours * 3600000)
-                updatePayload.sla_solution_deadline = new Date(base.getTime() + slaConfig.solution_hours * 3600000)
-            }
-        } else if (SlaLevelId) {
-            const slaLevel = await SlaLevel.findByPk(SlaLevelId)
-            if (slaLevel && os.createdAt) {
-                const base = new Date(os.createdAt)
-                updatePayload.SlaLevelId = SlaLevelId
-                updatePayload.sla_response_deadline = new Date(base.getTime() + slaLevel.response_hours * 3600000)
-                updatePayload.sla_solution_deadline = new Date(base.getTime() + slaLevel.solution_hours * 3600000)
-            }
-        }
-
-        if (Object.keys(updatePayload).length > 0) {
-            await os.update(updatePayload)
-        }
 
         return res.send(os)
     }
 
     static async update(req: serviceOrdersRequest, res: FastifyReply): Promise<FastifyReply> {
         const { id } = req.params
-        const { description, subject, status, SlaLevelId, gravidade, prazo } = req.body as any
+        const { description, subject, status, SlaLevelId, gravidade, prazo, notify_client } = req.body as any
 
         const transaction = await db.transaction()
 
@@ -148,6 +125,7 @@ class serviceOrdersController {
         await protocol?.save({ transaction })
 
         const updatePayload: any = { description, subject, status }
+        if (notify_client !== undefined) updatePayload.notify_client = !!notify_client
 
         if (prazo !== undefined) {
             updatePayload.prazo = prazo ? new Date(prazo) : null
