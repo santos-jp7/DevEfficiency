@@ -42,6 +42,9 @@
                 { label: 'Fluxo de Caixa', href: '/financial-history' },
                 { label: 'DRE', href: '/dre-report' },
                 { label: 'Despesas', href: '/expense-report' },
+                { label: 'Inadimplência', href: '/commercial-reports?tab=inadimplencia' },
+                { label: 'Vendas e Comissões', href: '/commercial-reports?tab=vendas' },
+                { label: 'Recorrência (MRR)', href: '/commercial-reports?tab=recorrencia' },
             ],
         },
         {

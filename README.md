@@ -31,7 +31,7 @@ Sistema de gestão operacional e financeira voltado para agências, prestadores 
 | **Contas a Pagar** | Controle de despesas e pagamentos com categorias por centro de custo |
 | **Contas Bancárias** | Saldo em tempo real, transferências entre contas, suporte a IBAN/SWIFT para pagamentos internacionais |
 | **Invoice Internacional** | Geração de invoice em PDF no padrão exterior (USD/EUR/GBP/BRL) a partir de uma OS |
-| **Relatórios** | Fluxo de Caixa, DRE e Relatório de Despesas |
+| **Relatórios** | Fluxo de Caixa, DRE e Relatório de Despesas. Relatórios comerciais: Inadimplência por cliente (faixas de atraso), Vendas e Comissões (com vendedor × Codlinx) e Recorrência (MRR/ARR), com exportação CSV |
 
 ### Infraestrutura
 | Módulo | Descrição |

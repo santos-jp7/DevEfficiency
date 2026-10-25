@@ -41,6 +41,7 @@ import clientSlaConfigController from './controllers/clientSlaConfigController'
 import sellersController from './controllers/sellersController'
 import reconciliationController from './controllers/reconciliationController'
 import payablesAlertController from './controllers/payablesAlertController'
+import commercialReportsController from './controllers/commercialReportsController'
 import ticketsController from './controllers/ticketsController'
 import { runBillingReminders, sendBillingReminder } from './utils/billingReminders'
 import Billing from './models/Billing'
@@ -62,6 +63,9 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.post('/config/:type', { preHandler: [isAuthed] }, configController.store)
 
     instance.get('/financial-history', { preHandler: [isAuthed] }, financialsController.index)
+    instance.get('/reports/delinquency', { preHandler: [isAuthed] }, commercialReportsController.delinquency as any)
+    instance.get('/reports/sales', { preHandler: [isAuthed] }, commercialReportsController.sales as any)
+    instance.get('/reports/recurrence', { preHandler: [isAuthed] }, commercialReportsController.recurrence as any)
     instance.get('/dre-report', { preHandler: [isAuthed] }, dreReportController.index)
     instance.get('/expense-report', { preHandler: [isAuthed] }, expenseReportController.index)
     instance.get('/financial-comparison', { preHandler: [isAuthed] }, expenseReportController.comparison)

@@ -120,19 +120,10 @@ const dashboard = new Vue({
                 const { data: subscriptions } = await __api__.get('/api/subscriptions?complete=true')
                 const activeSubs = subscriptions.filter((s) => s.status !== 'Cancelado')
 
-                const allActiveSubs = subscriptions.filter((s) => s.status === 'Pago')
-                this.metrics.subscriptions.total_active = allActiveSubs.length
-
-                // MRR calculation
-                let totalMrr = 0
-                for (const sub of allActiveSubs) {
-                    if (sub.Protocols && sub.Protocols.length > 0) {
-                        const lastProtocol = sub.Protocols[0]
-                        const value = (lastProtocol.Protocol_products || []).reduce((sum, r) => sum + parseFloat(r.value), 0)
-                        totalMrr += value
-                    }
-                }
-                this.metrics.subscriptions.mrr = totalMrr
+                // MRR/assinaturas ativas vêm do relatório de recorrência (anual conta 1/12; só Cancelado fica de fora).
+                const { data: recurrence } = await __api__.get('/api/reports/recurrence')
+                this.metrics.subscriptions.total_active = recurrence.totals.subscriptions
+                this.metrics.subscriptions.mrr = recurrence.totals.mrr
 
                 // Upcoming subscriptions (dueAt <= today+7, not cancelled)
                 const upcomingSubs = activeSubs.filter(
