@@ -312,7 +312,7 @@ class reconciliationController {
                 type: 'billing',
                 id: b.id,
                 label: `Cobrança #${b.id}${(b as any).Client ? ` - ${(b as any).Client.name}` : ''}`,
-                value: Number(b.total_value),
+                value: Number(b.paid_value ?? b.total_value),
                 date: moment(b.payment_date).format('YYYY-MM-DD'),
             })),
             receipts: receipts.map((r) => ({

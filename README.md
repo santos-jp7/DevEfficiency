@@ -147,6 +147,7 @@ Configurações operacionais (também em **Configurações**):
 | `billing_reminders_enabled` / `billing_reminder_schedule` | `true` / `-3,0,1,7,15` | Lembretes automáticos de cobrança faturada (dias em relação ao vencimento; cada etapa sai uma vez) |
 | `os_email_enabled` | `true` | E-mail ao cliente na abertura e a cada etapa da OS (desligável por OS) |
 | `tickets_email_enabled` / `tickets_notify_email` | `true` / `jean.pierre@codlinx.com.br` | E-mails do chamado ao solicitante / aviso interno de novo chamado e resposta do cliente |
+| `late_fee_percent` / `late_interest_percent_month` | `2` / `1` | Multa (% sobre o débito) e juros moratórios (% ao mês, pro rata por dia) das cobranças em atraso — **informativos**, não alteram o valor da cobrança. Ao receber uma cobrança em atraso o valor recebido é confirmado e pode ser alterado |
 | `subscription_release_days` | `45` | A cobrança do próximo ciclo da assinatura é liberada quando faltam até N dias para o vencimento |
 
 ---

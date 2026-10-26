@@ -40,6 +40,8 @@ const dashboard = new Vue({
             bankBalance: 0,
             overdueBillingsCount: 0,
             overdueBillingsValue: 0,
+            overdueFee: 0,
+            overdueInterest: 0,
             upcomingPayablesCount: 0,
             upcomingPayablesValue: 0,
             monthlyExpenses: 0,
@@ -114,6 +116,9 @@ const dashboard = new Vue({
                 )
                 this.metrics.overdueBillingsCount = overdueBillingsAll.length
                 this.metrics.overdueBillingsValue = overdueBillingsAll.reduce((sum, b) => sum + parseFloat(b.total_value), 0)
+                // Multa/juros por atraso (calculados pelo servidor; informativos, não alteram a cobrança).
+                this.metrics.overdueFee = overdueBillingsAll.reduce((sum, b) => sum + (b.late_charges ? b.late_charges.fee : 0), 0)
+                this.metrics.overdueInterest = overdueBillingsAll.reduce((sum, b) => sum + (b.late_charges ? b.late_charges.interest : 0), 0)
                 this.overdueBillings = overdueBillingsAll.slice(0, 10)
 
                 // Subscriptions Metrics

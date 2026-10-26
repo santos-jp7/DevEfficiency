@@ -81,7 +81,7 @@ async function candidatePool(entry: BankStatementEntry): Promise<Candidate[]> {
 
         for (const b of billings)
             if (!taken.has(b.id))
-                out.push({ type: 'billing', id: b.id, label: `Cobrança #${b.id}${(b as any).Client ? ` - ${(b as any).Client.name}` : ''}`, value: Number(b.total_value), date: day(b.payment_date) })
+                out.push({ type: 'billing', id: b.id, label: `Cobrança #${b.id}${(b as any).Client ? ` - ${(b as any).Client.name}` : ''}`, value: Number(b.paid_value ?? b.total_value), date: day(b.payment_date) })
 
         // Recibos de cobrança já estão cobertos pela própria cobrança; aqui entram só os recibos avulsos.
         const receiptWhere: any = {
@@ -293,7 +293,7 @@ export async function loadTarget(type: MatchType, id: number, accountId?: number
     if (type === 'billing') {
         const b = await Billing.findByPk(id)
         if (!b || b.status !== 'pago' || !b.BankAccountId) return null
-        return { value: Number(b.total_value), BankAccountId: b.BankAccountId, date: day(b.payment_date), sign: 1 }
+        return { value: Number(b.paid_value ?? b.total_value), BankAccountId: b.BankAccountId, date: day(b.payment_date), sign: 1 }
     }
     if (type === 'receipt') {
         const r = await Receipts.findByPk(id)

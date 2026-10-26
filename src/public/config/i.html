@@ -157,6 +157,12 @@
                     <button type="button" class="btn btn-sm btn-outline-dark" @click="previewReminders"><i class="fa-solid fa-eye"></i> Ver quais lembretes sairiam agora</button>
                 </div>
             </div>
+            <div class="mb-3 alert alert-info py-2" v-if="config.type === 'late_fee_percent' || config.type === 'late_interest_percent_month'">
+                <strong>Encargos por atraso</strong> (informativos &mdash; não alteram o valor da cobrança):
+                multa de <code>late_fee_percent</code>% (padrão 2) sobre o valor do débito, mais juros moratórios de
+                <code>late_interest_percent_month</code>% ao mês (padrão 1), calculados <em>pro rata</em> por dia (1%/30 por dia de atraso).
+                Aparecem no card da cobrança, no início e na Inadimplência; ao receber uma cobrança em atraso você confirma (e pode alterar) o valor recebido.
+            </div>
             <div class="mb-3 alert alert-info py-2" v-if="config.type === 'checks_failure_threshold'">
                 Quantas verificações seguidas (a cada 10 min) precisam falhar antes de avisar a queda. Com <code>2</code>, uma falha isolada não gera alerta.
             </div>

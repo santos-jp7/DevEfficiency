@@ -9,6 +9,7 @@ const app = new Vue({
         currentValue: 0,
         sendingEmail: false,
         sendingReminder: false,
+        receivedValue: null,
 
         bankAccounts: [],
     },
@@ -184,6 +185,13 @@ const app = new Vue({
                 return
             }
 
+            // Em atraso: o valor recebido precisa ser confirmado (e pode ser alterado) antes de finalizar.
+            if (this.billing.late_charges && this.billing.late_charges.overdue) {
+                this.receivedValue = this.billing.late_charges.total_with_charges
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('receiptModal')).show()
+                return
+            }
+
             if (
                 !confirm(
                     `Confirma o recebimento de R$ ${this.formatCurrency(this.billing.total_value)} para esta cobrança?`,
@@ -191,11 +199,19 @@ const app = new Vue({
             )
                 return
 
+            this.postReceipt()
+        },
+        confirmReceipt() {
+            bootstrap.Modal.getInstance(document.getElementById('receiptModal')).hide()
+            this.postReceipt(this.receivedValue)
+        },
+        postReceipt(receivedValue) {
             __api__
                 .post(`/api/billing-receipt`, {
                     method: this.billing.method,
                     BankAccountId: this.billing.BankAccountId,
                     id: this.billing.id,
+                    ...(receivedValue !== undefined ? { received_value: receivedValue } : {}),
                 })
                 .then((res) => {
                     alert('Cobrança recebida com sucesso!')
@@ -206,5 +222,6 @@ const app = new Vue({
                     console.error(err)
                 })
         },
+        pctNum: (v) => new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 }).format(Number(v) || 0),
     },
 })

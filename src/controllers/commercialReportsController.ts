@@ -13,6 +13,7 @@ import Subscription from '../models/Subscription'
 import Project from '../models/Project'
 import { round2 } from '../utils/pricing'
 import { nowInBusinessTimezone } from '../utils/payablesAlert'
+import { computeLateCharges, getLateRules } from '../utils/lateCharges'
 
 type Req = FastifyRequest<{ Querystring: Record<string, any> }>
 
@@ -49,12 +50,14 @@ class commercialReportsController {
         })
 
         const clients = new Map<number, any>()
-        const totals = { overdue: 0, count: 0, upcoming: 0, buckets: emptyBuckets() }
+        const rules = await getLateRules()
+        const totals = { overdue: 0, count: 0, upcoming: 0, fee: 0, interest: 0, buckets: emptyBuckets() }
 
         for (const billing of billings) {
             const due = moment.utc(billing.due_date as any).format('YYYY-MM-DD')
             const days = moment(today).diff(due, 'days')
             const value = Number(billing.total_value) || 0
+            const late = computeLateCharges(value, due, rules, today)
 
             if (days <= 0) {
                 totals.upcoming = round2(totals.upcoming + value)
@@ -68,26 +71,33 @@ class commercialReportsController {
                 total: 0,
                 count: 0,
                 oldest_days: 0,
+                fee: 0,
+                interest: 0,
                 buckets: emptyBuckets(),
                 billings: [] as any[],
             }
 
             row.total = round2(row.total + value)
             row.count++
+            row.fee = round2(row.fee + late.fee)
+            row.interest = round2(row.interest + late.interest)
             row.oldest_days = Math.max(row.oldest_days, days)
             row.buckets[bucketOf(days)] = round2(row.buckets[bucketOf(days)] + value)
-            row.billings.push({ id: billing.id, status: billing.status, due_date: due, days_overdue: days, value })
+            row.billings.push({ id: billing.id, status: billing.status, due_date: due, days_overdue: days, value, fee: late.fee, interest: late.interest })
             clients.set(billing.ClientId, row)
 
             totals.overdue = round2(totals.overdue + value)
             totals.count++
+            totals.fee = round2(totals.fee + late.fee)
+            totals.interest = round2(totals.interest + late.interest)
             totals.buckets[bucketOf(days)] = round2(totals.buckets[bucketOf(days)] + value)
         }
 
         return res.send({
             as_of: today,
             bucket_labels: Object.fromEntries(BUCKETS.map((b) => [b.key, b.label])),
-            totals: { ...totals, clients: clients.size },
+            rules: { fee_percent: rules.feePercent, interest_month_percent: rules.interestMonthPercent },
+            totals: { ...totals, charges: round2(totals.fee + totals.interest), clients: clients.size },
             clients: [...clients.values()].sort((a, b) => b.total - a.total),
         })
     }

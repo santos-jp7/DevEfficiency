@@ -40,8 +40,9 @@
         <div v-if="tab === 'inadimplencia' && delinquency">
             <div class="row g-3 mb-3">
                 <div class="col-6 col-md-3"><div class="cx-kpi cx-kpi--red"><div class="cx-kpi__label">Em atraso</div><div class="cx-kpi__value">{{ brl(delinquency.totals.overdue) }}</div><div class="cx-kpi__sub">{{ delinquency.totals.count }} cobrança(s) · {{ delinquency.totals.clients }} cliente(s)</div></div></div>
+                <div class="col-6 col-md-3"><div class="cx-kpi cx-kpi--red"><div class="cx-kpi__label">Multa + juros (informativo)</div><div class="cx-kpi__value">{{ brl(delinquency.totals.charges) }}</div><div class="cx-kpi__sub">multa {{ brl(delinquency.totals.fee) }} · juros {{ brl(delinquency.totals.interest) }} ({{ pct(delinquency.rules.fee_percent) }} + {{ pct(delinquency.rules.interest_month_percent) }} a.m.)</div></div></div>
                 <div class="col-6 col-md-3"><div class="cx-kpi cx-kpi--amber"><div class="cx-kpi__label">A vencer / vence hoje</div><div class="cx-kpi__value">{{ brl(delinquency.totals.upcoming) }}</div></div></div>
-                <div class="col-12 col-md-6">
+                <div class="col-12">
                     <div class="cx-tile">
                         <div class="cx-tile__label">Por faixa de atraso</div>
                         <div class="d-flex flex-wrap" style="gap:1rem">
@@ -56,21 +57,22 @@
             </div>
             <div class="table-responsive">
                 <table class="table table-striped border align-middle">
-                    <thead><tr><th>Cliente</th><th class="text-end">Cobranças</th><th class="text-end">Maior atraso</th><th class="text-end">1–15</th><th class="text-end">16–30</th><th class="text-end">31–60</th><th class="text-end">60+</th><th class="text-end">Total</th></tr></thead>
+                    <thead><tr><th>Cliente</th><th class="text-end">Cobranças</th><th class="text-end">Maior atraso</th><th class="text-end">1–15</th><th class="text-end">16–30</th><th class="text-end">31–60</th><th class="text-end">60+</th><th class="text-end">Multa + juros</th><th class="text-end">Total</th></tr></thead>
                     <tbody>
                         <template v-for="c in delinquency.clients">
                             <tr style="cursor:pointer" @click="toggle(c.ClientId)">
                                 <td><i :class="'fa-solid me-1 fa-chevron-' + (open[c.ClientId] ? 'down' : 'right')"></i>{{ c.client }}</td>
                                 <td class="text-end">{{ c.count }}</td><td class="text-end">{{ c.oldest_days }} dias</td>
                                 <td class="text-end">{{ brl(c.buckets.d1_15) }}</td><td class="text-end">{{ brl(c.buckets.d16_30) }}</td><td class="text-end">{{ brl(c.buckets.d31_60) }}</td><td class="text-end">{{ brl(c.buckets.d60_plus) }}</td>
+                                <td class="text-end text-danger">{{ brl(c.fee + c.interest) }}</td>
                                 <td class="text-end fw-bold">{{ brl(c.total) }}</td>
                             </tr>
                             <tr v-if="open[c.ClientId]" v-for="b in c.billings" class="small bg-light">
                                 <td colspan="2" class="ps-4"><a :href="'../billings/i.html?id=' + b.id">Cobrança #{{ b.id }}</a> <span class="badge bg-secondary">{{ b.status }}</span></td>
-                                <td class="text-end">{{ b.days_overdue }} dias</td><td colspan="4" class="text-end">venceu em {{ date(b.due_date) }}</td><td class="text-end">{{ brl(b.value) }}</td>
+                                <td class="text-end">{{ b.days_overdue }} dias</td><td colspan="4" class="text-end">venceu em {{ date(b.due_date) }}</td><td class="text-end text-danger">{{ brl(b.fee + b.interest) }}</td><td class="text-end">{{ brl(b.value) }}</td>
                             </tr>
                         </template>
-                        <tr v-if="!delinquency.clients.length"><td colspan="8" class="text-center text-muted py-4">Nenhuma cobrança em atraso. 🎉</td></tr>
+                        <tr v-if="!delinquency.clients.length"><td colspan="9" class="text-center text-muted py-4">Nenhuma cobrança em atraso. 🎉</td></tr>
                     </tbody>
                 </table>
             </div>

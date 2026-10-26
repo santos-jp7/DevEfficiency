@@ -27,6 +27,9 @@ async function seedConfigs(): Promise<void> {
         { type: 'auto_email_mode', value: 'test', upload: false },
         { type: 'auto_email_test_to', value: 'jean.pierre@codlinx.com.br', upload: false },
         // Só cobranças com vencimento a partir desta data recebem lembrete (padrão: dia do primeiro deploy).
+        // Encargos por atraso (informativos, não alteram a cobrança): multa % sobre o débito + juros % ao mês (pro rata por dia).
+        { type: 'late_fee_percent', value: '2', upload: false },
+        { type: 'late_interest_percent_month', value: '1', upload: false },
         { type: 'checks_failure_threshold', value: '2', upload: false },
         // Diferença máxima (R$) aceita para conciliar automaticamente extrato × sistema.
         { type: 'reconciliation_tolerance', value: '0.05', upload: false },

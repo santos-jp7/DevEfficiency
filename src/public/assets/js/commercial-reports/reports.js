@@ -50,8 +50,8 @@ new Vue({
         exportCsv(tab) {
             const rows = {
                 inadimplencia: () => [
-                    ['Cliente', 'Cobrança', 'Situação', 'Vencimento', 'Dias de atraso', 'Valor'],
-                    ...this.delinquency.clients.flatMap((c) => c.billings.map((b) => [c.client, b.id, b.status, b.due_date, b.days_overdue, b.value])),
+                    ['Cliente', 'Cobrança', 'Situação', 'Vencimento', 'Dias de atraso', 'Valor', 'Multa', 'Juros'],
+                    ...this.delinquency.clients.flatMap((c) => c.billings.map((b) => [c.client, b.id, b.status, b.due_date, b.days_overdue, b.value, b.fee, b.interest])),
                 ],
                 vendas: () => [
                     ['Origem', 'Protocolos', 'Vendas', '% das vendas', 'Comissão gerada', 'Comissão paga', 'Comissão a pagar'],

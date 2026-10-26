@@ -162,6 +162,13 @@
                 </div>
             </div>
             <div class="col">
+                <div class="cx-tile" style="border-left: 3px solid var(--cx-red)" title="Informativo: não altera o valor das cobranças">
+                    <div class="cx-tile__label">Multa + Juros em atraso</div>
+                    <div class="cx-tile__value text-cx-red">{{ (metrics.overdueFee + metrics.overdueInterest) | currency }}</div>
+                    <div class="cx-tile__sub">multa {{ metrics.overdueFee | currency }} · juros {{ metrics.overdueInterest | currency }}</div>
+                </div>
+            </div>
+            <div class="col">
                 <div class="cx-tile" style="border-left: 3px solid var(--cx-amber)">
                     <div class="cx-tile__label">A Pagar nos próximos 3 dias</div>
                     <div class="cx-tile__value text-cx-amber">{{ metrics.upcomingPayablesValue | currency }}</div>
