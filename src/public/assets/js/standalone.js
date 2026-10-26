@@ -12,7 +12,7 @@
         value: null,
         manual_override: false,
     })
-    const emptyProduct = () => ({ ProductId: null, value: null })
+    const emptyProduct = () => ({ ProductId: null, value: null, quantity: 1 })
     const emptyForm = () => ({
         ClientId: null,
         SellerId: null,
@@ -107,18 +107,23 @@
                         <button type="button" class="btn btn-sm btn-outline-dark" @click="form.products.push(newProduct())"><i class="fa-solid fa-plus"></i> Produto</button>
                     </div>
                     <div v-for="(p, i) in form.products" :key="'p' + i" class="row g-2 align-items-end border rounded p-2 mb-2">
-                        <div class="col-md-6">
+                        <div class="col-md-5">
                             <label class="form-label small mb-0">Produto</label>
                             <select class="form-select form-select-sm" v-model="p.ProductId" @change="fillProduct(p)">
                                 <option :value="null" disabled>Selecione…</option>
                                 <option v-for="pr in products" :value="pr.id">{{ pr.description }}</option>
                             </select>
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label small mb-0">Valor (R$)</label>
+                        <div class="col-md-2">
+                            <label class="form-label small mb-0">Qtd.</label>
+                            <input type="number" step="1" min="1" max="500" class="form-control form-control-sm" v-model.number="p.quantity">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small mb-0">Valor unitário (R$)</label>
                             <input type="number" step="0.01" min="0" class="form-control form-control-sm" v-model.number="p.value">
                         </div>
                         <div class="col text-end">
+                            <div class="small fw-bold" v-if="p.quantity > 1">{{ brl((Number(p.value) || 0) * p.quantity) }}</div>
                             <button type="button" class="btn btn-sm btn-link text-danger p-0" @click="form.products.splice(i, 1)"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </div>
@@ -170,7 +175,7 @@
                 subtotal() {
                     return (
                         this.form.registers.reduce((s, r) => s + this.registerNet(r), 0) +
-                        this.form.products.reduce((s, p) => s + (Number(p.value) || 0), 0)
+                        this.form.products.reduce((s, p) => s + (Number(p.value) || 0) * (Number(p.quantity) || 1), 0)
                     )
                 },
                 discount() {
@@ -228,7 +233,7 @@
 
                     if (registers.some((r) => !r.description)) return (this.error = 'Todo registro precisa de descrição.')
 
-                    const products = this.form.products.filter((p) => p.ProductId).map((p) => ({ ProductId: p.ProductId, value: p.value || 0 }))
+                    const products = this.form.products.filter((p) => p.ProductId).map((p) => ({ ProductId: p.ProductId, value: p.value || 0, quantity: p.quantity || 1 }))
 
                     if (!registers.length && !products.length) return (this.error = 'Lance ao menos um registro ou produto.')
 

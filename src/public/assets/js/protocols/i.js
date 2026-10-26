@@ -21,6 +21,7 @@ const app = new Vue({
                 charge_type: null,
                 value: null,
                 discount: 0,
+                quantity: 1,
                 ProductId: null,
             },
             receipt: {
@@ -240,6 +241,7 @@ const app = new Vue({
                 charge_type: null,
                 value: null,
                 discount: 0,
+                quantity: 1,
                 ProductId: null,
             }
 
@@ -269,6 +271,7 @@ const app = new Vue({
                 value: this.$data.payloads.protocolProduct.value,
                 ProductId: this.$data.payloads.protocolProduct.ProductId,
                 ProtocolId: this.$data.protocol.id,
+                ...(this.$data.payloads.protocolProduct.id ? {} : { quantity: this.$data.payloads.protocolProduct.quantity || 1 }),
             })
                 .then(() => {
                     window.location.reload()

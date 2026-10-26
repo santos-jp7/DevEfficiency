@@ -552,9 +552,21 @@
                             </div>
 
                             <div class="row mb-3">
-                                <label class="form-label" for="value">Valor</label>
+                                <label class="form-label" for="value">Valor {{ !payloads.protocolProduct.id && payloads.protocolProduct.quantity > 1 ? '(unitário)' : '' }}</label>
                                 <input type="" class="form-control" id="value" v-model="payloads.protocolProduct.value"
                                     step="0.01" required />
+                            </div>
+
+                            <div class="row mb-3" v-if="!payloads.protocolProduct.id">
+                                <label class="form-label" for="quantity">Quantidade</label>
+                                <input type="number" min="1" max="500" step="1" class="form-control" id="quantity"
+                                    v-model.number="payloads.protocolProduct.quantity" required />
+                                <div class="form-text" v-if="payloads.protocolProduct.quantity > 1">
+                                    Serão lançados <strong>{{ payloads.protocolProduct.quantity }}</strong> itens de
+                                    {{ brl(payloads.protocolProduct.value) }} (total
+                                    <strong>{{ brl((Number(payloads.protocolProduct.value) || 0) * payloads.protocolProduct.quantity) }}</strong>).
+                                    Se o produto gera licença, cada item recebe a sua chave.
+                                </div>
                             </div>
 
                             <div class="row mb-3">

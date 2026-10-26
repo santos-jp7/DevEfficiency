@@ -21,6 +21,8 @@ import BillingProtocol from '../models/BillingProtocol'
 import db from '../db'
 import Seller from '../models/Seller'
 import { PricingError, buildRegisterData } from './protocolsRegisterController'
+import { MAX_QUANTITY } from './protocolsProductController'
+import { v4 as uuidv4 } from 'uuid'
 import { getClientByProtocol, summarizeProtocol, sumSummaries, withPricing, pricingView } from '../utils/pricing'
 
 type protocolsRequest = FastifyRequest<{
@@ -141,6 +143,9 @@ class protocolsController {
         for (const p of productList) {
             if (!p.ProductId || !(Number(p.value) >= 0))
                 return res.status(400).send({ message: 'Todo produto precisa de produto e valor.' })
+            const q = Number(p.quantity ?? 1)
+            if (!Number.isInteger(q) || q < 1 || q > MAX_QUANTITY)
+                return res.status(400).send({ message: `Quantidade deve ser um inteiro entre 1 e ${MAX_QUANTITY}.` })
             // Produto recorrente depende de assinatura; no avulso a cobrança é sempre única.
             if (p.charge_type && p.charge_type !== 'Único')
                 return res.status(400).send({ message: 'Lançamento avulso aceita apenas produtos de cobrança única.' })
@@ -164,11 +169,17 @@ class protocolsController {
             }
 
             for (const p of productList) {
-                const created = await Protocol_product.create(
-                    { ProductId: p.ProductId, charge_type: 'Único', value: Number(p.value), ProtocolId: protocol.id },
-                    { transaction: t },
-                )
-                gross += Number(created.value)
+                const product = await Product.findByPk(p.ProductId, { transaction: t })
+
+                // Quantidade N = N linhas com o mesmo valor unitário; cada uma com sua licença quando o produto gera.
+                for (let i = 0; i < (Number(p.quantity) || 1); i++) {
+                    const created = await Protocol_product.create(
+                        { ProductId: p.ProductId, charge_type: 'Único', value: Number(p.value), ProtocolId: protocol.id },
+                        { transaction: t },
+                    )
+                    if (product?.generate_license) await created.createLicense({ key: uuidv4() }, { transaction: t })
+                    gross += Number(created.value)
+                }
             }
 
             const discount = Number(discount_value) || 0
