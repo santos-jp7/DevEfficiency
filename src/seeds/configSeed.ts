@@ -18,6 +18,9 @@ async function seedConfigs(): Promise<void> {
         { type: 'payables_alert_email', value: 'jean.pierre@codlinx.com.br', upload: false },
         { type: 'payables_alert_days', value: '3', upload: false },
         { type: 'payables_alert_enabled', value: 'true', upload: false },
+        // Conferência de saldo das contas bancárias (aviso quando o saldo diverge das movimentações).
+        { type: 'balance_alert_enabled', value: 'true', upload: false },
+        { type: 'balance_alert_email', value: 'jean.pierre@codlinx.com.br', upload: false },
         // Lembretes automáticos de cobrança: dias em relação ao vencimento (negativo = antes, positivo = atraso).
         { type: 'billing_reminders_enabled', value: 'true', upload: false },
         { type: 'billing_reminder_schedule', value: '-3,0,1,7,15', upload: false },

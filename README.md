@@ -29,7 +29,7 @@ Sistema de gestão operacional e financeira voltado para agências, prestadores 
 | **Conciliação Bancária** | Importa extrato OFX/CSV (sem duplicar lançamentos) e concilia com cobranças pagas, recibos e contas pagas |
 | **Cobranças** | Consolidação de protocolos em faturas por cliente; ciclo `pendente → faturada → pago` |
 | **Contas a Pagar** | Controle de despesas e pagamentos com categorias por centro de custo |
-| **Contas Bancárias** | Saldo em tempo real, transferências entre contas, suporte a IBAN/SWIFT para pagamentos internacionais |
+| **Contas Bancárias** | Saldo em tempo real, transferências entre contas, suporte a IBAN/SWIFT para pagamentos internacionais. **Conferência de saldo**: compara o saldo gravado com saldo inicial + movimentações, mostra o extrato da conta, avisa por e-mail quando diverge e permite correção auditada |
 | **Invoice Internacional** | Geração de invoice em PDF no padrão exterior (USD/EUR/GBP/BRL) a partir de uma OS |
 | **Relatórios** | Fluxo de Caixa, DRE e Relatório de Despesas. Relatórios comerciais: Inadimplência por cliente (faixas de atraso), Vendas e Comissões (com vendedor × Codlinx) e Recorrência (MRR/ARR), com exportação CSV |
 

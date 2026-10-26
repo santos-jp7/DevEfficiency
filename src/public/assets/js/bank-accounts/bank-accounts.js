@@ -4,6 +4,7 @@ const app = new Vue({
     el: '#app',
     data: {
         accounts: [],
+        checks: {},
     },
     methods: {
         formatCurrency(value) {
@@ -28,6 +29,12 @@ const app = new Vue({
             localStorage.clear()
             location.href = '/'
         })
+
+        // Conferência do saldo gravado × movimentações (por conta).
+        __api__
+            .get('/api/bank-accounts/balance-check')
+            .then(({ data }) => data.forEach((c) => this.$set(this.checks, c.id, c)))
+            .catch(() => {})
 
         __api__
             .get('/api/bank-accounts')

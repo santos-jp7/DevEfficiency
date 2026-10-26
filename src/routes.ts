@@ -42,6 +42,7 @@ import sellersController from './controllers/sellersController'
 import reconciliationController from './controllers/reconciliationController'
 import payablesAlertController from './controllers/payablesAlertController'
 import commercialReportsController from './controllers/commercialReportsController'
+import balanceController from './controllers/balanceController'
 import ticketsController from './controllers/ticketsController'
 import { runBillingReminders, sendBillingReminder } from './utils/billingReminders'
 import Billing from './models/Billing'
@@ -86,6 +87,12 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.put('/suppliers/:id', { preHandler: [isAuthed] }, supplierController.update)
     instance.delete('/suppliers/:id', { preHandler: [isAuthed] }, supplierController.destroy)
 
+    instance.get('/bank-accounts/balance-check', { preHandler: [isAuthed] }, balanceController.index as any)
+    instance.post('/bank-accounts/balance-check/alert', { preHandler: [isAuthed] }, balanceController.alertNow as any)
+    instance.get('/bank-accounts/:id/balance-check', { preHandler: [isAuthed] }, balanceController.show as any)
+    instance.get('/bank-accounts/:id/ledger', { preHandler: [isAuthed] }, balanceController.ledger as any)
+    instance.post('/bank-accounts/:id/opening-balance', { preHandler: [isAuthed] }, balanceController.setOpening as any)
+    instance.post('/bank-accounts/:id/fix-balance', { preHandler: [isAuthed] }, balanceController.fix as any)
     instance.get('/bank-accounts', { preHandler: [isAuthed] }, bankAccountController.index)
     instance.get('/bank-accounts/:id', { preHandler: [isAuthed] }, bankAccountController.show)
     instance.post('/bank-accounts', { preHandler: [isAuthed] }, bankAccountController.store)

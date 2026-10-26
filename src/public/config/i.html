@@ -143,6 +143,11 @@
             <div class="mb-3 alert alert-info py-2" v-if="config.type === 'payables_alert_enabled'">
                 Use <code>true</code> para manter o aviso diário ligado ou <code>false</code> para desligar.
             </div>
+            <div class="mb-3 alert alert-info py-2" v-if="config.type === 'balance_alert_enabled' || config.type === 'balance_alert_email'">
+                <strong>Conferência de saldo</strong> &mdash; a cada hora o sistema compara o saldo de cada conta com as movimentações
+                (recebimentos, contas pagas, ressarcimentos e transferências) e avisa por e-mail quando divergem.
+                <code>balance_alert_enabled</code>: <code>true</code>/<code>false</code>; <code>balance_alert_email</code>: destinatário(s), separados por vírgula.
+            </div>
             <div class="mb-3 alert alert-info py-2" v-if="config.type === 'billing_reminders_enabled'">
                 Use <code>true</code> para enviar lembretes automáticos de cobrança ao cliente ou <code>false</code> para desligar.
                 Só cobranças <strong>faturadas</strong> recebem lembrete.

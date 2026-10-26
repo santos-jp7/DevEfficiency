@@ -20,22 +20,14 @@ const nextDueDate = (current: string, recurrence: string): string => {
 // This function reverts the balance change for a given payable
 const revertPayableTransaction = async (payable: Payable, transaction: any) => {
     if (payable.BankAccountId) {
-        const bankAccount = await BankAccount.findByPk(payable.BankAccountId, { transaction })
-        if (bankAccount) {
-            bankAccount.balance = Number(bankAccount.balance) + Number(payable.value)
-            await bankAccount.save({ transaction })
-        }
+        await BankAccount.increment('balance', { by: Number(payable.value), where: { id: payable.BankAccountId }, transaction })
     }
 }
 
 // This function applies the balance change for a given payable
 const applyPayableTransaction = async (payable: Payable, transaction: any) => {
     if (payable.BankAccountId) {
-        const bankAccount = await BankAccount.findByPk(payable.BankAccountId, { transaction })
-        if (bankAccount) {
-            bankAccount.balance = Number(bankAccount.balance) - Number(payable.value)
-            await bankAccount.save({ transaction })
-        }
+        await BankAccount.decrement('balance', { by: Number(payable.value), where: { id: payable.BankAccountId }, transaction })
     }
 }
 
@@ -52,6 +44,24 @@ const payableHooks = {
 
         const changedToPaid = previousStatus !== 'pago' && currentStatus === 'pago'
         const changedFromPaid = previousStatus === 'pago' && currentStatus !== 'pago'
+
+        // Conta já paga que teve valor ou conta bancária alterados: o saldo precisa acompanhar (antes ficava divergente).
+        const editedWhilePaid =
+            previousStatus === 'pago' &&
+            currentStatus === 'pago' &&
+            (Number(payable.previous('value')) !== Number(payable.value) ||
+                (payable.previous('BankAccountId') ?? null) !== (payable.BankAccountId ?? null))
+
+        if (editedWhilePaid) {
+            const before = new Payable({
+                value: payable.previous('value') || 0,
+                BankAccountId: payable.previous('BankAccountId'),
+                description: '',
+                dueDate: new Date() as any,
+            } as any)
+            await revertPayableTransaction(before, options.transaction)
+            await applyPayableTransaction(payable, options.transaction)
+        }
 
         if (changedToPaid) {
             await applyPayableTransaction(payable, options.transaction)

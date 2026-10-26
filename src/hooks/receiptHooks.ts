@@ -1,25 +1,18 @@
 import BankAccount from '../models/BankAccount'
 import Receipt from '../models/Receipts'
 
+// Ajustes atômicos (UPDATE balance = balance ± x): evitam perder atualização quando dois lançamentos chegam juntos.
 // This function reverts the balance change for a given receipt
 const revertReceiptTransaction = async (receipt: Receipt, transaction: any) => {
     if (receipt.BankAccountId) {
-        const bankAccount = await BankAccount.findByPk(receipt.BankAccountId, { transaction })
-        if (bankAccount) {
-            bankAccount.balance = Number(bankAccount.balance) - Number(receipt.value)
-            await bankAccount.save({ transaction })
-        }
+        await BankAccount.decrement('balance', { by: Number(receipt.value), where: { id: receipt.BankAccountId }, transaction })
     }
 }
 
 // This function applies the balance change for a given receipt
 const applyReceiptTransaction = async (receipt: Receipt, transaction: any) => {
     if (receipt.BankAccountId) {
-        const bankAccount = await BankAccount.findByPk(receipt.BankAccountId, { transaction })
-        if (bankAccount) {
-            bankAccount.balance = Number(bankAccount.balance) + Number(receipt.value)
-            await bankAccount.save({ transaction })
-        }
+        await BankAccount.increment('balance', { by: Number(receipt.value), where: { id: receipt.BankAccountId }, transaction })
     }
 }
 

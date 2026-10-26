@@ -13,6 +13,9 @@ const app = new Vue({
         iban: '',
         swiftCode: '',
         bankAddress: '',
+        check: null,
+        ledger: [],
+        ledgerLoaded: false,
     },
     methods: {
         async saveAccount() {
@@ -56,6 +59,50 @@ const app = new Vue({
                 alert(error.response?.data?.message || 'Erro ao excluir a conta.');
             }
         },
+        brl: (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(v) || 0),
+        async loadCheck() {
+            try {
+                this.check = (await __api__.get(`/api/bank-accounts/${this.id}/balance-check`)).data;
+                this.ledgerLoaded = false;
+            } catch (error) {
+                console.error(error);
+            }
+        },
+        async loadLedger(event) {
+            if (!event.target.open || this.ledgerLoaded) return;
+            this.ledger = (await __api__.get(`/api/bank-accounts/${this.id}/ledger`)).data;
+            this.ledgerLoaded = true;
+        },
+        async postCheck(path, body, okMessage) {
+            try {
+                await __api__.post(`/api/bank-accounts/${this.id}/${path}`, body);
+                alert(okMessage);
+                await this.fetchAccountData();
+                await this.loadCheck();
+            } catch (error) {
+                alert(error.response?.data?.message || 'Não foi possível concluir a operação.');
+            }
+        },
+        acceptCurrent() {
+            if (!confirm(`Confirma que o saldo atual (${this.brl(this.check.balance)}) está correto? O saldo inicial passa a ser ${this.brl(this.check.implied_opening)}.`)) return;
+            this.postCheck('opening-balance', { accept_current: true }, 'Saldo inicial definido.');
+        },
+        setOpening() {
+            const value = prompt('Saldo inicial da conta (antes das movimentações do sistema), em R$:', this.check.opening_balance ?? this.check.implied_opening);
+            if (value === null) return;
+            const body = { opening_balance: Number(String(value).replace(',', '.')) };
+            if (this.check.opening_balance !== null) {
+                const reason = prompt('Motivo da alteração do saldo inicial:');
+                if (!reason) return;
+                body.reason = reason;
+            }
+            this.postCheck('opening-balance', body, 'Saldo inicial atualizado.');
+        },
+        fixBalance() {
+            const reason = prompt(`Corrigir o saldo de ${this.brl(this.check.balance)} para ${this.brl(this.check.expected)}.\n\nMotivo (obrigatório, fica registrado):`);
+            if (!reason) return;
+            this.postCheck('fix-balance', { reason }, 'Saldo corrigido.');
+        },
         async fetchAccountData() {
             try {
                 const { data } = await __api__.get(`/api/bank-accounts/${this.id}`);
@@ -98,6 +145,7 @@ const app = new Vue({
 
         if (this.id) {
             this.fetchAccountData();
+            this.loadCheck();
         }
     },
 });
