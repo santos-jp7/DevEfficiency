@@ -190,7 +190,7 @@
                 Efetuar recebimento
             </button>
             &bull;
-            <a class="btn btn-dark mt-2" :href="'/api/billings/'+id+'/pdf'" download><i
+            <a class="btn btn-dark mt-2" href="#" @click.prevent="openPdf({ kind: 'billing', id: id })"><i
                     class="fa-solid fa-download"></i></a>
             &bull;
             <button type="button" class="btn btn-success mt-2" @click="sendEmail" :disabled="sendingEmail">
@@ -400,6 +400,7 @@
     </div>
 
     <script src="../assets/js/pricing.js"></script>
+    <script src="../assets/js/pdf.js"></script>
     <script src="../assets/js/billings/i.js"></script>
     <script src="../assets/js/nav.js"></script>
 </body>

@@ -80,6 +80,9 @@ const client = new Vue({
         slaConfigs: [],
     },
     methods: {
+        openPdf(params) {
+            PdfLink.open(params)
+        },
         handlerSubmit(e) {
             e.preventDefault()
 

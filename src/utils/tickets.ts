@@ -36,7 +36,7 @@ async function greetingOf(ticket: Ticket): Promise<string> {
     return `Olá, ${client?.corporate_name || client?.name || ''}!`
 }
 
-async function emailRequester(ticket: Ticket, stage: string, title: string, subject: string, bodyHtml: string, accent?: string) {
+async function emailRequester(ticket: Ticket, stage: string, title: string, subject: string, bodyHtml: string, accent?: string, manual = false) {
     if (!(await isEnabled('tickets_email_enabled'))) return
 
     await sendClientEmail({
@@ -44,6 +44,7 @@ async function emailRequester(ticket: Ticket, stage: string, title: string, subj
         refType: 'ticket',
         refId: ticket.id,
         stage: `${stage}@${Date.now()}`,
+        manual,
         to: await requesterRecipients(ticket),
         subject: `Chamado #${ticket.id} — ${subject}`.slice(0, 250),
         html: emailLayout({
@@ -72,6 +73,7 @@ async function notifyTeam(ticket: Ticket, headline: string, text: string) {
             refType: 'ticket',
             refId: ticket.id,
             stage: `${headline}@${Date.now()}`,
+            manual: true, // destinatário é a própria equipe: não passa pela trava de envio a clientes
             to,
             subject: `[Chamado #${ticket.id}] ${headline}: ${ticket.subject}`.slice(0, 250),
             html: emailLayout({
@@ -153,7 +155,7 @@ export async function addMessage(
         if (!ticket.first_response_at) ticket.first_response_at = new Date()
         await ticket.save()
 
-        void emailRequester(ticket, 'resposta', 'Nova resposta ao seu chamado', 'Nova resposta', multiline(body))
+        void emailRequester(ticket, 'resposta', 'Nova resposta ao seu chamado', 'Nova resposta', multiline(body), undefined, true)
     } else {
         // Cliente respondeu: volta para a fila da equipe.
         if (['Respondido', 'Aguardando cliente', 'Resolvido'].includes(ticket.status)) {

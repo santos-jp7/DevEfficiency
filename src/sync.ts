@@ -118,6 +118,7 @@ async function syncModels(): Promise<true> {
 
     await BalanceAdjustment.sync({ alter: { drop: false } })
     await EmailLog.sync({ alter: { drop: false } })
+    await ensureEnumValues('email_logs', 'status', ['teste'])
     await Ticket.sync({ alter: { drop: false } })
     await TicketMessage.sync({ alter: { drop: false } })
 

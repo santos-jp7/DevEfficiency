@@ -149,6 +149,9 @@ const service_order = new Vue({
         },
     },
     methods: {
+        openPdf(params) {
+            PdfLink.open(params)
+        },
         brl: (v) => Pricing.brl(v),
         pct: (v) => Pricing.percent(v),
         hoursFmt: (v) => Pricing.hours(v),
@@ -459,7 +462,7 @@ const service_order = new Vue({
                     : {}),
             })
 
-            window.open(`/api/os/${this.$data.id}/invoice-pdf?${params.toString()}`, '_blank')
+            PdfLink.open({ kind: 'os-invoice', id: this.$data.id, ...Object.fromEntries(params) })
 
             bootstrap.Modal.getInstance(document.getElementById('invoiceModal')).hide()
         },

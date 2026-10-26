@@ -12,7 +12,8 @@ class EmailLog extends Model<InferAttributes<EmailLog>, InferCreationAttributes<
     declare stage: CreationOptional<string | null>
     declare to: string
     declare subject: string
-    declare status: 'enviado' | 'falhou' | 'ignorado'
+    // teste = redirecionado ao destinatário de teste (modo test); ignorado = não enviado (modo off / sem e-mail)
+    declare status: 'enviado' | 'falhou' | 'ignorado' | 'teste'
     declare channel: CreationOptional<string | null>
     declare error: CreationOptional<string | null>
 
@@ -29,7 +30,7 @@ EmailLog.init(
         stage: { type: DataTypes.STRING(60), allowNull: true },
         to: { type: DataTypes.STRING(512), allowNull: false },
         subject: { type: DataTypes.STRING(255), allowNull: false },
-        status: { type: DataTypes.ENUM('enviado', 'falhou', 'ignorado'), allowNull: false },
+        status: { type: DataTypes.ENUM('enviado', 'falhou', 'ignorado', 'teste'), allowNull: false },
         channel: { type: DataTypes.STRING(20), allowNull: true },
         error: { type: DataTypes.TEXT, allowNull: true },
         createdAt: DataTypes.DATE,

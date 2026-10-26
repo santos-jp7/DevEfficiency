@@ -43,8 +43,10 @@ import reconciliationController from './controllers/reconciliationController'
 import payablesAlertController from './controllers/payablesAlertController'
 import commercialReportsController from './controllers/commercialReportsController'
 import balanceController from './controllers/balanceController'
+import pdfLinkController from './controllers/pdfLinkController'
+import { pdfAccess, pdfScopes } from './middlewares/pdfAccess'
 import ticketsController from './controllers/ticketsController'
-import { runBillingReminders, sendBillingReminder } from './utils/billingReminders'
+import { previewBillingReminders, runBillingReminders, sendBillingReminder } from './utils/billingReminders'
 import Billing from './models/Billing'
 import mcp from './mcp/server'
 
@@ -184,8 +186,10 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.post('/os', { preHandler: [isAuthed] }, serviceOrdersController.store)
     instance.put('/os/:id', { preHandler: [isAuthed] }, serviceOrdersController.update)
 
-    instance.get('/os/:id/pdf', serviceOrdersController.pdf)
-    instance.get('/os/:id/invoice-pdf', serviceOrdersController.invoicePdf)
+    // PDFs: Bearer (API/MCP) ou link assinado temporário gerado em /pdf-link.
+    instance.get('/pdf-link', { preHandler: [isAuthed] }, pdfLinkController.create as any)
+    instance.get('/os/:id/pdf', { preHandler: [pdfAccess((r: any) => pdfScopes.os(r.params.id))] }, serviceOrdersController.pdf as any)
+    instance.get('/os/:id/invoice-pdf', { preHandler: [pdfAccess((r: any) => pdfScopes.osInvoice(r.params.id))] }, serviceOrdersController.invoicePdf as any)
 
     instance.get('/protocols', { preHandler: [isAuthed] }, protocolsController.index)
     instance.post('/protocols/standalone', { preHandler: [isAuthed] }, protocolsController.storeStandalone)
@@ -198,7 +202,7 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.put('/protocols/registers/:id', { preHandler: [isAuthed] }, protocolsRegisterController.update)
     instance.delete('/protocols/registers/:id', { preHandler: [isAuthed] }, protocolsRegisterController.destroy)
 
-    instance.get('/protocols/pdf', protocolsController.pdf)
+    instance.get('/protocols/pdf', { preHandler: [pdfAccess((r: any) => pdfScopes.protocols(r.query.ClientId, r.query.type ?? 'Liberado para pagamento'))] }, protocolsController.pdf as any)
 
     instance.get('/protocols/products', { preHandler: [isAuthed] }, protocolsProductController.index)
     instance.get('/protocols/products/:id', { preHandler: [isAuthed] }, protocolsProductController.show)
@@ -234,7 +238,7 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.post('/billings', { preHandler: [isAuthed] }, billingController.store)
     instance.put('/billings/:id', { preHandler: [isAuthed] }, billingController.update)
     instance.delete('/billings/:id', { preHandler: [isAuthed] }, billingController.destroy)
-    instance.get('/billings/:id/pdf', billingController.pdf)
+    instance.get('/billings/:id/pdf', { preHandler: [pdfAccess((r: any) => pdfScopes.billing(r.params.id))] }, billingController.pdf as any)
     instance.post('/billings/:id/upload', { preHandler: [isAuthed] }, billingController.upload as any)
     instance.post('/billings/:id/send-email', { preHandler: [isAuthed] }, async (req: any, res) => {
         try {
@@ -256,6 +260,7 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
         if (result === 'enviado') return res.send({ message: 'Lembrete enviado' })
         return res.status(400).send({ message: result === 'ignorado' ? 'Cliente sem e-mail cadastrado.' : 'Não foi possível enviar o lembrete.' })
     })
+    instance.get('/billing-reminders/preview', { preHandler: [isAuthed] }, async (req, res) => res.send(await previewBillingReminders()))
     instance.post('/billing-reminders/run', { preHandler: [isAuthed] }, async (req, res) => res.send(await runBillingReminders({ force: true })))
 
     instance.post('/billing-receipt', { preHandler: [isAuthed] }, billingReceipt)

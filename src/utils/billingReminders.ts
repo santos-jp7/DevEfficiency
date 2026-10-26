@@ -4,7 +4,7 @@ import Billing from '../models/Billing'
 import BillingFile from '../models/BillingFile'
 import Client from '../models/Client'
 import { brl, emailLayout, esc, infoBox } from './emailTemplates'
-import { clientRecipients, getConfigValue, isEnabled, sendClientEmail, SendResult } from './clientMail'
+import { alreadySent, clientRecipients, getConfigValue, getEmailMode, isEnabled, sendClientEmail, SendResult } from './clientMail'
 import { nowInBusinessTimezone } from './payablesAlert'
 
 // Dias em relação ao vencimento: negativo = antes, 0 = no dia, positivo = atraso.
@@ -97,34 +97,75 @@ export async function sendBillingReminder(billingId: number, offset: number | 'm
         subject: `${subjectPrefix} — ${name}`,
         html,
         dedupe: offset !== 'manual',
+        manual: offset === 'manual',
     })
 }
 
-export type ReminderRun = { checked: number; sent: number; skipped?: string }
+export type PlannedReminder = { billingId: number; client: string; value: number; due_date: string; offset: number; days: number; to: string[] }
+export type ReminderRun = { checked: number; sent: number; skipped?: string; planned?: PlannedReminder[] }
 
-// Percorre as cobranças faturadas (fatura já emitida ao cliente) e envia o lembrete da etapa vigente.
+const MAX_PER_RUN = 30
+
+// Quais lembretes sairiam agora (etapa vigente de cada cobrança faturada que ainda não recebeu essa etapa).
+// Respeita a data de corte (billing_reminder_start_date): cobranças com vencimento anterior não recebem lembrete.
+async function planReminders(today: string): Promise<{ planned: PlannedReminder[]; checked: number }> {
+    const schedule = parseSchedule(await getConfigValue('billing_reminder_schedule', DEFAULT_SCHEDULE))
+    const cutoff = await getConfigValue('billing_reminder_start_date', '')
+
+    const billings = await Billing.findAll({ where: { status: 'faturada' }, include: [Client] })
+    const planned: PlannedReminder[] = []
+
+    for (const billing of billings) {
+        if (!billing.due_date) continue
+
+        const due = moment.utc(billing.due_date as any).format('YYYY-MM-DD')
+        if (cutoff && due < cutoff) continue
+
+        const days = moment(today).diff(due, 'days')
+        const offset = currentStage(days, schedule)
+        if (offset === null) continue
+
+        // Em live a etapa só conta se já foi enviada de verdade; em teste, se já foi testada.
+        const mode = await getEmailMode()
+        if (mode !== 'off' && (await alreadySent('billing_reminder', 'billing', billing.id, stageKey(offset), mode === 'test' ? 'teste' : 'enviado'))) continue
+
+        planned.push({
+            billingId: billing.id,
+            client: (billing as any).Client?.name || '—',
+            value: Number(billing.total_value) || 0,
+            due_date: due,
+            offset,
+            days,
+            to: await clientRecipients(billing.ClientId),
+        })
+    }
+
+    return { planned, checked: billings.length }
+}
+
+// Simulação: o que seria enviado agora, sem enviar nada.
+export async function previewBillingReminders(): Promise<ReminderRun> {
+    const { planned, checked } = await planReminders(nowInBusinessTimezone().date)
+    return { checked, sent: 0, planned }
+}
+
+// Percorre as cobranças faturadas e envia o lembrete da etapa vigente (sujeito à trava auto_email_mode).
 export async function runBillingReminders(options: { force?: boolean } = {}): Promise<ReminderRun> {
     if (!(await isEnabled('billing_reminders_enabled'))) return { checked: 0, sent: 0, skipped: 'desativado' }
+    if ((await getEmailMode()) === 'off') return { checked: 0, sent: 0, skipped: 'envio automático desligado (auto_email_mode)' }
 
     const { date: today, hour } = nowInBusinessTimezone()
     const sendHour = Number(process.env.BILLING_REMINDER_HOUR ?? 9)
     if (!options.force && hour < sendHour) return { checked: 0, sent: 0, skipped: 'fora do horário' }
 
-    const schedule = parseSchedule(await getConfigValue('billing_reminder_schedule', DEFAULT_SCHEDULE))
-    if (schedule.length === 0) return { checked: 0, sent: 0, skipped: 'sem etapas' }
-
-    const billings = await Billing.findAll({ where: { status: 'faturada' } })
+    const { planned, checked } = await planReminders(today)
 
     let sent = 0
-    for (const billing of billings) {
-        if (!billing.due_date) continue
-
-        const diff = moment(today).diff(moment.utc(billing.due_date as any).format('YYYY-MM-DD'), 'days')
-        const offset = currentStage(diff, schedule)
-        if (offset === null) continue
-
-        if ((await sendBillingReminder(billing.id, offset, diff)) === 'enviado') sent++
+    for (const item of planned.slice(0, MAX_PER_RUN)) {
+        const result = await sendBillingReminder(item.billingId, item.offset, item.days)
+        if (result === 'enviado' || result === 'teste') sent++
     }
 
-    return { checked: billings.length, sent }
+    // Teto por execução: o excedente sai nas próximas (30 min), evitando rajada de e-mails.
+    return { checked, sent, ...(planned.length > MAX_PER_RUN ? { skipped: `${planned.length - MAX_PER_RUN} aguardam a próxima execução` } : {}) }
 }

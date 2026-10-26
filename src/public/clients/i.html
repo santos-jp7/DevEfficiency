@@ -481,16 +481,14 @@
                     <h5>Relatórios</h5>
                 </div>
                 <div class="my-1">
-                    <a class="btn btn-sm btn-dark my-1" :href="'/api/protocols/pdf?type=Em aberto&ClientId='+id"
-                        download><i class="fa-solid fa-download"></i> Em aberto</a>
+                    <a class="btn btn-sm btn-dark my-1" href="#" @click.prevent="openPdf({ kind: 'protocols', type: 'Em aberto', ClientId: id })"><i class="fa-solid fa-download"></i> Em aberto</a>
                     &bull;
-                    <a class="btn btn-sm btn-dark my-1"
-                        :href="'/api/protocols/pdf?type=Liberado para pagamento&ClientId='+id" download><i
+                    <a class="btn btn-sm btn-dark my-1" href="#"
+                        @click.prevent="openPdf({ kind: 'protocols', type: 'Liberado para pagamento', ClientId: id })"><i
                             class="fa-solid fa-download"></i> Liberado para
                         pagamento</a>
                     &bull;
-                    <a class="btn btn-sm btn-dark my-1" :href="'/api/protocols/pdf?type=Fechado&ClientId='+id"
-                        download><i class="fa-solid fa-download"></i>
+                    <a class="btn btn-sm btn-dark my-1" href="#" @click.prevent="openPdf({ kind: 'protocols', type: 'Fechado', ClientId: id })"><i class="fa-solid fa-download"></i>
                         Fechado</a>
                 </div>
                 <div class="table-responsive">
@@ -912,6 +910,7 @@
             </div>
         </div>
 
+    <script src="../assets/js/pdf.js"></script>
     <script src="../assets/js/clients/i.js"></script>
     <script src="../assets/js/nav.js"></script>
 </body>

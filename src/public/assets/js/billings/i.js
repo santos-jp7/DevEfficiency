@@ -67,6 +67,9 @@ const app = new Vue({
             })
     },
     methods: {
+        openPdf(params) {
+            PdfLink.open(params)
+        },
         updateBilling() {
             __api__
                 .put(`/api/billings/${this.id}`, this.billing)
