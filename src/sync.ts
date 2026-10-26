@@ -1,3 +1,4 @@
+import db from './db'
 import User from './models/User'
 import Client from './models/Client'
 import Credential from './models/Credential'
@@ -31,6 +32,34 @@ import Os_entry from './models/Os_entry'
 import SlaLevel from './models/SlaLevel'
 import seedSlaLevels from './seeds/slaLevelSeed'
 import ClientSlaConfig from './models/ClientSlaConfig'
+import Seller from './models/Seller'
+import BillingFile from './models/BillingFile'
+import BalanceAdjustment from './models/BalanceAdjustment'
+import EmailLog from './models/EmailLog'
+import Ticket from './models/Ticket'
+import TicketMessage from './models/TicketMessage'
+import BankStatementImport from './models/BankStatementImport'
+import BankStatementEntry from './models/BankStatementEntry'
+import BankEntryMatch from './models/BankEntryMatch'
+
+// O `sync({ alter })` do Sequelize não amplia ENUMs já existentes no MySQL. Quando um valor novo é
+// acrescentado ao model, esta função (idempotente) atualiza a coluna sem mexer em nulidade/default.
+async function ensureEnumValues(table: string, column: string, values: readonly string[]) {
+    const [rows] = (await db.query(`SHOW COLUMNS FROM \`${table}\` LIKE '${column}'`)) as any[]
+    const current = rows?.[0]
+    if (!current) return
+
+    const existing = [...String(current.Type).matchAll(/'((?:[^']|'')*)'/g)].map((m) => m[1].replace(/''/g, "'"))
+    if (values.every((v) => existing.includes(v))) return
+
+    // Mantém os valores atuais (ordem preservada) e acrescenta os novos.
+    const merged = [...existing, ...values.filter((v) => !existing.includes(v))]
+    const list = merged.map((v) => db.escape(v)).join(', ')
+    const nullable = current.Null === 'YES' ? 'NULL' : 'NOT NULL'
+    const fallback = current.Default !== null && current.Default !== undefined ? ` DEFAULT ${db.escape(current.Default)}` : ''
+
+    await db.query(`ALTER TABLE \`${table}\` MODIFY \`${column}\` ENUM(${list}) ${nullable}${fallback}`)
+}
 
 async function syncModels(): Promise<true> {
     await User.sync()
@@ -53,11 +82,16 @@ async function syncModels(): Promise<true> {
     await seedSlaLevels()
 
     await Service_order.sync({ alter: { drop: false } })
+    await ensureEnumValues('service_orders', 'status', ['Backlog'])
     await Os_entry.sync({ alter: { drop: false } })
 
     await Subscription.sync({ alter: { drop: false } })
 
     await License.sync({ alter: { drop: false } })
+
+    // Vendedor referencia centro de custo; protocolo e contas a pagar referenciam vendedor.
+    await CostCenter.sync()
+    await Seller.sync({ alter: { drop: false } })
 
     await Protocol.sync({ alter: { drop: false } })
     await Protocol_register.sync({ alter: { drop: false } })
@@ -68,16 +102,28 @@ async function syncModels(): Promise<true> {
 
     await Billing.sync({ alter: { drop: false } })
     await BillingProtocol.sync({ alter: { drop: false } })
+    await BillingFile.sync({ alter: { drop: false } })
 
     await CostCenter.sync()
     await Supplier.sync()
 
     await Receipts.sync({ alter: { drop: false } })
-    await Payable.sync()
+    await Payable.sync({ alter: { drop: false } })
 
     await Config.sync({ alter: { drop: false } })
     await seedConfigs()
     await seedPartnerClients()
+
+    await BankStatementImport.sync({ alter: { drop: false } })
+    await BankStatementEntry.sync({ alter: { drop: false } })
+    await ensureEnumValues('bank_statement_entries', 'matched_type', ['transfer'])
+    await BankEntryMatch.sync({ alter: { drop: false } })
+
+    await BalanceAdjustment.sync({ alter: { drop: false } })
+    await EmailLog.sync({ alter: { drop: false } })
+    await ensureEnumValues('email_logs', 'status', ['teste'])
+    await Ticket.sync({ alter: { drop: false } })
+    await TicketMessage.sync({ alter: { drop: false } })
 
     await Reimbursement.sync({ alter: { drop: false } })
     await ReimbursementFile.sync({ alter: { drop: false } })

@@ -3,6 +3,7 @@ let __api__ = null
 const dashboard = new Vue({
     el: '#dashboard',
     data: {
+        ticketsAttention: 0,
         currentOs: {
             id: null,
             subject: null,
@@ -21,6 +22,7 @@ const dashboard = new Vue({
             os: {
                 total_open: 0,
                 in_progress: 0,
+                backlog: 0,
             },
             billings: {
                 pending_value: 0,
@@ -38,6 +40,8 @@ const dashboard = new Vue({
             bankBalance: 0,
             overdueBillingsCount: 0,
             overdueBillingsValue: 0,
+            overdueFee: 0,
+            overdueInterest: 0,
             upcomingPayablesCount: 0,
             upcomingPayablesValue: 0,
             monthlyExpenses: 0,
@@ -62,6 +66,11 @@ const dashboard = new Vue({
     },
     methods: {
         async fetchMetrics() {
+            __api__
+                .get('/api/tickets/summary')
+                .then(({ data }) => (this.ticketsAttention = data.needs_attention))
+                .catch(() => {})
+
             try {
                 // OS Metrics - Fetching non-finalized OS
                 const openStatuses = ['Em avaliação', 'Orçamento enviado', 'Na fila', 'Em correções', 'Pendente']
@@ -69,6 +78,12 @@ const dashboard = new Vue({
 
                 this.metrics.os.total_open = osResponse.total
                 this.metrics.os.in_progress = osResponse.data.filter((os) => os.status === 'Em correções').length
+
+                // Backlog é trabalho em segundo plano: fica fora de "abertas" e dos alertas de SLA, só contabilizado à parte.
+                __api__
+                    .get('/api/os?status=Backlog&limit=1')
+                    .then(({ data }) => (this.metrics.os.backlog = data.total))
+                    .catch(() => {})
 
                 // SLA at-risk: breached or within 4h of solution deadline or prazo already past
                 const now = new Date()
@@ -101,25 +116,19 @@ const dashboard = new Vue({
                 )
                 this.metrics.overdueBillingsCount = overdueBillingsAll.length
                 this.metrics.overdueBillingsValue = overdueBillingsAll.reduce((sum, b) => sum + parseFloat(b.total_value), 0)
+                // Multa/juros por atraso (calculados pelo servidor; informativos, não alteram a cobrança).
+                this.metrics.overdueFee = overdueBillingsAll.reduce((sum, b) => sum + (b.late_charges ? b.late_charges.fee : 0), 0)
+                this.metrics.overdueInterest = overdueBillingsAll.reduce((sum, b) => sum + (b.late_charges ? b.late_charges.interest : 0), 0)
                 this.overdueBillings = overdueBillingsAll.slice(0, 10)
 
                 // Subscriptions Metrics
                 const { data: subscriptions } = await __api__.get('/api/subscriptions?complete=true')
                 const activeSubs = subscriptions.filter((s) => s.status !== 'Cancelado')
 
-                const allActiveSubs = subscriptions.filter((s) => s.status === 'Pago')
-                this.metrics.subscriptions.total_active = allActiveSubs.length
-
-                // MRR calculation
-                let totalMrr = 0
-                for (const sub of allActiveSubs) {
-                    if (sub.Protocols && sub.Protocols.length > 0) {
-                        const lastProtocol = sub.Protocols[0]
-                        const value = (lastProtocol.Protocol_products || []).reduce((sum, r) => sum + parseFloat(r.value), 0)
-                        totalMrr += value
-                    }
-                }
-                this.metrics.subscriptions.mrr = totalMrr
+                // MRR/assinaturas ativas vêm do relatório de recorrência (anual conta 1/12; só Cancelado fica de fora).
+                const { data: recurrence } = await __api__.get('/api/reports/recurrence')
+                this.metrics.subscriptions.total_active = recurrence.totals.subscriptions
+                this.metrics.subscriptions.mrr = recurrence.totals.mrr
 
                 // Upcoming subscriptions (dueAt <= today+7, not cancelled)
                 const upcomingSubs = activeSubs.filter(
@@ -206,6 +215,7 @@ const dashboard = new Vue({
             }, {})
 
             const colors = {
+                'Backlog': '#adb5bd',
                 'Em avaliação': '#6c757d',
                 'Orçamento enviado': '#17a2b8',
                 'Na fila': '#ffc107',

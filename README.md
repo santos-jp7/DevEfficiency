@@ -18,17 +18,20 @@ Sistema de gestão operacional e financeira voltado para agências, prestadores 
 | Módulo | Descrição |
 |---|---|
 | **Ordens de Serviço** | Criação, acompanhamento e controle de status; apontamentos de horas; geração de orçamento/fatura/recibo em PDF |
+| **Chamados** | Requisições dos clientes (dúvida, validação, problema, solicitação) com conversa por e-mail, notas internas e conversão em OS quando exige trabalho/cobrança. Preparado para abertura pelo painel do cliente e por e-mail |
 | **Assinaturas** | Cobranças recorrentes (mensal/anual) com renovação automática de protocolos |
 
 ### Financeiro
 | Módulo | Descrição |
 |---|---|
-| **Protocolos** | Acordo financeiro por OS ou assinatura com itens de serviço, produtos, recibos, parcelamento e desconto |
+| **Protocolos** | Acordo financeiro por OS ou assinatura com itens de serviço, produtos, recibos, parcelamento e desconto. Também aceita **lançamento avulso** (direto para um cliente, sem OS/assinatura) que já vai para cobrança |
+| **Vendedores** | Cadastro com percentual e regras de comissão (base líquida/bruta, serviços/produtos, mínimo, prazo). Vinculado ao protocolo; ao finalizar gera a conta a pagar da comissão. Relatório e próximos pagamentos por vendedor |
+| **Conciliação Bancária** | Importa extrato OFX/CSV (sem duplicar lançamentos) e concilia com cobranças pagas, recibos e contas pagas |
 | **Cobranças** | Consolidação de protocolos em faturas por cliente; ciclo `pendente → faturada → pago` |
 | **Contas a Pagar** | Controle de despesas e pagamentos com categorias por centro de custo |
-| **Contas Bancárias** | Saldo em tempo real, transferências entre contas, suporte a IBAN/SWIFT para pagamentos internacionais |
+| **Contas Bancárias** | Saldo em tempo real, transferências entre contas, suporte a IBAN/SWIFT para pagamentos internacionais. **Conferência de saldo**: compara o saldo gravado com saldo inicial + movimentações, mostra o extrato da conta, avisa por e-mail quando diverge e permite correção auditada |
 | **Invoice Internacional** | Geração de invoice em PDF no padrão exterior (USD/EUR/GBP/BRL) a partir de uma OS |
-| **Relatórios** | Fluxo de Caixa, DRE e Relatório de Despesas |
+| **Relatórios** | Fluxo de Caixa, DRE e Relatório de Despesas. Relatórios comerciais: Inadimplência por cliente (faixas de atraso), Vendas e Comissões (com vendedor × Codlinx) e Recorrência (MRR/ARR), com exportação CSV |
 
 ### Infraestrutura
 | Módulo | Descrição |
@@ -111,6 +114,13 @@ EMAIL_PASS=senha_smtp
 EMAIL_HOST=smtp.suaempresa.com
 EMAIL_CC=admin@suaempresa.com
 
+# E-mail (Resend) — faturas, avisos de queda dos checks e aviso de contas a pagar
+RESEND_API_KEY=re_xxx
+RESEND_FROM=fatura@suaempresa.com
+RESEND_ALERT_FROM=alerta@suaempresa.com   # opcional; padrão = RESEND_FROM
+BILLING_REMINDER_HOUR=9                   # opcional; hora (America/Sao_Paulo) a partir da qual saem os lembretes de cobrança
+PAYABLES_ALERT_HOUR=8                     # opcional; hora (America/Sao_Paulo) do aviso diário de contas a pagar
+
 # MCP (controle por IA) — vazio desliga o endpoint /api/mcp
 MCP_API_KEY=uma_chave_longa_e_aleatoria
 MCP_DISABLE=
@@ -126,6 +136,29 @@ CF_ACCESS_ALLOWED_EMAILS=voce@suaempresa.com
 Após iniciar o servidor, acesse `http://localhost:3002`.
 
 As configurações da empresa (nome, CNPJ, endereço, logo) são definidas em **Gestão → Configurações** após o primeiro login. Os valores padrão são populados automaticamente no startup via seed.
+
+Configurações operacionais (também em **Configurações**):
+
+| Chave | Padrão | Função |
+|---|---|---|
+| `payables_alert_email` | `jean.pierre@codlinx.com.br` | Destinatário(s) do aviso diário de contas a pagar (separe por vírgula) |
+| `payables_alert_days` | `3` | Além de atrasadas e de hoje, inclui as que vencem nos próximos N dias |
+| `payables_alert_enabled` | `true` | `false` desliga o aviso |
+| `billing_reminders_enabled` / `billing_reminder_schedule` | `true` / `-3,0,1,7,15` | Lembretes automáticos de cobrança faturada (dias em relação ao vencimento; cada etapa sai uma vez) |
+| `os_email_enabled` | `true` | E-mail ao cliente na abertura e a cada etapa da OS (desligável por OS) |
+| `tickets_email_enabled` / `tickets_notify_email` | `true` / `jean.pierre@codlinx.com.br` | E-mails do chamado ao solicitante / aviso interno de novo chamado e resposta do cliente |
+| `late_fee_percent` / `late_interest_percent_month` | `2` / `1` | Multa (% sobre o débito) e juros moratórios (% ao mês, pro rata por dia) das cobranças em atraso — **informativos**, não alteram o valor da cobrança. Ao receber uma cobrança em atraso o valor recebido é confirmado e pode ser alterado |
+| `subscription_release_days` | `45` | A cobrança do próximo ciclo da assinatura é liberada quando faltam até N dias para o vencimento |
+
+---
+
+## Execução
+
+Os agendadores (checks, assinaturas, lembretes, avisos de contas a pagar e de saldo) rodam **dentro da aplicação**.
+Mantenha **uma única instância** em execução; com duas, avisos e e-mails automáticos podem sair duplicados.
+
+Os e-mails automáticos ao cliente (lembretes, etapas da OS, chamados, alertas dos checks) começam em **modo teste**
+(`auto_email_mode=test`): tudo chega só em `auto_email_test_to`. Mude para `live` em Configurações quando validar.
 
 ---
 

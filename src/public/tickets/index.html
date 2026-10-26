@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Codlinx - Chamados</title>
+    <link href="../assets/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/codlinx.css">
+    <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css">
+
+    <script src="../assets/js/vue.min.js"></script>
+    <script src="../assets/js/jquery-3.6.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2/dist/umd/popper.min.js"></script>
+    <script src="../assets/js/bootstrap.min.js"></script>
+    <script src="../assets/js/axios.min.js"></script>
+    <script src="../assets/js/moment.min.js"></script>
+</head>
+
+<body>
+    <nav class="navbar bg-light">
+        <div class="container">
+            <a class="navbar-brand" href="/dashboard">
+                <img src="../assets/img/logo_cabecalho.png" alt="Codlinx" width="40" height="40">
+            </a>
+        </div>
+    </nav>
+
+    <div class="container p-4" id="app">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">Chamados</h5>
+            <a class="btn btn-dark" href="../tickets/i.html"><i class="fa-solid fa-plus"></i> Novo chamado</a>
+        </div>
+
+        <div class="row g-2 align-items-end mb-3">
+            <div class="col-md-5">
+                <input type="search" class="form-control" placeholder="Buscar por assunto ou solicitante" v-model="q" @keyup.enter="load(1)">
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" v-model="status" @change="load(1)">
+                    <option value="">Todas as situações</option>
+                    <option value="Aberto,Em análise">Precisam de ação</option>
+                    <option v-for="s in statuses" :value="s">{{ s }}</option>
+                </select>
+            </div>
+            <div class="col-md-2"><button class="btn btn-outline-dark w-100" @click="load(1)">Buscar</button></div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-striped border align-middle">
+                <thead><tr><th>#</th><th>Assunto</th><th>Cliente</th><th>Tipo</th><th>Situação</th><th>Aberto em</th><th></th></tr></thead>
+                <tbody>
+                    <tr v-for="t in tickets">
+                        <th>{{ t.id }}</th>
+                        <td>{{ t.subject }}<div class="small text-muted" v-if="t.requester_name">{{ t.requester_name }}</div></td>
+                        <td>{{ t.Client ? t.Client.name : '—' }}</td>
+                        <td>{{ t.type }}<span v-if="t.gravidade" class="badge bg-light text-dark border ms-1">{{ t.gravidade }}</span></td>
+                        <td><span :class="'badge bg-' + color(t.status)">{{ t.status }}</span></td>
+                        <td>{{ moment(t.createdAt).format('DD/MM/YYYY HH:mm') }}</td>
+                        <td><a :href="'../tickets/i.html?id=' + t.id"><i class="fa-solid fa-arrow-right"></i></a></td>
+                    </tr>
+                    <tr v-if="!tickets.length"><td colspan="7" class="text-center text-muted py-4">Nenhum chamado.</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="d-flex justify-content-center">
+            <ul class="pagination">
+                <li class="page-item" :class="{ disabled: page <= 1 }"><a class="page-link" href="#" @click.prevent="load(page - 1)">Anterior</a></li>
+                <li class="page-item"><a class="page-link" href="#" @click.prevent>{{ page }} / {{ pages }}</a></li>
+                <li class="page-item" :class="{ disabled: page >= pages }"><a class="page-link" href="#" @click.prevent="load(page + 1)">Próxima</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="../assets/js/tickets/common.js"></script>
+    <script src="../assets/js/tickets/tickets.js"></script>
+    <script src="../assets/js/nav.js"></script>
+</body>
+
+</html>

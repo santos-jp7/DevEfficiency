@@ -1,4 +1,5 @@
 import Config from '../models/Config'
+import { nowInBusinessTimezone } from '../utils/payablesAlert'
 
 async function seedConfigs(): Promise<void> {
     const defaultConfigs = [
@@ -14,6 +15,34 @@ async function seedConfigs(): Promise<void> {
         { type: 'email', value: 'contato@minhaempresa.com.br', upload: false },
         { type: 'default_day_due', value: '20', upload: false },
         { type: 'hourly_rate', value: '120.00', upload: false },
+        // Aviso diário de contas a pagar (vários e-mails separados por vírgula).
+        { type: 'payables_alert_email', value: 'jean.pierre@codlinx.com.br', upload: false },
+        { type: 'payables_alert_days', value: '3', upload: false },
+        { type: 'payables_alert_enabled', value: 'true', upload: false },
+        // Conferência de saldo das contas bancárias (aviso quando o saldo diverge das movimentações).
+        { type: 'balance_alert_enabled', value: 'true', upload: false },
+        { type: 'balance_alert_email', value: 'jean.pierre@codlinx.com.br', upload: false },
+        // TRAVA dos e-mails automáticos ao cliente (lembretes, etapas da OS, chamados): off | test | live.
+        // Começa em "test": nada vai a clientes, tudo chega só em auto_email_test_to. Troque para "live" quando validar.
+        { type: 'auto_email_mode', value: 'test', upload: false },
+        { type: 'auto_email_test_to', value: 'jean.pierre@codlinx.com.br', upload: false },
+        // Só cobranças com vencimento a partir desta data recebem lembrete (padrão: dia do primeiro deploy).
+        // Encargos por atraso (informativos, não alteram a cobrança): multa % sobre o débito + juros % ao mês (pro rata por dia).
+        { type: 'late_fee_percent', value: '2', upload: false },
+        { type: 'late_interest_percent_month', value: '1', upload: false },
+        { type: 'checks_failure_threshold', value: '2', upload: false },
+        // Diferença máxima (R$) aceita para conciliar automaticamente extrato × sistema.
+        { type: 'reconciliation_tolerance', value: '0.05', upload: false },
+        { type: 'billing_reminder_start_date', value: nowInBusinessTimezone().date, upload: false },
+        // Lembretes automáticos de cobrança: dias em relação ao vencimento (negativo = antes, positivo = atraso).
+        { type: 'billing_reminders_enabled', value: 'true', upload: false },
+        { type: 'billing_reminder_schedule', value: '-3,0,1,7,15', upload: false },
+        // E-mails ao cliente a cada etapa da OS e nos chamados.
+        { type: 'os_email_enabled', value: 'true', upload: false },
+        { type: 'tickets_email_enabled', value: 'true', upload: false },
+        { type: 'tickets_notify_email', value: 'jean.pierre@codlinx.com.br', upload: false },
+        // Dias antes do vencimento para liberar a cobrança da assinatura (padrão 45: mensais liberam na renovação).
+        { type: 'subscription_release_days', value: '45', upload: false },
     ]
 
     for (const configData of defaultConfigs) {

@@ -98,13 +98,24 @@
 
         <hr />
 
+        <div class="d-flex flex-wrap mb-3" style="gap:.5rem">
+            <button type="button" class="btn btn-dark btn-sm" onclick="StandaloneLaunch.open()">
+                <i class="fa-solid fa-bolt"></i> Lançamento avulso
+            </button>
+            <a class="btn btn-outline-dark btn-sm" href="../tickets?needs=1">
+                <i class="fa-solid fa-headset"></i> Chamados
+                <span v-if="ticketsAttention > 0" class="badge bg-danger ms-1">{{ ticketsAttention }}</span>
+            </a>
+            <a class="btn btn-outline-dark btn-sm" href="../reconciliation"><i class="fa-solid fa-scale-balanced"></i> Conciliação bancária</a>
+        </div>
+
         <!-- Row 1: Core KPIs -->
         <div class="row g-3 mb-3">
             <div class="col-md-3">
                 <div class="cx-kpi cx-kpi--brand">
                     <div class="cx-kpi__label">Ordens de Serviço</div>
                     <div class="cx-kpi__value">{{ metrics.os.total_open }}</div>
-                    <div class="cx-kpi__sub">{{ metrics.os.in_progress }} em correções</div>
+                    <div class="cx-kpi__sub">{{ metrics.os.in_progress }} em correções<span v-if="metrics.os.backlog"> · {{ metrics.os.backlog }} em backlog</span></div>
                 </div>
             </div>
             <div class="col-md-3">
@@ -148,6 +159,13 @@
                     <div class="cx-tile__label">Cobranças Atrasadas</div>
                     <div class="cx-tile__value text-cx-red">{{ metrics.overdueBillingsValue | currency }}</div>
                     <div class="cx-tile__sub">{{ metrics.overdueBillingsCount }} fatura(s) vencidas</div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="cx-tile" style="border-left: 3px solid var(--cx-red)" title="Informativo: não altera o valor das cobranças">
+                    <div class="cx-tile__label">Multa + Juros em atraso</div>
+                    <div class="cx-tile__value text-cx-red">{{ (metrics.overdueFee + metrics.overdueInterest) | currency }}</div>
+                    <div class="cx-tile__sub">multa {{ metrics.overdueFee | currency }} · juros {{ metrics.overdueInterest | currency }}</div>
                 </div>
             </div>
             <div class="col">
@@ -506,6 +524,8 @@
         </div>
     </div>
 
+    <script src="./assets/js/pricing.js"></script>
+    <script src="./assets/js/standalone.js"></script>
     <script src="./assets/js/dashboard.js"></script>
     <script src="assets/js/nav.js"></script>
 </body>

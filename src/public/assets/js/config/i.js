@@ -9,8 +9,40 @@ const configForm = new Vue({
             upload: false, // Initialize upload flag
         },
         isEditing: false,
+        sendingAlert: false,
     },
     methods: {
+        async previewReminders() {
+            try {
+                const { data } = await __api__.get('/api/billing-reminders/preview')
+                const money = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)
+                if (!data.planned.length) return alert(`Nenhum lembrete a enviar agora (${data.checked} cobrança(s) faturada(s) analisada(s)).`)
+                alert(
+                    `${data.planned.length} lembrete(s) sairiam agora:\n\n` +
+                        data.planned
+                            .slice(0, 25)
+                            .map((p) => `#${p.billingId} ${p.client} — ${money(p.value)} — venc. ${p.due_date} (${p.days >= 0 ? p.days + ' dias de atraso' : -p.days + ' dias para vencer'}) → ${p.to.join(', ') || 'SEM E-MAIL'}`)
+                            .join('\n'),
+                )
+            } catch (error) {
+                alert(error.response?.data?.message || 'Não foi possível simular.')
+            }
+        },
+        async sendTestAlert() {
+            this.sendingAlert = true
+            try {
+                const { data } = await __api__.post('/api/payables-alert/send')
+                alert(
+                    data.sent
+                        ? `Aviso enviado para ${data.to.join(', ')} (${data.count} conta(s)).`
+                        : data.reason || 'Nada para enviar.',
+                )
+            } catch (error) {
+                alert(error.response?.data?.message || 'Não foi possível enviar o aviso.')
+            } finally {
+                this.sendingAlert = false
+            }
+        },
         async saveConfig() {
             try {
                 const url = `/api/config/${this.config.type}`

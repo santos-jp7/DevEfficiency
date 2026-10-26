@@ -360,6 +360,12 @@
                                     </td>
                                     <td>
                                         <span :class="'badge bg-' + statusClass(p)">{{ p.status }}</span>
+                                        <a v-if="p.status === 'pago'" href="../reconciliation" class="ms-1"
+                                            :class="p.reconciled ? 'text-success' : 'text-muted'"
+                                            :title="p.reconciled ? 'Conciliado com o extrato' : 'Ainda sem correspondência no extrato'">
+                                            <i :class="'fa-solid ' + (p.reconciled ? 'fa-link' : 'fa-link-slash')"></i>
+                                        </a>
+                                        <div v-if="p.Seller" class="small text-muted">Vendedor: {{ p.Seller.name }}</div>
                                     </td>
                                     <td class="text-end pe-2">
                                         <button v-if="p.status !== 'pago' && p.status !== 'cancelado'"

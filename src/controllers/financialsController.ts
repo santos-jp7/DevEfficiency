@@ -77,6 +77,8 @@ class FinancialsController {
             // Get all bank transfers
             const bankTransfers = await BankTransfer.findAll({
                 where: {
+                    // Transferências canceladas (estornadas) não entram no fluxo de caixa.
+                    canceledAt: null,
                     ...(startDate && endDate && { date: whereClause }),
                 },
                 include: [{ all: true }],

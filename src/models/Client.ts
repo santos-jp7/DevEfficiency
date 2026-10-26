@@ -174,6 +174,8 @@ Service_order.belongsTo(Client)
 Contact.belongsTo(Client)
 Subscription.belongsTo(Client)
 Billing.belongsTo(Client)
+Client.hasMany(Protocol)
+Protocol.belongsTo(Client)
 Address.belongsTo(Client)
 
 export default Client

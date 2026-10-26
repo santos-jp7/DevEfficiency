@@ -19,6 +19,15 @@ import BankAccount from './BankAccount'
 
 import billingHooks from '../hooks/billingHooks'
 
+const money = (field: string) => ({
+    type: DataTypes.DECIMAL(12, 2),
+    allowNull: true,
+    get(this: any) {
+        const v = this.getDataValue(field)
+        return v === null || v === undefined ? null : Number(v)
+    },
+})
+
 class Billing extends Model<InferAttributes<Billing>, InferCreationAttributes<Billing>> {
     declare id: CreationOptional<number>
     declare status: CreationOptional<string>
@@ -26,6 +35,10 @@ class Billing extends Model<InferAttributes<Billing>, InferCreationAttributes<Bi
     declare due_date: CreationOptional<Date>
     declare payment_date: CreationOptional<Date>
     declare method: CreationOptional<'Pix' | 'Boleto' | 'Cartão' | 'Transferência' | 'Espécie'>
+    // Recebimento: valor efetivamente recebido (pode incluir multa/juros) e os encargos calculados na data (informativos).
+    declare paid_value: CreationOptional<number | null>
+    declare late_fee_value: CreationOptional<number | null>
+    declare late_interest_value: CreationOptional<number | null>
 
     declare ClientId: ForeignKey<Client['id']>
     declare BankAccountId: ForeignKey<BankAccount['id']>
@@ -70,6 +83,9 @@ Billing.init(
             allowNull: false,
             defaultValue: 'Boleto',
         },
+        paid_value: money('paid_value'),
+        late_fee_value: money('late_fee_value'),
+        late_interest_value: money('late_interest_value'),
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
     },

@@ -38,6 +38,16 @@ import osEntriesController from './controllers/osEntriesController'
 import reimbursementsController from './controllers/reimbursementsController'
 import slaController from './controllers/slaController'
 import clientSlaConfigController from './controllers/clientSlaConfigController'
+import sellersController from './controllers/sellersController'
+import reconciliationController from './controllers/reconciliationController'
+import payablesAlertController from './controllers/payablesAlertController'
+import commercialReportsController from './controllers/commercialReportsController'
+import balanceController from './controllers/balanceController'
+import pdfLinkController from './controllers/pdfLinkController'
+import { pdfAccess, pdfScopes } from './middlewares/pdfAccess'
+import ticketsController from './controllers/ticketsController'
+import { previewBillingReminders, runBillingReminders, sendBillingReminder } from './utils/billingReminders'
+import Billing from './models/Billing'
 import mcp from './mcp/server'
 
 const routes: FastifyPluginCallback = (instance, opts, next) => {
@@ -56,12 +66,16 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.post('/config/:type', { preHandler: [isAuthed] }, configController.store)
 
     instance.get('/financial-history', { preHandler: [isAuthed] }, financialsController.index)
+    instance.get('/reports/delinquency', { preHandler: [isAuthed] }, commercialReportsController.delinquency as any)
+    instance.get('/reports/sales', { preHandler: [isAuthed] }, commercialReportsController.sales as any)
+    instance.get('/reports/recurrence', { preHandler: [isAuthed] }, commercialReportsController.recurrence as any)
     instance.get('/dre-report', { preHandler: [isAuthed] }, dreReportController.index)
     instance.get('/expense-report', { preHandler: [isAuthed] }, expenseReportController.index)
     instance.get('/financial-comparison', { preHandler: [isAuthed] }, expenseReportController.comparison)
 
     instance.get('/bank-transfers', { preHandler: [isAuthed] }, bankTransferController.index)
     instance.get('/bank-transfers/:id', { preHandler: [isAuthed] }, bankTransferController.show)
+    instance.post('/bank-transfers/:id/cancel', { preHandler: [isAuthed] }, bankTransferController.cancel as any)
     instance.post('/bank-transfers', { preHandler: [isAuthed] }, bankTransferController.store)
 
     instance.get('/cost-centers', { preHandler: [isAuthed] }, costCenterController.index)
@@ -76,6 +90,12 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.put('/suppliers/:id', { preHandler: [isAuthed] }, supplierController.update)
     instance.delete('/suppliers/:id', { preHandler: [isAuthed] }, supplierController.destroy)
 
+    instance.get('/bank-accounts/balance-check', { preHandler: [isAuthed] }, balanceController.index as any)
+    instance.post('/bank-accounts/balance-check/alert', { preHandler: [isAuthed] }, balanceController.alertNow as any)
+    instance.get('/bank-accounts/:id/balance-check', { preHandler: [isAuthed] }, balanceController.show as any)
+    instance.get('/bank-accounts/:id/ledger', { preHandler: [isAuthed] }, balanceController.ledger as any)
+    instance.post('/bank-accounts/:id/opening-balance', { preHandler: [isAuthed] }, balanceController.setOpening as any)
+    instance.post('/bank-accounts/:id/fix-balance', { preHandler: [isAuthed] }, balanceController.fix as any)
     instance.get('/bank-accounts', { preHandler: [isAuthed] }, bankAccountController.index)
     instance.get('/bank-accounts/:id', { preHandler: [isAuthed] }, bankAccountController.show)
     instance.post('/bank-accounts', { preHandler: [isAuthed] }, bankAccountController.store)
@@ -87,6 +107,40 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.post('/payables', { preHandler: [isAuthed] }, payablesController.store)
     instance.put('/payables/:id', { preHandler: [isAuthed] }, payablesController.update)
     instance.delete('/payables/:id', { preHandler: [isAuthed] }, payablesController.destroy)
+
+    instance.get('/sellers', { preHandler: [isAuthed] }, sellersController.index as any)
+    instance.get('/sellers/:id', { preHandler: [isAuthed] }, sellersController.show as any)
+    instance.get('/sellers/:id/report', { preHandler: [isAuthed] }, sellersController.report as any)
+    instance.get('/sellers/:id/upcoming', { preHandler: [isAuthed] }, sellersController.upcoming as any)
+    instance.post('/sellers', { preHandler: [isAuthed] }, sellersController.store as any)
+    instance.put('/sellers/:id', { preHandler: [isAuthed] }, sellersController.update as any)
+    instance.delete('/sellers/:id', { preHandler: [isAuthed] }, sellersController.destroy as any)
+
+    instance.get('/reconciliation/entries', { preHandler: [isAuthed] }, reconciliationController.entries as any)
+    instance.get('/reconciliation/summary', { preHandler: [isAuthed] }, reconciliationController.summary as any)
+    instance.get('/reconciliation/imports', { preHandler: [isAuthed] }, reconciliationController.imports as any)
+    instance.get('/reconciliation/unreconciled', { preHandler: [isAuthed] }, reconciliationController.unreconciled as any)
+    instance.get('/reconciliation/status', { preHandler: [isAuthed] }, reconciliationController.status as any)
+    instance.get('/reconciliation/balance-compare', { preHandler: [isAuthed] }, reconciliationController.balanceCompare as any)
+    instance.post('/reconciliation/statement-balance', { preHandler: [isAuthed] }, reconciliationController.setStatementBalance as any)
+    instance.post('/reconciliation/entries/:id/expense', { preHandler: [isAuthed] }, reconciliationController.expense as any)
+    instance.post('/reconciliation/import', { preHandler: [isAuthed] }, reconciliationController.import as any)
+    instance.post('/reconciliation/auto-match', { preHandler: [isAuthed] }, reconciliationController.autoMatch as any)
+    instance.post('/reconciliation/entries/:id/match', { preHandler: [isAuthed] }, reconciliationController.match as any)
+    instance.post('/reconciliation/entries/:id/unmatch', { preHandler: [isAuthed] }, reconciliationController.unmatch as any)
+    instance.post('/reconciliation/entries/:id/ignore', { preHandler: [isAuthed] }, reconciliationController.ignore as any)
+    instance.post('/reconciliation/entries/:id/unignore', { preHandler: [isAuthed] }, reconciliationController.unignore as any)
+
+    instance.post('/payables-alert/send', { preHandler: [isAuthed] }, payablesAlertController.send)
+
+    instance.get('/tickets', { preHandler: [isAuthed] }, ticketsController.index as any)
+    instance.get('/tickets/summary', { preHandler: [isAuthed] }, ticketsController.summary as any)
+    instance.get('/tickets/:id', { preHandler: [isAuthed] }, ticketsController.show as any)
+    instance.post('/tickets', { preHandler: [isAuthed] }, ticketsController.store as any)
+    instance.put('/tickets/:id', { preHandler: [isAuthed] }, ticketsController.update as any)
+    instance.post('/tickets/:id/messages', { preHandler: [isAuthed] }, ticketsController.message as any)
+    instance.post('/tickets/:id/status', { preHandler: [isAuthed] }, ticketsController.status as any)
+    instance.post('/tickets/:id/convert', { preHandler: [isAuthed] }, ticketsController.convert as any)
 
     instance.get('/clients', { preHandler: [isAuthed] }, clientController.index)
     instance.get('/clients/:id', { preHandler: [isAuthed] }, clientController.show)
@@ -136,10 +190,13 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.post('/os', { preHandler: [isAuthed] }, serviceOrdersController.store)
     instance.put('/os/:id', { preHandler: [isAuthed] }, serviceOrdersController.update)
 
-    instance.get('/os/:id/pdf', serviceOrdersController.pdf)
-    instance.get('/os/:id/invoice-pdf', serviceOrdersController.invoicePdf)
+    // PDFs: Bearer (API/MCP) ou link assinado temporário gerado em /pdf-link.
+    instance.get('/pdf-link', { preHandler: [isAuthed] }, pdfLinkController.create as any)
+    instance.get('/os/:id/pdf', { preHandler: [pdfAccess((r: any) => pdfScopes.os(r.params.id))] }, serviceOrdersController.pdf as any)
+    instance.get('/os/:id/invoice-pdf', { preHandler: [pdfAccess((r: any) => pdfScopes.osInvoice(r.params.id))] }, serviceOrdersController.invoicePdf as any)
 
     instance.get('/protocols', { preHandler: [isAuthed] }, protocolsController.index)
+    instance.post('/protocols/standalone', { preHandler: [isAuthed] }, protocolsController.storeStandalone)
     instance.get('/protocols/:id', { preHandler: [isAuthed] }, protocolsController.show)
     instance.put('/protocols/:id', { preHandler: [isAuthed] }, protocolsController.update)
 
@@ -149,7 +206,7 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.put('/protocols/registers/:id', { preHandler: [isAuthed] }, protocolsRegisterController.update)
     instance.delete('/protocols/registers/:id', { preHandler: [isAuthed] }, protocolsRegisterController.destroy)
 
-    instance.get('/protocols/pdf', protocolsController.pdf)
+    instance.get('/protocols/pdf', { preHandler: [pdfAccess((r: any) => pdfScopes.protocols(r.query.ClientId, r.query.type ?? 'Liberado para pagamento'))] }, protocolsController.pdf as any)
 
     instance.get('/protocols/products', { preHandler: [isAuthed] }, protocolsProductController.index)
     instance.get('/protocols/products/:id', { preHandler: [isAuthed] }, protocolsProductController.show)
@@ -185,7 +242,7 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.post('/billings', { preHandler: [isAuthed] }, billingController.store)
     instance.put('/billings/:id', { preHandler: [isAuthed] }, billingController.update)
     instance.delete('/billings/:id', { preHandler: [isAuthed] }, billingController.destroy)
-    instance.get('/billings/:id/pdf', billingController.pdf)
+    instance.get('/billings/:id/pdf', { preHandler: [pdfAccess((r: any) => pdfScopes.billing(r.params.id))] }, billingController.pdf as any)
     instance.post('/billings/:id/upload', { preHandler: [isAuthed] }, billingController.upload as any)
     instance.post('/billings/:id/send-email', { preHandler: [isAuthed] }, async (req: any, res) => {
         try {
@@ -195,6 +252,20 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
             return res.status(400).send({ message: err.message || 'Erro ao enviar email' })
         }
     })
+
+    instance.post('/billings/:id/send-reminder', { preHandler: [isAuthed] }, async (req: any, res) => {
+        const billing = await Billing.findByPk(parseInt(req.params.id))
+        if (!billing) return res.status(404).send({ message: 'Cobrança não encontrada' })
+        if (billing.status !== 'faturada') return res.status(400).send({ message: 'Só cobranças faturadas recebem lembrete.' })
+
+        const diff = billing.due_date ? Math.floor((Date.now() - new Date(billing.due_date as any).getTime()) / 86400000) : 0
+        const result = await sendBillingReminder(billing.id, 'manual', diff)
+
+        if (result === 'enviado') return res.send({ message: 'Lembrete enviado' })
+        return res.status(400).send({ message: result === 'ignorado' ? 'Cliente sem e-mail cadastrado.' : 'Não foi possível enviar o lembrete.' })
+    })
+    instance.get('/billing-reminders/preview', { preHandler: [isAuthed] }, async (req, res) => res.send(await previewBillingReminders()))
+    instance.post('/billing-reminders/run', { preHandler: [isAuthed] }, async (req, res) => res.send(await runBillingReminders({ force: true })))
 
     instance.post('/billing-receipt', { preHandler: [isAuthed] }, billingReceipt)
 

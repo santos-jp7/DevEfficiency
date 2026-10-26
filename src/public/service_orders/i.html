@@ -144,6 +144,7 @@
                     <label for="status" class="form-label">Status</label>
                     <select class="form-select" v-model="status" id="status">
                         <option disabled value="">Selecione uma opção</option>
+                        <option value="Backlog">Backlog (segundo plano)</option>
                         <option value="Em avaliação">Em avaliação</option>
                         <option value="Orçamento enviado">Orçamento enviado</option>
                         <option value="Na fila">Na fila</option>
@@ -182,10 +183,21 @@
                     <div class="form-text">Data limite acordada com o cliente.</div>
                 </div>
             </div>
+            <div class="row mb-3">
+                <div class="col">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="notify_client" v-model="notify_client">
+                        <label class="form-check-label" for="notify_client">Avisar o cliente por e-mail a cada etapa desta OS</label>
+                    </div>
+                    <div class="form-text" v-if="Ticket">
+                        Origem: <a :href="'../tickets/i.html?id=' + Ticket.id">Chamado #{{ Ticket.id }}</a>
+                    </div>
+                </div>
+            </div>
 
             <button type="submit" class="btn btn-dark">Enviar</button>
             &bull;
-            <a class="btn btn-dark" :href="'/api/os/'+id+'/pdf'" download><i class="fa-solid fa-download"></i></a>
+            <a class="btn btn-dark" href="#" @click.prevent="openPdf({ kind: 'os', id: id })"><i class="fa-solid fa-download"></i></a>
             &bull;
             <button type="button" class="btn btn-dark" @click="handlerNewInvoice">
                 <i class="fa-solid fa-file-invoice-dollar"></i> Invoice (Exterior)
@@ -785,6 +797,7 @@
     </div>
 
     <script src="../assets/js/pricing.js"></script>
+    <script src="../assets/js/pdf.js"></script>
     <script src="../assets/js/service_orders/i.js"></script>
     <script src="../assets/js/nav.js"></script>
 </body>

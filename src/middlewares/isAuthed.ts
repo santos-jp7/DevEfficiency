@@ -5,7 +5,6 @@ import {
     FastifyRequest,
     HookHandlerDoneFunction,
     RequestBodyDefault,
-    RequestParamsDefault,
     RequestHeadersDefault,
 } from 'fastify'
 import User from '../models/User'
@@ -15,13 +14,25 @@ type isAuthedRequest = FastifyRequest<{
     Headers: RequestHeadersDefault
 }>
 
-export default function isAuthed(req: isAuthedRequest, res: FastifyReply, next: HookHandlerDoneFunction): void {
-    const { authorization } = req.headers
+export function decodeToken(authorization?: string): User | null {
+    try {
+        return jsonwebtoken.verify(
+            authorization?.replace('bearer ', '').replace('Bearer ', '') as string,
+            process.env.SECRET as string,
+        ) as User
+    } catch {
+        return null
+    }
+}
 
-    const decoded = jsonwebtoken.verify(
-        authorization?.replace('bearer ', '').replace('Bearer ', '') as string,
-        process.env.SECRET as string,
-    ) as User
+export default function isAuthed(req: isAuthedRequest, res: FastifyReply, next: HookHandlerDoneFunction): void {
+    const decoded = decodeToken(req.headers.authorization)
+
+    // Token ausente, inválido ou expirado: 401 (antes estourava como erro 500).
+    if (!decoded) {
+        res.status(401).send({ error: true, message: 'Não autorizado.' })
+        return
+    }
 
     req.__user = decoded
 

@@ -10,6 +10,8 @@ import db from '../db'
 import Supplier from './Supplier'
 import BankAccount from './BankAccount'
 import CostCenter from './CostCenter'
+import Seller from './Seller'
+import Protocol from './Protocol'
 
 class Payable extends Model<InferAttributes<Payable>, InferCreationAttributes<Payable>> {
     declare id: CreationOptional<number>
@@ -27,6 +29,9 @@ class Payable extends Model<InferAttributes<Payable>, InferCreationAttributes<Pa
     declare SupplierId: ForeignKey<Supplier['id']>
     declare BankAccountId: ForeignKey<BankAccount['id']>
     declare CostCenterId: ForeignKey<CostCenter['id']>
+    // Comissão de vendedor gerada ao finalizar o protocolo.
+    declare SellerId: CreationOptional<ForeignKey<Seller['id']> | null>
+    declare ProtocolId: CreationOptional<ForeignKey<Protocol['id']> | null>
 
     declare createdAt: CreationOptional<Date>
     declare updatedAt: CreationOptional<Date>
@@ -91,10 +96,13 @@ import payableHooks from '../hooks/payableHooks';
 Payable.belongsTo(Supplier)
 Payable.belongsTo(BankAccount)
 Payable.belongsTo(CostCenter)
+Payable.belongsTo(Seller)
+// Payable.belongsTo(Protocol) fica em Protocol.ts (evita dependência circular na carga dos modelos)
 
 Supplier.hasMany(Payable)
 BankAccount.hasMany(Payable)
 CostCenter.hasMany(Payable)
+Seller.hasMany(Payable)
 
 // Hooks
 Payable.afterCreate(payableHooks.afterCreate);

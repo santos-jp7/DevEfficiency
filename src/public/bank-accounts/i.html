@@ -155,6 +155,77 @@
             <a href="./index.html" class="btn btn-secondary">Voltar</a>
         </form>
         <hr>
+
+        <div v-if="id && check" id="conferencia" class="mb-4">
+            <h6>Conferência de saldo
+                <span v-if="check.status === 'ok'" class="badge bg-success ms-1">Confere</span>
+                <span v-else-if="check.status === 'divergente'" class="badge bg-danger ms-1">Divergente</span>
+                <span v-else class="badge bg-warning text-dark ms-1">Saldo inicial pendente</span>
+            </h6>
+
+            <table class="table table-sm border" style="max-width:520px">
+                <tbody>
+                    <tr><td>Saldo inicial</td><td class="text-end">{{ check.opening_balance === null ? '—' : brl(check.opening_balance) }}</td></tr>
+                    <tr><td>+ Recebimentos</td><td class="text-end">{{ brl(check.receipts) }}</td></tr>
+                    <tr><td>+ Ressarcimentos</td><td class="text-end">{{ brl(check.reimbursements) }}</td></tr>
+                    <tr><td>+ Transferências recebidas</td><td class="text-end">{{ brl(check.transfers_in) }}</td></tr>
+                    <tr><td>− Contas pagas</td><td class="text-end">{{ brl(check.payables) }}</td></tr>
+                    <tr><td>− Transferências enviadas</td><td class="text-end">{{ brl(check.transfers_out) }}</td></tr>
+                    <tr class="fw-bold"><td>Saldo esperado</td><td class="text-end">{{ check.expected === null ? '—' : brl(check.expected) }}</td></tr>
+                    <tr class="fw-bold"><td>Saldo gravado</td><td class="text-end">{{ brl(check.balance) }}</td></tr>
+                    <tr v-if="check.difference !== null" class="fw-bold" :class="check.difference === 0 ? 'table-success' : 'table-danger'">
+                        <td>Diferença</td><td class="text-end">{{ brl(check.difference) }}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div v-if="check.status === 'sem_saldo_inicial'" class="alert alert-warning">
+                A conferência só começa depois de confirmar o <strong>saldo inicial</strong> (o saldo da conta antes das movimentações do sistema).
+                Pelas movimentações, o saldo atual implica um saldo inicial de <strong>{{ brl(check.implied_opening) }}</strong>.
+                <div class="mt-2 d-flex flex-wrap" style="gap:.5rem">
+                    <button type="button" class="btn btn-sm btn-dark" @click="acceptCurrent">Está certo: aceitar o saldo atual</button>
+                    <button type="button" class="btn btn-sm btn-outline-dark" @click="setOpening">Informar o saldo inicial correto…</button>
+                </div>
+            </div>
+
+            <div v-if="check.status === 'divergente'" class="alert alert-danger">
+                O saldo gravado não bate com as movimentações. Confira o extrato abaixo (um lançamento editado/removido por fora costuma ser a causa).
+                Se o saldo esperado estiver certo, corrija o saldo — a correção fica registrada com usuário e motivo.
+                <div class="mt-2 d-flex flex-wrap" style="gap:.5rem">
+                    <button type="button" class="btn btn-sm btn-danger" @click="fixBalance">Corrigir saldo para {{ brl(check.expected) }}</button>
+                    <button type="button" class="btn btn-sm btn-outline-dark" @click="setOpening">O saldo inicial está errado…</button>
+                </div>
+            </div>
+
+            <p v-if="check.status === 'ok'" class="small">
+                <a href="#" @click.prevent="setOpening">Alterar saldo inicial</a>
+            </p>
+
+            <details class="mt-2" @toggle="loadLedger">
+                <summary>Movimentações que compõem o saldo</summary>
+                <table class="table table-sm table-striped border mt-2">
+                    <thead><tr><th>Data</th><th>Tipo</th><th>Descrição</th><th class="text-end">Valor</th></tr></thead>
+                    <tbody>
+                        <tr v-for="row in ledger"><td>{{ row.date }}</td><td>{{ row.type }}</td><td>{{ row.description }}</td>
+                            <td class="text-end" :class="row.value < 0 ? 'text-danger' : 'text-success'">{{ brl(row.value) }}</td></tr>
+                        <tr v-if="!ledger.length"><td colspan="4" class="text-center text-muted">Sem movimentações.</td></tr>
+                    </tbody>
+                </table>
+            </details>
+
+            <details v-if="check.adjustments && check.adjustments.length" class="mt-2">
+                <summary>Histórico de ajustes ({{ check.adjustments.length }})</summary>
+                <table class="table table-sm border mt-2">
+                    <thead><tr><th>Quando</th><th>Tipo</th><th class="text-end">De</th><th class="text-end">Para</th><th>Usuário</th><th>Motivo</th></tr></thead>
+                    <tbody>
+                        <tr v-for="a in check.adjustments"><td>{{ new Date(a.createdAt).toLocaleString('pt-BR') }}</td><td>{{ a.kind === 'saldo_inicial' ? 'Saldo inicial' : 'Correção de saldo' }}</td>
+                            <td class="text-end">{{ a.previous_value === null ? '—' : brl(a.previous_value) }}</td><td class="text-end">{{ brl(a.new_value) }}</td><td>{{ a.user }}</td><td>{{ a.reason }}</td></tr>
+                    </tbody>
+                </table>
+            </details>
+            <hr>
+        </div>
+
         <button v-if="id" @click="deleteAccount" class="btn btn-danger">Excluir Conta</button>
     </div>
 

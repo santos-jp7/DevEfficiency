@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Codlinx - Vendedores</title>
+    <link href="../assets/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/codlinx.css">
+    <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css">
+
+    <script src="../assets/js/vue.min.js"></script>
+    <script src="../assets/js/jquery-3.6.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2/dist/umd/popper.min.js"></script>
+    <script src="../assets/js/bootstrap.min.js"></script>
+    <script src="../assets/js/axios.min.js"></script>
+    <script src="../assets/js/moment.min.js"></script>
+</head>
+
+<body>
+    <nav class="navbar bg-light">
+        <div class="container">
+            <a class="navbar-brand" href="/dashboard">
+                <img src="../assets/img/logo_cabecalho.png" alt="Codlinx" width="40" height="40">
+            </a>
+        </div>
+    </nav>
+
+    <div class="container p-4" id="app">
+        <div class="d-flex flex-wrap justify-content-between">
+            <h5>Vendedores</h5>
+            <a class="btn btn-dark" href="../sellers/i.html"><i class="fa-solid fa-plus"></i> Novo Vendedor</a>
+        </div>
+
+        <div class="table-responsive m-2">
+            <table class="table table-striped border">
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Comissão</th>
+                        <th>Regra</th>
+                        <th>Prazo</th>
+                        <th class="text-end">A pagar</th>
+                        <th>Situação</th>
+                        <th>Abrir</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="seller in sellers">
+                        <td>{{ seller.name }}<div class="small text-muted">{{ seller.email }}</div></td>
+                        <td>{{ seller.commission_percent }}%</td>
+                        <td class="small">{{ baseLabel(seller.commission_base) }} · {{ appliesLabel(seller.applies_to) }}</td>
+                        <td>{{ seller.payment_delay_days }} dias</td>
+                        <td class="text-end">{{ brl(seller.pending_commission) }}</td>
+                        <td><span :class="'badge bg-' + (seller.active ? 'success' : 'secondary')">{{ seller.active ? 'Ativo' : 'Inativo' }}</span></td>
+                        <td><a :href="'../sellers/i.html?id=' + seller.id"><i class="fa-solid fa-arrow-right"></i></a></td>
+                    </tr>
+                    <tr v-if="!sellers.length">
+                        <td colspan="7" class="text-center text-muted py-4">Nenhum vendedor cadastrado.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="../assets/js/sellers/common.js"></script>
+    <script src="../assets/js/sellers/sellers.js"></script>
+    <script src="../assets/js/nav.js"></script>
+</body>
+
+</html>

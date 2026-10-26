@@ -9,6 +9,9 @@ class BankTransfer extends Model<InferAttributes<BankTransfer>, InferCreationAtt
     declare destinationAccountId: ForeignKey<BankAccount['id']>
     declare amount: number
     declare date: Date
+    // Transferência cancelada (estornada): mantida no histórico, mas não compõe mais o saldo.
+    declare canceledAt: CreationOptional<Date | null>
+    declare cancel_reason: CreationOptional<string | null>
 
     declare createdAt: CreationOptional<Date>
     declare updatedAt: CreationOptional<Date>
@@ -44,6 +47,14 @@ BankTransfer.init(
         date: {
             type: DataTypes.DATEONLY,
             allowNull: false,
+        },
+        canceledAt: {
+            type: DataTypes.DATE,
+            allowNull: true,
+        },
+        cancel_reason: {
+            type: DataTypes.STRING(255),
+            allowNull: true,
         },
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,

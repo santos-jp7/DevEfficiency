@@ -5,6 +5,7 @@
             label: 'Operações',
             icon: 'fa-solid fa-clipboard-list',
             items: [
+                { label: 'Chamados', href: '/tickets' },
                 { label: 'Ordens de Serviço', href: '/service_orders' },
                 { label: 'Assinaturas', href: '/subscriptions' },
                 { label: 'Protocolos', href: '/protocols' },
@@ -27,6 +28,8 @@
             items: [
                 { label: 'Contas a Pagar', href: '/payables' },
                 { label: 'Contas Bancárias', href: '/bank-accounts' },
+                { label: 'Conciliação Bancária', href: '/reconciliation' },
+                { label: 'Vendedores', href: '/sellers' },
                 { label: 'Transferências', href: '/bank-transfers' },
                 { label: 'Centros de Custo', href: '/cost-centers' },
             ],
@@ -39,6 +42,9 @@
                 { label: 'Fluxo de Caixa', href: '/financial-history' },
                 { label: 'DRE', href: '/dre-report' },
                 { label: 'Despesas', href: '/expense-report' },
+                { label: 'Inadimplência', href: '/commercial-reports?tab=inadimplencia' },
+                { label: 'Vendas e Comissões', href: '/commercial-reports?tab=vendas' },
+                { label: 'Recorrência (MRR)', href: '/commercial-reports?tab=recorrencia' },
             ],
         },
         {

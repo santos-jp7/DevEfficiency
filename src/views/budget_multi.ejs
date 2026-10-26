@@ -329,6 +329,54 @@
                                         <% } %>
                 </div>
                 <% } %>
+            <% for(let avulso of (avulsos || [])){ %>
+                <div class="os-card">
+                    <div class="os-header">
+                        <div class="section-label">Referência: Lançamento avulso &mdash; Protocolo #<%= avulso.id %>
+                        </div>
+                        <% if (avulso.notes) { %>
+                        <p class="text-muted" style="margin: 5px 0;"><%= avulso.notes %></p>
+                        <% } %>
+                    </div>
+
+                    <% if(avulso.Protocol_registers?.length > 0){ %>
+                        <table>
+                            <thead><tr><th>Serviços e Despesas</th><th>Tipo</th><th class="text-right">Valor</th></tr></thead>
+                            <tbody>
+                                <% for(let register of avulso.Protocol_registers){ %>
+                                    <tr>
+                                        <td><%= register.description %>
+                                            <% if (pv.registerDetail(register)) { %><br><small class="text-muted"><%= pv.registerDetail(register) %></small><% } %>
+                                        </td>
+                                        <td><small><%= register.type %></small></td>
+                                        <td class="text-right"><%= pv.brl(register.value) %></td>
+                                    </tr>
+                                <% } %>
+                            </tbody>
+                        </table>
+                    <% } %>
+
+                    <% if(avulso.Protocol_products?.length > 0){ %>
+                        <table>
+                            <thead><tr><th style="width: 40px;">#</th><th>Produto</th><th>Cobrança</th><th class="text-right">Valor</th></tr></thead>
+                            <tbody>
+                                <% for(let product of avulso.Protocol_products){ %>
+                                    <tr>
+                                        <td><%= product.ProductId %></td>
+                                        <td><%= product.Product?.description %></td>
+                                        <td><%= product.charge_type %></td>
+                                        <td class="text-right"><%= pv.brl(product.value) %></td>
+                                    </tr>
+                                <% } %>
+                            </tbody>
+                        </table>
+                    <% } %>
+
+                    <% if (Number(avulso.discount_value) > 0) { %>
+                        <p class="text-muted" style="text-align:right;margin:4px 0">Desconto: – <%= pv.brl(avulso.discount_value) %></p>
+                    <% } %>
+                </div>
+            <% } %>
                     <div class="total-container">
                         <div class="total-box">
                             <% if (pricing.total_partner_discount > 0 || pricing.total_commercial_discount > 0) { %>
@@ -367,6 +415,12 @@
                                         return s2 + gross - disc
                                         }, 0)||0)
                                         }, 0)
+                                        +
+                                        (avulsos || []).reduce((sum, p) => {
+                                        const gross = (p.Protocol_registers?.reduce((s,v) => s+v.value, 0)||0)
+                                                    + (p.Protocol_products?.reduce((s,v) => s+v.value, 0)||0)
+                                        return sum + gross - (Number(p.discount_value) || 0)
+                                        }, 0)
                                         %>
 
                                         <%= total.toLocaleString('pt-br',{style: 'currency' , currency: 'BRL' }) %>
@@ -380,7 +434,9 @@
                                 subscriptions.map(
                                 subscription=>subscription.Protocol?.Receipts?.reduce((
                                 sum, v) => sum + v.value, 0) || 0).reduce((
-                                sum, v) => sum + v, 0);
+                                sum, v) => sum + v, 0)
+                                +
+                                (avulsos || []).reduce((sum, p) => sum + (p.Receipts?.reduce((s, v) => s + v.value, 0) || 0), 0);
 
                                 if(totalPago > 0){
                                 %>

@@ -10,6 +10,8 @@ class BankAccount extends Model<InferAttributes<BankAccount>, InferCreationAttri
     declare agency: CreationOptional<string>
     declare accountNumber: CreationOptional<string>
     declare balance: CreationOptional<number>
+    // Saldo antes de qualquer movimentação do sistema. null = ainda não confirmado (conferência de saldo pendente).
+    declare opening_balance: CreationOptional<number | null>
     declare iban: CreationOptional<string>
     declare swiftCode: CreationOptional<string>
     declare bankAddress: CreationOptional<string>
@@ -45,6 +47,14 @@ BankAccount.init(
             type: DataTypes.FLOAT,
             defaultValue: 0.0,
             allowNull: false,
+        },
+        opening_balance: {
+            type: DataTypes.DECIMAL(14, 2),
+            allowNull: true,
+            get() {
+                const v = this.getDataValue('opening_balance')
+                return v === null || v === undefined ? null : Number(v)
+            },
         },
         iban: {
             type: DataTypes.STRING(50),

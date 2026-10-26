@@ -13,11 +13,11 @@ type protocolsRegisterRequest = FastifyRequest<{
 type RegisterPayload = Pick<Protocol_register, 'description' | 'value' | 'type'> &
     Partial<Pick<Protocol_register, 'estimated_hours' | 'hourly_rate' | 'manual_override'>>
 
-class PricingError extends Error {}
+export class PricingError extends Error {}
 
 // Monta os campos persistidos do item. Itens de Serviço com horas são calculados aqui, no servidor;
 // Despesa (ou Serviço sem horas, formato legado) segue com description + value, sem desconto.
-async function buildRegisterData(
+export async function buildRegisterData(
     protocol: Protocol,
     body: RegisterPayload,
     current?: Protocol_register | null,

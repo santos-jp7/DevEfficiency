@@ -31,6 +31,9 @@ export async function getClientByProtocol(protocol: Protocol): Promise<Client | 
         return subscription ? Client.findByPk(subscription.ClientId) : null
     }
 
+    // Lançamento avulso: o cliente fica direto no protocolo.
+    if (protocol.ClientId) return Client.findByPk(protocol.ClientId)
+
     return null
 }
 

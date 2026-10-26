@@ -119,6 +119,16 @@
                 </div>
             </div>
             <div class="row">
+                <div class="mb-3 col-md-6">
+                    <label class="form-label">Vendedor</label>
+                    <select class="form-control" v-model="protocol.SellerId" :disabled="protocol.status === 'Fechado'">
+                        <option :value="null">Sem vendedor</option>
+                        <option v-for="seller in references.sellers" :value="seller.id">{{ seller.name }} ({{ seller.commission_percent }}%){{ seller.active ? "" : " - inativo" }}</option>
+                    </select>
+                    <div class="form-text">A comissão vira conta a pagar quando o protocolo é finalizado.</div>
+                </div>
+            </div>
+            <div class="row">
                 <div class="mb-3 col">
                     <label class="form-label">Observações</label>
                     <textarea class="form-control" v-model="protocol.notes" rows="3"></textarea>
@@ -166,6 +176,10 @@
 
             <button type="submit" class="btn btn-dark">Salvar Alterações</button>
 
+            <div v-if="!protocol.SubscriptionId && !protocol.ServiceOrderId && protocol.Client">
+                <hr>
+                &bull; Lançamento avulso &mdash; Cliente: <a :href="'../clients/i.html?id=' + protocol.Client.id">{{ protocol.Client.name }}</a>
+            </div>
             <div v-if="protocol.SubscriptionId">
                 <hr>
                 &bull; Vinculado a: <a :href="'../subscriptions/i?id=' + protocol.SubscriptionId">Assinatura
@@ -538,9 +552,21 @@
                             </div>
 
                             <div class="row mb-3">
-                                <label class="form-label" for="value">Valor</label>
+                                <label class="form-label" for="value">Valor {{ !payloads.protocolProduct.id && payloads.protocolProduct.quantity > 1 ? '(unitário)' : '' }}</label>
                                 <input type="" class="form-control" id="value" v-model="payloads.protocolProduct.value"
                                     step="0.01" required />
+                            </div>
+
+                            <div class="row mb-3" v-if="!payloads.protocolProduct.id">
+                                <label class="form-label" for="quantity">Quantidade</label>
+                                <input type="number" min="1" max="500" step="1" class="form-control" id="quantity"
+                                    v-model.number="payloads.protocolProduct.quantity" required />
+                                <div class="form-text" v-if="payloads.protocolProduct.quantity > 1">
+                                    Serão lançados <strong>{{ payloads.protocolProduct.quantity }}</strong> itens de
+                                    {{ brl(payloads.protocolProduct.value) }} (total
+                                    <strong>{{ brl((Number(payloads.protocolProduct.value) || 0) * payloads.protocolProduct.quantity) }}</strong>).
+                                    Se o produto gera licença, cada item recebe a sua chave.
+                                </div>
                             </div>
 
                             <div class="row mb-3">

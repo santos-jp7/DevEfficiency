@@ -22,6 +22,8 @@ import Config from '../models/Config'
 import puppeteer from 'puppeteer'
 import CloudFlareR2 from '../providers/CloudFlareR2'
 import { pricingView, summarizeProtocol, sumSummaries } from '../utils/pricing'
+import { alreadyMatched } from '../utils/reconciliation'
+import { computeLateCharges, getLateRules } from '../utils/lateCharges'
 
 type billingRequest = FastifyRequest<{
     Body: Billing
@@ -69,7 +71,19 @@ class billingController {
             ...{ ...(limit ? { limit: parseInt(limit) } : {}) },
         })
 
-        return res.send(billings)
+        const reconciled = await alreadyMatched('billing', billings.filter((b) => b.status === 'pago').map((b) => b.id))
+
+        const rules = await getLateRules()
+        const open = (b: Billing) => ['pendente', 'faturada'].includes(b.status as string)
+
+        return res.send(
+            billings.map((b) => ({
+                ...b.toJSON(),
+                reconciled: reconciled.has(b.id),
+                // Informativo: não altera total_value.
+                late_charges: open(b) ? computeLateCharges(Number(b.total_value), b.due_date, rules) : null,
+            })),
+        )
     }
 
     static async show(req: billingRequest, res: FastifyReply): Promise<FastifyReply> {
@@ -99,7 +113,16 @@ class billingController {
 
         if (!billing) return res.send(billing)
 
-        return res.send({ ...billing.toJSON(), pricing: billingPricing(billing, (billing as any).Client) })
+        const reconciled = billing.status === 'pago' ? await alreadyMatched('billing', [billing.id]) : new Set<number>()
+
+        return res.send({
+            ...billing.toJSON(),
+            pricing: billingPricing(billing, (billing as any).Client),
+            reconciled: reconciled.has(billing.id),
+            // Informativo: multa/juros por atraso calculados hoje; não alteram total_value.
+            late_charges: ['pendente', 'faturada'].includes(billing.status as string) ? computeLateCharges(Number(billing.total_value), billing.due_date, await getLateRules()) : null,
+            late_rules: await getLateRules(),
+        })
     }
 
     static async upload(req: FastifyRequest<{ Params: { id: string } }>, res: FastifyReply): Promise<FastifyReply> {

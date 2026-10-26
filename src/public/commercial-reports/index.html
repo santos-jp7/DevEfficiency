@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Codlinx - Relatórios Comerciais</title>
+    <link href="../assets/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/codlinx.css">
+    <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css">
+
+    <script src="../assets/js/vue.min.js"></script>
+    <script src="../assets/js/jquery-3.6.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2/dist/umd/popper.min.js"></script>
+    <script src="../assets/js/bootstrap.min.js"></script>
+    <script src="../assets/js/axios.min.js"></script>
+    <script src="../assets/js/moment.min.js"></script>
+</head>
+
+<body>
+    <nav class="navbar bg-light">
+        <div class="container">
+            <a class="navbar-brand" href="/dashboard">
+                <img src="../assets/img/logo_cabecalho.png" alt="Codlinx" width="40" height="40">
+            </a>
+        </div>
+    </nav>
+
+    <div class="container p-4" id="app">
+        <h5 class="mb-3">Relatórios comerciais</h5>
+
+        <ul class="nav nav-tabs mb-3">
+            <li class="nav-item"><a class="nav-link" :class="{ active: tab === 'inadimplencia' }" href="#" @click.prevent="go('inadimplencia')">Inadimplência</a></li>
+            <li class="nav-item"><a class="nav-link" :class="{ active: tab === 'vendas' }" href="#" @click.prevent="go('vendas')">Vendas e comissões</a></li>
+            <li class="nav-item"><a class="nav-link" :class="{ active: tab === 'recorrencia' }" href="#" @click.prevent="go('recorrencia')">Recorrência (MRR)</a></li>
+        </ul>
+
+        <!-- Inadimplência -->
+        <div v-if="tab === 'inadimplencia' && delinquency">
+            <div class="row g-3 mb-3">
+                <div class="col-6 col-md-3"><div class="cx-kpi cx-kpi--red"><div class="cx-kpi__label">Em atraso</div><div class="cx-kpi__value">{{ brl(delinquency.totals.overdue) }}</div><div class="cx-kpi__sub">{{ delinquency.totals.count }} cobrança(s) · {{ delinquency.totals.clients }} cliente(s)</div></div></div>
+                <div class="col-6 col-md-3"><div class="cx-kpi cx-kpi--red"><div class="cx-kpi__label">Multa + juros (informativo)</div><div class="cx-kpi__value">{{ brl(delinquency.totals.charges) }}</div><div class="cx-kpi__sub">multa {{ brl(delinquency.totals.fee) }} · juros {{ brl(delinquency.totals.interest) }} ({{ pct(delinquency.rules.fee_percent) }} + {{ pct(delinquency.rules.interest_month_percent) }} a.m.)</div></div></div>
+                <div class="col-6 col-md-3"><div class="cx-kpi cx-kpi--amber"><div class="cx-kpi__label">A vencer / vence hoje</div><div class="cx-kpi__value">{{ brl(delinquency.totals.upcoming) }}</div></div></div>
+                <div class="col-12">
+                    <div class="cx-tile">
+                        <div class="cx-tile__label">Por faixa de atraso</div>
+                        <div class="d-flex flex-wrap" style="gap:1rem">
+                            <div v-for="(label, key) in delinquency.bucket_labels"><div class="small text-muted">{{ label }}</div><strong>{{ brl(delinquency.totals.buckets[key]) }}</strong></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="onlyInvoiced" v-model="onlyInvoiced" @change="loadDelinquency"><label class="form-check-label small" for="onlyInvoiced">Somente faturadas (padrão); desmarque para incluir pendentes vencidas</label></div>
+                <button class="btn btn-outline-dark btn-sm" @click="exportCsv('inadimplencia')"><i class="fa-solid fa-file-csv"></i> CSV</button>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-striped border align-middle">
+                    <thead><tr><th>Cliente</th><th class="text-end">Cobranças</th><th class="text-end">Maior atraso</th><th class="text-end">1–15</th><th class="text-end">16–30</th><th class="text-end">31–60</th><th class="text-end">60+</th><th class="text-end">Multa + juros</th><th class="text-end">Total</th></tr></thead>
+                    <tbody>
+                        <template v-for="c in delinquency.clients">
+                            <tr style="cursor:pointer" @click="toggle(c.ClientId)">
+                                <td><i :class="'fa-solid me-1 fa-chevron-' + (open[c.ClientId] ? 'down' : 'right')"></i>{{ c.client }}</td>
+                                <td class="text-end">{{ c.count }}</td><td class="text-end">{{ c.oldest_days }} dias</td>
+                                <td class="text-end">{{ brl(c.buckets.d1_15) }}</td><td class="text-end">{{ brl(c.buckets.d16_30) }}</td><td class="text-end">{{ brl(c.buckets.d31_60) }}</td><td class="text-end">{{ brl(c.buckets.d60_plus) }}</td>
+                                <td class="text-end text-danger">{{ brl(c.fee + c.interest) }}</td>
+                                <td class="text-end fw-bold">{{ brl(c.total) }}</td>
+                            </tr>
+                            <tr v-if="open[c.ClientId]" v-for="b in c.billings" class="small bg-light">
+                                <td colspan="2" class="ps-4"><a :href="'../billings/i.html?id=' + b.id">Cobrança #{{ b.id }}</a> <span class="badge bg-secondary">{{ b.status }}</span></td>
+                                <td class="text-end">{{ b.days_overdue }} dias</td><td colspan="4" class="text-end">venceu em {{ date(b.due_date) }}</td><td class="text-end text-danger">{{ brl(b.fee + b.interest) }}</td><td class="text-end">{{ brl(b.value) }}</td>
+                            </tr>
+                        </template>
+                        <tr v-if="!delinquency.clients.length"><td colspan="9" class="text-center text-muted py-4">Nenhuma cobrança em atraso. 🎉</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Vendas e comissões -->
+        <div v-if="tab === 'vendas' && sales">
+            <div class="row g-2 align-items-end mb-3">
+                <div class="col-auto"><label class="form-label small mb-0">De</label><input type="date" class="form-control form-control-sm" v-model="range.startDate" @change="loadSales"></div>
+                <div class="col-auto"><label class="form-label small mb-0">Até</label><input type="date" class="form-control form-control-sm" v-model="range.endDate" @change="loadSales"></div>
+                <div class="col-auto ms-auto"><button class="btn btn-outline-dark btn-sm" @click="exportCsv('vendas')"><i class="fa-solid fa-file-csv"></i> CSV</button></div>
+            </div>
+            <div class="row g-3 mb-3">
+                <div class="col-6 col-md-3"><div class="cx-kpi cx-kpi--brand"><div class="cx-kpi__label">Vendas finalizadas</div><div class="cx-kpi__value">{{ brl(sales.totals.sales) }}</div><div class="cx-kpi__sub">{{ sales.totals.protocols }} protocolo(s)</div></div></div>
+                <div class="col-6 col-md-3"><div class="cx-kpi cx-kpi--cyan"><div class="cx-kpi__label">Com vendedor</div><div class="cx-kpi__value">{{ brl(sales.totals.sales_with_seller) }}</div><div class="cx-kpi__sub">{{ pct(sales.totals.share_with_seller) }} das vendas</div></div></div>
+                <div class="col-6 col-md-3"><div class="cx-kpi cx-kpi--green"><div class="cx-kpi__label">Codlinx (sem vendedor)</div><div class="cx-kpi__value">{{ brl(sales.totals.sales_without_seller) }}</div><div class="cx-kpi__sub">{{ pct(100 - sales.totals.share_with_seller) }} das vendas</div></div></div>
+                <div class="col-6 col-md-3"><div class="cx-kpi cx-kpi--amber"><div class="cx-kpi__label">Comissões</div><div class="cx-kpi__value">{{ brl(sales.totals.commission_generated) }}</div><div class="cx-kpi__sub">pagas no período: {{ brl(sales.totals.commission_paid_in_period) }} · a pagar: {{ brl(sales.totals.commission_pending) }}</div></div></div>
+            </div>
+            <div class="table-responsive mb-4">
+                <table class="table table-striped border">
+                    <thead><tr><th>Origem</th><th class="text-end">Protocolos</th><th class="text-end">Vendas</th><th class="text-end">% das vendas</th><th class="text-end">Comissão gerada</th><th class="text-end">Paga</th><th class="text-end">A pagar</th></tr></thead>
+                    <tbody>
+                        <tr v-for="s in sales.sellers">
+                            <td><a v-if="s.SellerId" :href="'../sellers/i.html?id=' + s.SellerId">{{ s.name }}</a><span v-else>{{ s.name }}</span></td>
+                            <td class="text-end">{{ s.protocols }}</td><td class="text-end">{{ brl(s.sales) }}</td><td class="text-end">{{ pct(s.share) }}</td>
+                            <td class="text-end">{{ s.SellerId ? brl(s.commission_generated) : '—' }}</td><td class="text-end">{{ s.SellerId ? brl(s.commission_paid) : '—' }}</td><td class="text-end">{{ s.SellerId ? brl(s.commission_pending) : '—' }}</td>
+                        </tr>
+                        <tr v-if="!sales.sellers.length"><td colspan="7" class="text-center text-muted py-4">Nenhuma venda finalizada no período.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <h6>Comissões pagas no período</h6>
+            <div class="table-responsive">
+                <table class="table table-sm table-striped border">
+                    <thead><tr><th>Pagamento</th><th>Vendedor</th><th>Descrição</th><th class="text-end">Valor</th></tr></thead>
+                    <tbody>
+                        <tr v-for="p in sales.commissions_paid"><td>{{ date(p.paymentDate) }}</td><td>{{ p.seller }}</td><td>{{ p.description }}</td><td class="text-end">{{ brl(p.value) }}</td></tr>
+                        <tr v-if="!sales.commissions_paid.length"><td colspan="4" class="text-center text-muted py-3">Nenhuma comissão paga no período.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Recorrência -->
+        <div v-if="tab === 'recorrencia' && recurrence">
+            <div class="row g-3 mb-3">
+                <div class="col-6 col-md-3"><div class="cx-kpi cx-kpi--cyan"><div class="cx-kpi__label">MRR</div><div class="cx-kpi__value">{{ brl(recurrence.totals.mrr) }}</div><div class="cx-kpi__sub">anuais contam 1/12</div></div></div>
+                <div class="col-6 col-md-3"><div class="cx-kpi cx-kpi--brand"><div class="cx-kpi__label">ARR</div><div class="cx-kpi__value">{{ brl(recurrence.totals.arr) }}</div></div></div>
+                <div class="col-6 col-md-3"><div class="cx-kpi cx-kpi--green"><div class="cx-kpi__label">Assinaturas</div><div class="cx-kpi__value">{{ recurrence.totals.subscriptions }}</div><div class="cx-kpi__sub">{{ recurrence.totals.monthly_plans }} mensais · {{ recurrence.totals.annual_plans }} anuais</div></div></div>
+                <div class="col-6 col-md-3"><div class="cx-kpi cx-kpi--red"><div class="cx-kpi__label">MRR em risco</div><div class="cx-kpi__value">{{ brl(recurrence.totals.mrr_at_risk) }}</div><div class="cx-kpi__sub">assinaturas "Não pago"</div></div></div>
+            </div>
+            <div class="d-flex justify-content-end mb-2"><button class="btn btn-outline-dark btn-sm" @click="exportCsv('recorrencia')"><i class="fa-solid fa-file-csv"></i> CSV</button></div>
+            <div class="table-responsive">
+                <table class="table table-striped border">
+                    <thead><tr><th>Assinatura</th><th>Cliente</th><th>Ciclo</th><th>Situação</th><th>Vencimento</th><th class="text-end">Valor do ciclo</th><th class="text-end">MRR</th></tr></thead>
+                    <tbody>
+                        <tr v-for="s in recurrence.subscriptions">
+                            <td><a :href="'../subscriptions/i.html?id=' + s.id">{{ s.name }}</a></td><td>{{ s.client }}</td><td>{{ s.cycle }}</td>
+                            <td><span :class="'badge bg-' + (s.status === 'Pago' ? 'success' : s.status === 'Não pago' ? 'danger' : 'warning')">{{ s.status }}</span></td>
+                            <td>{{ date(s.dueAt) }}</td><td class="text-end">{{ brl(s.value) }}</td><td class="text-end fw-bold">{{ brl(s.mrr) }}</td>
+                        </tr>
+                        <tr v-if="!recurrence.subscriptions.length"><td colspan="7" class="text-center text-muted py-4">Nenhuma assinatura ativa.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="../assets/js/commercial-reports/reports.js"></script>
+    <script src="../assets/js/nav.js"></script>
+</body>
+
+</html>

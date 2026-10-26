@@ -44,6 +44,8 @@ class BankAccountController {
                 agency,
                 accountNumber,
                 balance,
+                // O saldo informado na criação é o saldo inicial: base da conferência de saldo.
+                opening_balance: Number(balance) || 0,
                 iban,
                 swiftCode,
                 bankAddress,

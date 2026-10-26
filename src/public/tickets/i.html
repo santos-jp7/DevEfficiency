@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Codlinx - Chamado</title>
+    <link href="../assets/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/codlinx.css">
+    <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css">
+
+    <script src="../assets/js/vue.min.js"></script>
+    <script src="../assets/js/jquery-3.6.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2/dist/umd/popper.min.js"></script>
+    <script src="../assets/js/bootstrap.min.js"></script>
+    <script src="../assets/js/axios.min.js"></script>
+    <script src="../assets/js/moment.min.js"></script>
+</head>
+
+<body>
+    <nav class="navbar bg-light">
+        <div class="container">
+            <a class="navbar-brand" href="/dashboard">
+                <img src="../assets/img/logo_cabecalho.png" alt="Codlinx" width="40" height="40">
+            </a>
+        </div>
+    </nav>
+
+    <div class="container p-4" id="app">
+        <div class="d-flex flex-wrap justify-content-between align-items-center">
+            <h5 class="mb-0">
+                {{ id ? 'Chamado #' + id : 'Novo chamado' }}
+                <span v-if="id" :class="'badge ms-2 bg-' + color(ticket.status)">{{ ticket.status }}</span>
+            </h5>
+            <a href="./index.html" class="btn btn-secondary btn-sm">Voltar</a>
+        </div>
+        <hr>
+
+        <div class="row">
+            <!-- Dados -->
+            <div class="col-lg-5 mb-4">
+                <form @submit.prevent="save">
+                    <div class="mb-3">
+                        <label class="form-label">Cliente</label>
+                        <select class="form-select" v-model="ticket.ClientId" @change="onClientChange" :disabled="!!ticket.ServiceOrderId">
+                            <option :value="null">Selecione…</option>
+                            <option v-for="c in clients" :value="c.id">{{ c.name }}</option>
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="mb-3 col-md-6">
+                            <label class="form-label">Solicitante</label>
+                            <select class="form-select" v-model="ticket.ContactId" @change="onContactChange">
+                                <option :value="null">Outro / não cadastrado</option>
+                                <option v-for="c in contacts" :value="c.id">{{ c.name }}</option>
+                            </select>
+                        </div>
+                        <div class="mb-3 col-md-6">
+                            <label class="form-label">Projeto</label>
+                            <select class="form-select" v-model="ticket.ProjectId">
+                                <option :value="null">—</option>
+                                <option v-for="p in projects" :value="p.id">{{ p.name }}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="mb-3 col-md-6">
+                            <label class="form-label">Nome do solicitante</label>
+                            <input type="text" class="form-control" v-model="ticket.requester_name">
+                        </div>
+                        <div class="mb-3 col-md-6">
+                            <label class="form-label">E-mail do solicitante</label>
+                            <input type="email" class="form-control" v-model="ticket.requester_email">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Assunto</label>
+                        <input type="text" class="form-control" v-model="ticket.subject" required maxlength="160">
+                    </div>
+                    <div class="row">
+                        <div class="mb-3 col-md-6">
+                            <label class="form-label">Tipo</label>
+                            <select class="form-select" v-model="ticket.type"><option v-for="t in types">{{ t }}</option></select>
+                        </div>
+                        <div class="mb-3 col-md-6">
+                            <label class="form-label">Gravidade</label>
+                            <select class="form-select" v-model="ticket.gravidade">
+                                <option :value="null">—</option><option>Baixo</option><option>Médio</option><option>Alto</option><option>Crítico</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3" v-if="!id">
+                        <label class="form-label">Descrição</label>
+                        <textarea class="form-control" rows="5" v-model="ticket.description"></textarea>
+                        <div class="form-text">O solicitante recebe um e-mail confirmando o recebimento.</div>
+                    </div>
+                    <button type="submit" class="btn btn-dark">{{ id ? 'Salvar dados' : 'Abrir chamado' }}</button>
+                </form>
+
+                <div v-if="id" class="mt-4">
+                    <hr>
+                    <div v-if="ticket.ServiceOrder" class="alert alert-info py-2">
+                        Convertido na <a :href="'../service_orders/i.html?id=' + ticket.ServiceOrder.id">OS #{{ ticket.ServiceOrder.id }}</a>
+                        ({{ ticket.ServiceOrder.status }}). O cliente acompanha pelos e-mails da OS.
+                    </div>
+                    <div v-else class="d-flex flex-wrap" style="gap:.5rem">
+                        <button class="btn btn-primary btn-sm" @click="openConvert"><i class="fa-solid fa-clipboard-list"></i> Converter em OS</button>
+                        <button class="btn btn-success btn-sm" @click="resolve" v-if="ticket.status !== 'Resolvido'"><i class="fa-solid fa-check"></i> Resolver</button>
+                        <button class="btn btn-outline-secondary btn-sm" @click="setStatus('Aguardando cliente')" v-if="ticket.status !== 'Aguardando cliente'">Aguardando cliente</button>
+                        <button class="btn btn-outline-secondary btn-sm" @click="setStatus('Em análise')" v-if="ticket.status === 'Aberto'">Em análise</button>
+                        <button class="btn btn-outline-danger btn-sm" @click="cancel" v-if="ticket.status !== 'Cancelado'">Cancelar</button>
+                    </div>
+                    <div class="form-text mt-2" v-if="!ticket.ServiceOrder">Dúvidas e validações podem ser só resolvidas; só vira OS (e cobrança) o que exige trabalho.</div>
+                </div>
+            </div>
+
+            <!-- Conversa -->
+            <div class="col-lg-7" v-if="id">
+                <h6>Conversa</h6>
+                <div class="border rounded p-2 mb-3" style="max-height:480px;overflow:auto">
+                    <div v-for="m in ticket.messages" :key="m.id" class="mb-2 p-2 rounded"
+                        :class="m.author_type === 'cliente' ? 'bg-light' : (m.internal ? 'bg-warning bg-opacity-25' : 'bg-primary bg-opacity-10')">
+                        <div class="small text-muted">
+                            <strong>{{ m.author_type === 'cliente' ? (m.author_name || 'Cliente') : (m.author_type === 'sistema' ? 'Sistema' : (m.author_name || 'Equipe')) }}</strong>
+                            <span v-if="m.internal" class="badge bg-warning text-dark ms-1">interno</span>
+                            · {{ moment(m.createdAt).format('DD/MM/YYYY HH:mm') }}
+                        </div>
+                        <div style="white-space:pre-wrap">{{ m.body }}</div>
+                    </div>
+                    <div v-if="!ticket.messages || !ticket.messages.length" class="text-muted text-center py-3">Sem mensagens.</div>
+                </div>
+
+                <form @submit.prevent="send" v-if="ticket.status !== 'Cancelado'">
+                    <textarea class="form-control mb-2" rows="3" v-model="reply.body" placeholder="Escreva a resposta ao cliente ou uma nota interna…"></textarea>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="internal" v-model="reply.internal">
+                            <label class="form-check-label small" for="internal">Nota interna (não envia e-mail)</label>
+                        </div>
+                        <button class="btn btn-dark btn-sm" :disabled="sending">
+                            <i class="fa-solid fa-paper-plane"></i> {{ reply.internal ? 'Salvar nota' : 'Enviar ao cliente' }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Converter -->
+        <div class="modal fade" id="convertModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header"><h6 class="modal-title">Converter em ordem de serviço</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                    <div class="modal-body">
+                        <p class="small text-muted">Cria a OS (com protocolo e SLA) a partir do chamado. O cliente é avisado da abertura e das próximas etapas.</p>
+                        <div class="mb-3"><label class="form-label">Assunto da OS</label><input class="form-control" v-model="convert.subject"></div>
+                        <div class="row">
+                            <div class="mb-3 col-md-6"><label class="form-label">Gravidade</label>
+                                <select class="form-select" v-model="convert.gravidade"><option :value="null">—</option><option>Baixo</option><option>Médio</option><option>Alto</option><option>Crítico</option></select></div>
+                            <div class="mb-3 col-md-6"><label class="form-label">Prazo</label><input type="date" class="form-control" v-model="convert.prazo"></div>
+                        </div>
+                    </div>
+                    <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-primary" @click="doConvert">Converter</button></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../assets/js/tickets/common.js"></script>
+    <script src="../assets/js/tickets/i.js"></script>
+    <script src="../assets/js/nav.js"></script>
+</body>
+
+</html>
