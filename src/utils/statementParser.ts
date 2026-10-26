@@ -11,6 +11,8 @@ export type ParsedEntry = {
 export type ParsedStatement = {
     format: 'ofx' | 'csv'
     entries: ParsedEntry[]
+    // Saldo final do extrato (OFX LEDGERBAL), quando informado pelo banco.
+    balance?: { amount: number; date: string } | null
 }
 
 export class StatementError extends Error {}
@@ -158,6 +160,16 @@ export function parseOfx(text: string): ParsedEntry[] {
     }
 
     return assignKeys(rows)
+}
+
+export function parseOfxBalance(text: string): { amount: number; date: string } | null {
+    const block = text.match(/<LEDGERBAL>[\s\S]*?(?=<\/LEDGERBAL>|<AVAILBAL>|<\/STMTRS>|$)/i)?.[0]
+    if (!block) return null
+
+    const amount = parseAmount(ofxTag(block, 'BALAMT') || '')
+    const date = parseDate(ofxTag(block, 'DTASOF') || '')
+
+    return Number.isNaN(amount) || !date ? null : { amount, date }
 }
 
 // ───────────────────────── CSV ─────────────────────────
@@ -313,7 +325,7 @@ export function parseStatement(buffer: Buffer, filename: string): ParsedStatemen
     const text = decodeBuffer(buffer)
     const isOfx = /\.ofx$/i.test(filename) || /<OFX>|OFXHEADER/i.test(text.slice(0, 2000))
 
-    if (isOfx) return { format: 'ofx', entries: parseOfx(text) }
+    if (isOfx) return { format: 'ofx', entries: parseOfx(text), balance: parseOfxBalance(text) }
     if (/\.(csv|txt)$/i.test(filename)) return { format: 'csv', entries: parseCsv(text) }
 
     throw new StatementError('Formato não suportado. Envie um arquivo .ofx ou .csv.')

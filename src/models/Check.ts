@@ -23,6 +23,8 @@ class Check extends Model<InferAttributes<Check>, InferCreationAttributes<Check>
     declare path_return: CreationOptional<string>
     declare return: CreationOptional<string>
     declare verify_status: CreationOptional<boolean>
+    // Falhas consecutivas (zera quando volta ao normal). O alerta só sai ao atingir checks_failure_threshold.
+    declare fail_count: CreationOptional<number>
 
     declare status: CreationOptional<'OK' | 'Error'>
 
@@ -67,6 +69,11 @@ Check.init(
         verify_status: {
             type: DataTypes.BOOLEAN,
             defaultValue: true,
+        },
+        fail_count: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 0,
         },
         path_return: {
             type: DataTypes.STRING,

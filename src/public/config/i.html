@@ -146,8 +146,8 @@
             <div class="mb-3 alert alert-warning py-2" v-if="config.type === 'auto_email_mode' || config.type === 'auto_email_test_to' || config.type === 'billing_reminder_start_date'">
                 <strong>Trava dos e-mails automáticos ao cliente</strong> (lembretes de cobrança, etapas da OS e chamados).
                 <ul class="mb-1">
-                    <li><code>off</code> (padrão): não envia nada;</li>
-                    <li><code>test</code>: envia <u>somente</u> para <code>auto_email_test_to</code>, com aviso de quem receberia;</li>
+                    <li><code>off</code>: não envia nada;</li>
+                    <li><code>test</code> (padrão): envia <u>somente</u> para <code>auto_email_test_to</code>, com aviso de quem receberia;</li>
                     <li><code>live</code>: envia de verdade aos clientes.</li>
                 </ul>
                 Recomendado: <code>test</code> por alguns dias, conferir o preview e só então <code>live</code>.
@@ -156,6 +156,9 @@
                 <div class="mt-2">
                     <button type="button" class="btn btn-sm btn-outline-dark" @click="previewReminders"><i class="fa-solid fa-eye"></i> Ver quais lembretes sairiam agora</button>
                 </div>
+            </div>
+            <div class="mb-3 alert alert-info py-2" v-if="config.type === 'checks_failure_threshold'">
+                Quantas verificações seguidas (a cada 10 min) precisam falhar antes de avisar a queda. Com <code>2</code>, uma falha isolada não gera alerta.
             </div>
             <div class="mb-3 alert alert-info py-2" v-if="config.type === 'balance_alert_enabled' || config.type === 'balance_alert_email'">
                 <strong>Conferência de saldo</strong> &mdash; a cada hora o sistema compara o saldo de cada conta com as movimentações

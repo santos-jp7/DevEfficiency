@@ -151,6 +151,16 @@ Configurações operacionais (também em **Configurações**):
 
 ---
 
+## Execução
+
+Os agendadores (checks, assinaturas, lembretes, avisos de contas a pagar e de saldo) rodam **dentro da aplicação**.
+Mantenha **uma única instância** em execução; com duas, avisos e e-mails automáticos podem sair duplicados.
+
+Os e-mails automáticos ao cliente (lembretes, etapas da OS, chamados, alertas dos checks) começam em **modo teste**
+(`auto_email_mode=test`): tudo chega só em `auto_email_test_to`. Mude para `live` em Configurações quando validar.
+
+---
+
 ## Estrutura do Projeto
 
 ```

@@ -111,15 +111,20 @@
                         <th>Origem</th>
                         <th>Destino</th>
                         <th class="text-right">Valor</th>
+                        <th>Situação</th>
                         <th>Abrir</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="transfer in transfers">
+                    <tr v-for="transfer in transfers" :class="{ 'text-muted': transfer.canceledAt }">
                         <td>{{ formatDate(transfer.date) }}</td>
                         <td>{{ transfer.SourceAccount ? transfer.SourceAccount.name : '' }}</td>
                         <td>{{ transfer.DestinationAccount ? transfer.DestinationAccount.name : '' }}</td>
-                        <td class="text-right">{{ formatCurrency(transfer.amount) }}</td>
+                        <td class="text-right" :style="transfer.canceledAt ? 'text-decoration:line-through' : ''">{{ formatCurrency(transfer.amount) }}</td>
+                        <td>
+                            <span v-if="transfer.canceledAt" class="badge bg-secondary" :title="transfer.cancel_reason">Cancelada</span>
+                            <button v-else class="btn btn-sm btn-outline-danger py-0" @click="cancelTransfer(transfer)">Cancelar</button>
+                        </td>
                         <td>
                             <a :href="'../bank-transfers/i.html?id=' + transfer.id"><i
                                     class="fa-solid fa-arrow-right"></i></a>

@@ -40,6 +40,7 @@ import Ticket from './models/Ticket'
 import TicketMessage from './models/TicketMessage'
 import BankStatementImport from './models/BankStatementImport'
 import BankStatementEntry from './models/BankStatementEntry'
+import BankEntryMatch from './models/BankEntryMatch'
 
 // O `sync({ alter })` do Sequelize não amplia ENUMs já existentes no MySQL. Quando um valor novo é
 // acrescentado ao model, esta função (idempotente) atualiza a coluna sem mexer em nulidade/default.
@@ -115,6 +116,8 @@ async function syncModels(): Promise<true> {
 
     await BankStatementImport.sync({ alter: { drop: false } })
     await BankStatementEntry.sync({ alter: { drop: false } })
+    await ensureEnumValues('bank_statement_entries', 'matched_type', ['transfer'])
+    await BankEntryMatch.sync({ alter: { drop: false } })
 
     await BalanceAdjustment.sync({ alter: { drop: false } })
     await EmailLog.sync({ alter: { drop: false } })

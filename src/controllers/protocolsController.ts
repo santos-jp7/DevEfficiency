@@ -315,6 +315,15 @@ class protocolsController {
             ],
         })
 
+        // Lançamentos avulsos: protocolos ligados direto ao cliente (sem OS/assinatura) na mesma situação.
+        const avulsos = client
+            ? await Protocol.findAll({
+                  where: { ClientId: client.id, status: type, ServiceOrderId: null, SubscriptionId: null } as any,
+                  include: [{ model: Protocol_product, include: [Product] }, Protocol_register, Receipts],
+                  order: [['id', 'ASC']],
+              })
+            : []
+
         const config = await Config.findAll({})
         const configMap: { [key: string]: string | null } = {}
         config.forEach((cfg) => {
@@ -335,6 +344,7 @@ class protocolsController {
         const protocols = [
             ...(oss || []).map((os) => (os as any).Protocol),
             ...(subscriptions || []).flatMap((sub) => (sub as any).Protocols || []),
+            ...avulsos,
         ].filter(Boolean)
         const pricing = sumSummaries(
             protocols.map((p) => summarizeProtocol(p, client)),
@@ -342,7 +352,7 @@ class protocolsController {
         )
 
         const template = fs.readFileSync(path.resolve('src', 'views', 'budget_multi.ejs'), 'utf-8')
-        const html = ejs.render(template, { oss, subscriptions, client, type, configMap, pricing, pv: pricingView })
+        const html = ejs.render(template, { oss, subscriptions, avulsos, client, type, configMap, pricing, pv: pricingView })
 
         // return res.send(html)
 

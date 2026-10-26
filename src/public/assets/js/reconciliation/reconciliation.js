@@ -22,22 +22,43 @@ new Vue({
         filter: { status: 'pendente', direction: '', startDate: '', endDate: '' },
         manual: null,
         manualOptions: [],
+        selected: [],
+        compare: null,
+        tolerance: 0.05,
+        balanceForm: { amount: '', date: moment().format('YYYY-MM-DD') },
         moment,
+    },
+    computed: {
+        selectedSum() {
+            return this.selected.reduce((s, i) => s + i.value, 0)
+        },
     },
     methods: {
         brl: (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(v) || 0),
         date: (v) => (v ? moment(String(v).slice(0, 10)).format('DD/MM/YYYY') : ''),
         statusColor: (s) => ({ pendente: 'warning', conciliado: 'success', ignorado: 'secondary' }[s] || 'secondary'),
-        typeLabel: (t) => ({ billing: 'Cobrança recebida', receipt: 'Recibo', payable: 'Conta paga' }[t] || t),
+        typeLabel: (t) => ({ billing: 'Cobrança recebida', receipt: 'Recibo', payable: 'Conta paga', transfer: 'Transferência' }[t] || t),
         fail(error, fallback) {
             alert(error.response?.data?.message || fallback)
         },
         async loadAll() {
-            await Promise.all([this.loadSummary(), this.loadEntries(), this.loadImports()])
+            await Promise.all([this.loadSummary(), this.loadEntries(), this.loadImports(), this.loadCompare()])
             if (this.tab === 'sistema') this.loadUnreconciled()
         },
         async loadSummary() {
             this.summary = (await __api__.get('/api/reconciliation/summary', { params: { BankAccountId: this.accountId } })).data
+            this.tolerance = this.summary.tolerance
+        },
+        async loadCompare() {
+            this.compare = (await __api__.get('/api/reconciliation/balance-compare', { params: { BankAccountId: this.accountId } })).data
+        },
+        async saveStatementBalance() {
+            if (this.balanceForm.amount === '') return alert('Informe o saldo do extrato.')
+            try {
+                this.compare = (await __api__.post('/api/reconciliation/statement-balance', { BankAccountId: this.accountId, amount: this.balanceForm.amount, date: this.balanceForm.date })).data
+            } catch (error) {
+                this.fail(error, 'Não foi possível registrar o saldo.')
+            }
         },
         async loadEntries() {
             const params = { BankAccountId: this.accountId }
@@ -49,7 +70,7 @@ new Vue({
         },
         async loadUnreconciled() {
             const { data } = await __api__.get('/api/reconciliation/unreconciled', { params: { BankAccountId: this.accountId } })
-            this.unreconciledList = [...data.billings, ...data.receipts, ...data.payables].sort((a, b) => b.date.localeCompare(a.date))
+            this.unreconciledList = [...data.billings, ...data.receipts, ...data.payables, ...data.transfers].sort((a, b) => b.date.localeCompare(a.date))
         },
         async importFile() {
             const file = this.$refs.file.files[0]
@@ -79,17 +100,35 @@ new Vue({
                 this.fail(error, 'Erro na conciliação automática.')
             }
         },
-        async match(entry, target, force = false) {
+        // Um clique numa sugestão = vincular só aquele lançamento.
+        match(entry, target) {
+            return this.matchMany(entry, [target])
+        },
+        async matchMany(entry, targets, force = false) {
             try {
-                await __api__.post(`/api/reconciliation/entries/${entry.id}/match`, { type: target.type, id: target.id, force })
+                await __api__.post(`/api/reconciliation/entries/${entry.id}/match`, {
+                    targets: targets.map((t) => ({ type: t.type, id: t.id })),
+                    force,
+                })
                 this.closeManual()
                 await this.loadAll()
             } catch (error) {
                 if (error.response?.data?.diverges && !force) {
-                    if (confirm('Os valores do extrato e do sistema divergem. Vincular mesmo assim?')) return this.match(entry, target, true)
+                    const diff = error.response.data.difference
+                    if (confirm(`Os valores divergem em ${this.brl(diff)} (extrato − lançamentos). Vincular mesmo assim? A diferença fica registrada.`)) return this.matchMany(entry, targets, true)
                     return
                 }
                 this.fail(error, 'Não foi possível conciliar.')
+            }
+        },
+        async createExpense(entry) {
+            const description = prompt(`Lançar ${this.brl(Math.abs(entry.amount))} como despesa paga (a conta bancária já reflete esse débito).\n\nDescrição:`, entry.description || 'Tarifa bancária')
+            if (description === null) return
+            try {
+                await __api__.post(`/api/reconciliation/entries/${entry.id}/expense`, { description })
+                await this.loadAll()
+            } catch (error) {
+                this.fail(error, 'Não foi possível lançar a despesa.')
             }
         },
         async act(entry, action) {
@@ -102,6 +141,7 @@ new Vue({
         },
         async openManual(entry) {
             this.manual = entry
+            this.selected = []
             const { data } = await __api__.get('/api/reconciliation/unreconciled', {
                 params: {
                     BankAccountId: this.accountId,
@@ -109,7 +149,8 @@ new Vue({
                     endDate: moment(entry.date).add(60, 'days').format('YYYY-MM-DD'),
                 },
             })
-            const pool = entry.amount > 0 ? [...data.billings, ...data.receipts] : data.payables
+            const transfers = data.transfers.filter((t) => t.direction === (entry.amount > 0 ? 'in' : 'out'))
+            const pool = entry.amount > 0 ? [...data.billings, ...data.receipts, ...transfers] : [...data.payables, ...transfers]
             // Valor igual primeiro, depois o mais próximo da data.
             this.manualOptions = pool.sort(
                 (a, b) =>

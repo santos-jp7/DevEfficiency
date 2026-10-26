@@ -75,6 +75,7 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
 
     instance.get('/bank-transfers', { preHandler: [isAuthed] }, bankTransferController.index)
     instance.get('/bank-transfers/:id', { preHandler: [isAuthed] }, bankTransferController.show)
+    instance.post('/bank-transfers/:id/cancel', { preHandler: [isAuthed] }, bankTransferController.cancel as any)
     instance.post('/bank-transfers', { preHandler: [isAuthed] }, bankTransferController.store)
 
     instance.get('/cost-centers', { preHandler: [isAuthed] }, costCenterController.index)
@@ -120,6 +121,9 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.get('/reconciliation/imports', { preHandler: [isAuthed] }, reconciliationController.imports as any)
     instance.get('/reconciliation/unreconciled', { preHandler: [isAuthed] }, reconciliationController.unreconciled as any)
     instance.get('/reconciliation/status', { preHandler: [isAuthed] }, reconciliationController.status as any)
+    instance.get('/reconciliation/balance-compare', { preHandler: [isAuthed] }, reconciliationController.balanceCompare as any)
+    instance.post('/reconciliation/statement-balance', { preHandler: [isAuthed] }, reconciliationController.setStatementBalance as any)
+    instance.post('/reconciliation/entries/:id/expense', { preHandler: [isAuthed] }, reconciliationController.expense as any)
     instance.post('/reconciliation/import', { preHandler: [isAuthed] }, reconciliationController.import as any)
     instance.post('/reconciliation/auto-match', { preHandler: [isAuthed] }, reconciliationController.autoMatch as any)
     instance.post('/reconciliation/entries/:id/match', { preHandler: [isAuthed] }, reconciliationController.match as any)

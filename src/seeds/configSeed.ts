@@ -23,10 +23,13 @@ async function seedConfigs(): Promise<void> {
         { type: 'balance_alert_enabled', value: 'true', upload: false },
         { type: 'balance_alert_email', value: 'jean.pierre@codlinx.com.br', upload: false },
         // TRAVA dos e-mails automáticos ao cliente (lembretes, etapas da OS, chamados): off | test | live.
-        // Começa desligada: ligue em "test" (tudo vai para auto_email_test_to) e só depois em "live".
-        { type: 'auto_email_mode', value: 'off', upload: false },
+        // Começa em "test": nada vai a clientes, tudo chega só em auto_email_test_to. Troque para "live" quando validar.
+        { type: 'auto_email_mode', value: 'test', upload: false },
         { type: 'auto_email_test_to', value: 'jean.pierre@codlinx.com.br', upload: false },
         // Só cobranças com vencimento a partir desta data recebem lembrete (padrão: dia do primeiro deploy).
+        { type: 'checks_failure_threshold', value: '2', upload: false },
+        // Diferença máxima (R$) aceita para conciliar automaticamente extrato × sistema.
+        { type: 'reconciliation_tolerance', value: '0.05', upload: false },
         { type: 'billing_reminder_start_date', value: nowInBusinessTimezone().date, upload: false },
         // Lembretes automáticos de cobrança: dias em relação ao vencimento (negativo = antes, positivo = atraso).
         { type: 'billing_reminders_enabled', value: 'true', upload: false },

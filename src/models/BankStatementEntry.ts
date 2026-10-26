@@ -5,7 +5,7 @@ import BankAccount from './BankAccount'
 import BankStatementImport from './BankStatementImport'
 
 export type EntryStatus = 'pendente' | 'conciliado' | 'ignorado'
-export type MatchType = 'billing' | 'receipt' | 'payable'
+export type MatchType = 'billing' | 'receipt' | 'payable' | 'transfer'
 
 class BankStatementEntry extends Model<InferAttributes<BankStatementEntry>, InferCreationAttributes<BankStatementEntry>> {
     declare id: CreationOptional<number>
@@ -23,6 +23,8 @@ class BankStatementEntry extends Model<InferAttributes<BankStatementEntry>, Infe
     declare matched_type: CreationOptional<MatchType | null>
     declare matched_id: CreationOptional<number | null>
     declare matched_at: CreationOptional<Date | null>
+    // Diferença aceita ao conciliar (extrato − soma dos lançamentos), ex.: tarifa descontada do depósito.
+    declare match_difference: CreationOptional<number | null>
 
     declare BankAccountId: ForeignKey<BankAccount['id']>
     declare BankStatementImportId: CreationOptional<ForeignKey<BankStatementImport['id']>>
@@ -54,9 +56,17 @@ BankStatementEntry.init(
             allowNull: false,
             defaultValue: 'pendente',
         },
-        matched_type: { type: DataTypes.ENUM('billing', 'receipt', 'payable'), allowNull: true },
+        matched_type: { type: DataTypes.ENUM('billing', 'receipt', 'payable', 'transfer'), allowNull: true },
         matched_id: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true },
         matched_at: { type: DataTypes.DATE, allowNull: true },
+        match_difference: {
+            type: DataTypes.DECIMAL(12, 2),
+            allowNull: true,
+            get() {
+                const v = this.getDataValue('match_difference')
+                return v === null || v === undefined ? null : Number(v)
+            },
+        },
         BankAccountId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false },
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,

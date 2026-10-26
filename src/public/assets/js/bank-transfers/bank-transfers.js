@@ -19,6 +19,18 @@ const app = new Vue({
             }
             return ''
         },
+        async cancelTransfer(transfer) {
+            const reason = prompt(`Cancelar a transferência de ${this.formatCurrency(transfer.amount)}? O valor volta para a conta de origem.\n\nMotivo (obrigatório):`)
+            if (!reason) return
+
+            try {
+                await __api__.post(`/api/bank-transfers/${transfer.id}/cancel`, { reason })
+                const { data } = await __api__.get('/api/bank-transfers')
+                this.transfers = data
+            } catch (error) {
+                alert(error.response?.data?.message || 'Não foi possível cancelar a transferência.')
+            }
+        },
         formatDate(date) {
             return moment(date).format('DD/MM/YYYY')
         },

@@ -39,7 +39,8 @@ class commercialReportsController {
     // Inadimplência: cobranças vencidas e ainda não pagas, por cliente, com faixas de atraso.
     static async delinquency(req: Req, res: FastifyReply) {
         const { date: today } = nowInBusinessTimezone()
-        const statuses = req.query.status ? String(req.query.status).split(',') : ['faturada', 'pendente']
+        // Inadimplência = fatura já emitida ao cliente e vencida (faturada). Outros status só se pedidos explicitamente.
+        const statuses = req.query.status ? String(req.query.status).split(',') : ['faturada']
 
         const billings = await Billing.findAll({
             where: { status: { [Op.in]: statuses }, due_date: { [Op.ne]: null as any } },

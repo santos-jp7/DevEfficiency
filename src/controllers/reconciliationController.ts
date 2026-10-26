@@ -7,21 +7,29 @@ import Client from '../models/Client'
 import Receipts from '../models/Receipts'
 import Payable from '../models/Payable'
 import BankAccount from '../models/BankAccount'
+import BankTransfer from '../models/BankTransfer'
 import BankStatementEntry, { MatchType } from '../models/BankStatementEntry'
 import BankStatementImport from '../models/BankStatementImport'
+import BankEntryMatch from '../models/BankEntryMatch'
 import { StatementError } from '../utils/statementParser'
 import {
+    alreadyMatched,
     autoMatchPending,
-    describeTarget,
+    compareStatementBalance,
+    createExpenseFromEntry,
+    describeMatches,
     entriesForTarget,
     findCandidates,
+    findCombos,
+    getTolerance,
     importStatement,
     loadTarget,
+    looksLikeFee,
     matchEntry,
     unmatchEntry,
 } from '../utils/reconciliation'
 
-const TYPES: MatchType[] = ['billing', 'receipt', 'payable']
+const TYPES: MatchType[] = ['billing', 'receipt', 'payable', 'transfer']
 
 type Req = FastifyRequest<{ Params: { id: string }; Querystring: Record<string, any>; Body: Record<string, any> }>
 
@@ -58,8 +66,15 @@ class reconciliationController {
         for (const entry of entries) {
             const json: any = entry.toJSON()
 
-            if (entry.status === 'conciliado') json.matched_label = await describeTarget(entry.matched_type, entry.matched_id)
-            else if (entry.status === 'pendente' && suggestionBudget-- > 0) json.suggestions = await findCandidates(entry)
+            if (entry.status === 'conciliado') json.matches = await describeMatches(entry)
+            else if (entry.status === 'pendente') {
+                json.likely_fee = Number(entry.amount) < 0 && looksLikeFee(entry.description)
+
+                if (suggestionBudget-- > 0) {
+                    json.suggestions = await findCandidates(entry)
+                    json.combos = json.suggestions.length ? [] : await findCombos(entry)
+                }
+            }
 
             data.push(json)
         }
@@ -88,7 +103,7 @@ class reconciliationController {
 
         const account = await BankAccount.findByPk(BankAccountId)
 
-        return res.send({ ...summary, system_balance: account ? Number(account.balance) : null })
+        return res.send({ ...summary, system_balance: account ? Number(account.balance) : null, tolerance: await getTolerance() })
     }
 
     static async imports(req: Req, res: FastifyReply) {
@@ -131,32 +146,67 @@ class reconciliationController {
         return res.send({ matched: await autoMatchPending(BankAccountId) })
     }
 
+    // Vincula uma linha do extrato a um ou mais lançamentos (targets). Aceita também o formato antigo { type, id }.
     static async match(req: Req, res: FastifyReply) {
         const entry = await BankStatementEntry.findByPk(req.params.id)
         if (!entry) return notFound(res, 'Lançamento do extrato não encontrado.')
-
-        const { type, id, force } = req.body || {}
-
-        if (!TYPES.includes(type) || !id) return res.status(400).send({ message: 'Informe o tipo e o id do lançamento.' })
         if (entry.status === 'conciliado') return res.status(400).send({ message: 'Lançamento já conciliado.' })
 
-        const target = await loadTarget(type, Number(id))
-        if (!target) return notFound(res, 'Lançamento do sistema não encontrado ou ainda não pago.')
+        const { force } = req.body
+        const targets: { type: MatchType; id: number }[] = Array.isArray(req.body.targets)
+            ? req.body.targets
+            : req.body.type
+            ? [{ type: req.body.type, id: req.body.id }]
+            : []
 
-        if (target.BankAccountId !== entry.BankAccountId)
-            return res.status(400).send({ message: 'O lançamento pertence a outra conta bancária.' })
+        if (targets.length === 0 || targets.length > 10 || targets.some((t) => !TYPES.includes(t.type) || !t.id))
+            return res.status(400).send({ message: 'Informe de 1 a 10 lançamentos (tipo e id).' })
 
-        if (Math.sign(Number(entry.amount)) !== target.sign)
-            return res.status(400).send({ message: 'Entrada/saída incompatível com o lançamento escolhido.' })
+        const keys = new Set(targets.map((t) => `${t.type}:${t.id}`))
+        if (keys.size !== targets.length) return res.status(400).send({ message: 'Lançamento repetido.' })
 
-        if (!force && Math.abs(Math.abs(Number(entry.amount)) - target.value) > 0.01)
-            return res.status(409).send({ message: 'Os valores divergem.', diverges: true })
+        const loaded: { type: MatchType; id: number; value: number }[] = []
 
-        const taken = await BankStatementEntry.findOne({ where: { matched_type: type, matched_id: id } })
-        if (taken) return res.status(409).send({ message: `Este lançamento já foi conciliado com a linha #${taken.id}.` })
+        for (const t of targets) {
+            const target = await loadTarget(t.type, Number(t.id), entry.BankAccountId)
 
-        await matchEntry(entry, type, Number(id))
+            if (!target) return notFound(res, `Lançamento ${t.type} #${t.id} não encontrado ou ainda não pago.`)
+            if (target.BankAccountId !== entry.BankAccountId)
+                return res.status(400).send({ message: 'O lançamento pertence a outra conta bancária.' })
+            if (Math.sign(Number(entry.amount)) !== target.sign)
+                return res.status(400).send({ message: 'Entrada/saída incompatível com o lançamento escolhido.' })
+
+            const taken = await alreadyMatched(t.type, [Number(t.id)], { accountId: entry.BankAccountId })
+            if (taken.has(Number(t.id))) return res.status(409).send({ message: `${t.type} #${t.id} já foi conciliado com outra linha.` })
+
+            loaded.push({ type: t.type, id: Number(t.id), value: target.value })
+        }
+
+        const sum = loaded.reduce((s, t) => s + Math.round(t.value * 100), 0) / 100
+        const difference = Math.round((Math.abs(Number(entry.amount)) - sum) * 100) / 100
+
+        if (!force && Math.abs(difference) > (await getTolerance()))
+            return res.status(409).send({ message: 'Os valores divergem.', diverges: true, difference })
+
+        await matchEntry(entry, loaded, { difference: Math.abs(difference) > 0 ? difference : null })
         return res.send(entry)
+    }
+
+    // Tarifa/despesa que só aparece no banco: cria a conta paga e concilia numa operação.
+    static async expense(req: Req, res: FastifyReply) {
+        const entry = await BankStatementEntry.findByPk(req.params.id)
+        if (!entry) return notFound(res, 'Lançamento do extrato não encontrado.')
+
+        try {
+            const payable = await createExpenseFromEntry(entry, {
+                description: req.body.description,
+                CostCenterId: req.body.CostCenterId || null,
+                SupplierId: req.body.SupplierId || null,
+            })
+            return res.status(201).send({ payable, entry: await entry.reload() })
+        } catch (err: any) {
+            return res.status(400).send({ message: err.message })
+        }
     }
 
     static async unmatch(req: Req, res: FastifyReply) {
@@ -186,14 +236,15 @@ class reconciliationController {
 
     // Situação de um pagamento/recibo/conta frente ao extrato: conciliado, ou com linha candidata, ou sem extrato.
     static async status(req: Req, res: FastifyReply) {
-        const { type, id } = req.query
+        const { type, id, accountId } = req.query
 
         if (!TYPES.includes(type) || !id) return res.status(400).send({ message: 'Informe type e id.' })
 
-        const matched = await BankStatementEntry.findOne({ where: { matched_type: type, matched_id: id } })
-        if (matched) return res.send({ state: 'conciliado', entry: matched })
+        const matches = await BankEntryMatch.findAll({ where: { target_type: type, target_id: id }, include: [BankStatementEntry] })
+        const own = accountId ? matches.filter((m) => (m as any).BankStatementEntry?.BankAccountId === Number(accountId)) : matches
+        if (own.length) return res.send({ state: 'conciliado', entry: (own[0] as any).BankStatementEntry })
 
-        const { target, entries } = await entriesForTarget(type, Number(id))
+        const { target, entries } = await entriesForTarget(type, Number(id), accountId ? Number(accountId) : undefined)
         if (!target) return res.send({ state: 'indisponivel', entry: null, suggestions: [] })
 
         return res.send({ state: entries.length ? 'sugestao' : 'sem_extrato', entry: null, suggestions: entries })
@@ -207,18 +258,22 @@ class reconciliationController {
 
         if (!BankAccountId) return res.status(400).send({ message: 'Informe a conta bancária.' })
 
+        const accountId = Number(BankAccountId)
         const from = moment(startDate).startOf('day').toDate()
         const to = moment(endDate).endOf('day').toDate()
 
         const matchedIds = async (type: MatchType) =>
-            (
-                await BankStatementEntry.findAll({
-                    where: { matched_type: type, BankAccountId },
-                    attributes: ['matched_id'],
-                })
-            ).map((r) => Number(r.matched_id))
+            [...(await alreadyMatched(type, await candidateIds(type), { accountId }))]
 
-        const [mb, mr, mp] = await Promise.all([matchedIds('billing'), matchedIds('receipt'), matchedIds('payable')])
+        // Ids de cada tipo na janela (limita a consulta de vínculos).
+        const candidateIds = async (type: MatchType): Promise<number[]> => {
+            if (type === 'billing') return (await Billing.findAll({ where: { status: 'pago', BankAccountId: accountId, payment_date: { [Op.between]: [from, to] } }, attributes: ['id'] })).map((b) => b.id)
+            if (type === 'receipt') return (await Receipts.findAll({ where: { BankAccountId: accountId, createdAt: { [Op.between]: [from, to] } }, attributes: ['id'] })).map((r) => r.id)
+            if (type === 'payable') return (await Payable.findAll({ where: { status: 'pago', BankAccountId: accountId, paymentDate: { [Op.between]: [startDate, endDate] } }, attributes: ['id'] })).map((p) => p.id)
+            return (await BankTransfer.findAll({ where: { canceledAt: null, date: { [Op.between]: [startDate, endDate] }, [Op.or]: [{ sourceAccountId: accountId }, { destinationAccountId: accountId }] }, attributes: ['id'] })).map((t) => t.id)
+        }
+
+        const [mb, mr, mp, mt] = await Promise.all([matchedIds('billing'), matchedIds('receipt'), matchedIds('payable'), matchedIds('transfer')])
 
         const billings = await Billing.findAll({
             where: { status: 'pago', BankAccountId, payment_date: { [Op.between]: [from, to] }, id: { [Op.notIn]: mb.length ? mb : [0] } },
@@ -240,6 +295,16 @@ class reconciliationController {
                 paymentDate: { [Op.between]: [startDate, endDate] },
                 id: { [Op.notIn]: mp.length ? mp : [0] },
             },
+        })
+
+        const transfers = await BankTransfer.findAll({
+            where: {
+                canceledAt: null,
+                date: { [Op.between]: [startDate, endDate] },
+                id: { [Op.notIn]: mt.length ? mt : [0] },
+                [Op.or]: [{ sourceAccountId: accountId }, { destinationAccountId: accountId }],
+            },
+            include: [{ all: true }],
         })
 
         return res.send({
@@ -264,7 +329,43 @@ class reconciliationController {
                 value: Number(p.value),
                 date: moment(p.paymentDate).format('YYYY-MM-DD'),
             })),
+            transfers: transfers.map((t) => {
+                const outgoing = t.sourceAccountId === accountId
+                const other = outgoing ? (t as any).DestinationAccount : (t as any).SourceAccount
+                return {
+                    type: 'transfer',
+                    id: t.id,
+                    label: `Transferência #${t.id} ${outgoing ? 'para' : 'de'} ${other?.name || '—'}`,
+                    value: Number(t.amount),
+                    date: moment(t.date).format('YYYY-MM-DD'),
+                    direction: outgoing ? 'out' : 'in',
+                }
+            }),
         })
+    }
+
+    // Saldo do extrato × saldo do sistema na mesma data.
+    static async balanceCompare(req: Req, res: FastifyReply) {
+        const BankAccountId = Number(req.query.BankAccountId)
+        if (!BankAccountId) return res.status(400).send({ message: 'Informe a conta bancária.' })
+
+        return res.send(await compareStatementBalance(BankAccountId))
+    }
+
+    // Informa manualmente o saldo final do extrato (CSV não traz saldo): grava na importação mais recente da conta.
+    static async setStatementBalance(req: Req, res: FastifyReply) {
+        const BankAccountId = Number(req.body.BankAccountId)
+        const amount = Number(req.body.amount)
+        const date = String(req.body.date || '')
+
+        if (!BankAccountId || !Number.isFinite(amount) || !/^\d{4}-\d{2}-\d{2}$/.test(date))
+            return res.status(400).send({ message: 'Informe conta, saldo e data (AAAA-MM-DD).' })
+
+        const latest = await BankStatementImport.findOne({ where: { BankAccountId }, order: [['id', 'DESC']] })
+        if (!latest) return res.status(400).send({ message: 'Importe um extrato antes de informar o saldo.' })
+
+        await latest.update({ statement_balance: Math.round(amount * 100) / 100, statement_balance_date: date })
+        return res.send(await compareStatementBalance(BankAccountId))
     }
 }
 

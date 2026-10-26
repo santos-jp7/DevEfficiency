@@ -4,7 +4,8 @@ import moment from 'moment'
 import Check from '../models/Check'
 import Client from '../models/Client'
 import Project from '../models/Project'
-import { parseEmails, sendAlertEmail } from '../utils/resendMail'
+import { parseEmails } from '../utils/resendMail'
+import { getConfigValue, sendClientEmail } from '../utils/clientMail'
 
 const REQUEST_TIMEOUT_MS = 15000
 
@@ -55,9 +56,19 @@ export default new (class checksWorker {
                     ${kind === 'down' ? `Detalhe: ${escapeHtml(detail)}` : ''}
                 </p>`
 
-            // Sem contato do cliente, o aviso vai ao menos para a cópia interna.
-            const channel = await sendAlertEmail({ to: to.length ? to : cc, cc: to.length ? cc : undefined, subject, html })
-            console.log(`[checks] alerta (${kind}) enviado via ${channel} para check #${check.id}`)
+            // Passa pela trava de envio (auto_email_mode): em teste vai só para o e-mail de teste. Sem contato do
+            // cliente o aviso é interno (equipe) e não é barrado.
+            const result = await sendClientEmail({
+                kind: 'check_alert',
+                refType: 'check',
+                refId: check.id,
+                stage: `${kind}@${Date.now()}`,
+                to: to.length ? to : cc,
+                subject,
+                html,
+                manual: to.length === 0,
+            })
+            console.log(`[checks] alerta (${kind}) do check #${check.id}: ${result}`)
         } catch (err) {
             console.error(`[checks] falha ao enviar alerta do check #${check.id}`, err)
         }
@@ -113,6 +124,22 @@ export default new (class checksWorker {
 
         const previous = check.status
         const next = ok ? 'OK' : 'Error'
+
+        // Tolerância: uma falha isolada (rede, timeout) não vira queda; só após N falhas seguidas.
+        if (ok) {
+            if (check.fail_count) {
+                check.fail_count = 0
+                await check.save()
+            }
+        } else {
+            check.fail_count = (check.fail_count || 0) + 1
+            const threshold = Math.max(Number(await getConfigValue('checks_failure_threshold', '2')) || 1, 1)
+
+            if (previous === 'OK' && check.fail_count < threshold) {
+                await check.save()
+                return
+            }
+        }
 
         // Sem mudança de estado não repete o aviso (queda contínua) nem regrava o registro.
         if (previous === next) return

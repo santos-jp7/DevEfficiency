@@ -37,9 +37,9 @@ async function totals(id: number) {
     const [receipts, reimbursements, tin, payables, tout] = await Promise.all([
         Receipts.sum('value', { where: { BankAccountId: id } }),
         Reimbursement.sum('value', { where: { BankAccountId: id } }),
-        BankTransfer.sum('amount', { where: { destinationAccountId: id } }),
+        BankTransfer.sum('amount', { where: { destinationAccountId: id, canceledAt: null } }),
         Payable.sum('value', { where: { BankAccountId: id, status: 'pago' } }),
-        BankTransfer.sum('amount', { where: { sourceAccountId: id } }),
+        BankTransfer.sum('amount', { where: { sourceAccountId: id, canceledAt: null } }),
     ])
 
     return { receipts: cents(receipts), reimbursements: cents(reimbursements), tin: cents(tin), payables: cents(payables), tout: cents(tout) }
@@ -90,7 +90,7 @@ export async function accountLedger(id: number, startDate?: string, endDate?: st
         Receipts.findAll({ where: { BankAccountId: id } }),
         Payable.findAll({ where: { BankAccountId: id, status: 'pago' } }),
         Reimbursement.findAll({ where: { BankAccountId: id } }),
-        BankTransfer.findAll({ where: { [Op.or]: [{ sourceAccountId: id }, { destinationAccountId: id }] } }),
+        BankTransfer.findAll({ where: { canceledAt: null, [Op.or]: [{ sourceAccountId: id }, { destinationAccountId: id }] } }),
     ])
 
     const rows: LedgerRow[] = [

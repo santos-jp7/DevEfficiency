@@ -17,6 +17,9 @@ class BankStatementImport extends Model<
     declare duplicate_entries: number
     declare period_start: CreationOptional<string | null>
     declare period_end: CreationOptional<string | null>
+    // Saldo final informado pelo banco (OFX LEDGERBAL) ou digitado, e a data a que se refere.
+    declare statement_balance: CreationOptional<number | null>
+    declare statement_balance_date: CreationOptional<string | null>
 
     declare BankAccountId: ForeignKey<BankAccount['id']>
 
@@ -39,6 +42,15 @@ BankStatementImport.init(
         duplicate_entries: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
         period_start: { type: DataTypes.DATEONLY, allowNull: true },
         period_end: { type: DataTypes.DATEONLY, allowNull: true },
+        statement_balance: {
+            type: DataTypes.DECIMAL(14, 2),
+            allowNull: true,
+            get() {
+                const v = this.getDataValue('statement_balance')
+                return v === null || v === undefined ? null : Number(v)
+            },
+        },
+        statement_balance_date: { type: DataTypes.DATEONLY, allowNull: true },
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
     },

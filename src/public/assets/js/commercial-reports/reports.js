@@ -9,7 +9,7 @@ new Vue({
         delinquency: null,
         sales: null,
         recurrence: null,
-        onlyInvoiced: false,
+        onlyInvoiced: true,
         open: {},
         range: { startDate: moment().startOf('month').format('YYYY-MM-DD'), endDate: moment().endOf('month').format('YYYY-MM-DD') },
     },
@@ -29,7 +29,7 @@ new Vue({
             alert((error.response && error.response.data && error.response.data.message) || 'Erro ao carregar o relatório.')
         },
         async loadDelinquency() {
-            const params = this.onlyInvoiced ? { status: 'faturada' } : {}
+            const params = this.onlyInvoiced ? {} : { status: 'faturada,pendente' }
             this.delinquency = (await __api__.get('/api/reports/delinquency', { params })).data
         },
         async loadSales() {
