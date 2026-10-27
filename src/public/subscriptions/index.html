@@ -227,8 +227,12 @@
                                     <option value="Anual">Anual</option>
                                 </select>
                             </div>
-                            <div class="col-auto" style="width:120px">
-                                <label class="form-label small">Valor</label>
+                            <div class="col-auto" style="width:90px">
+                                <label class="form-label small">Qtd.</label>
+                                <input type="number" min="1" max="500" step="1" class="form-control form-control-sm" v-model.number="p.quantity" />
+                            </div>
+                            <div class="col-auto" style="width:130px">
+                                <label class="form-label small">Valor unitário</label>
                                 <input type="number" step="0.01" class="form-control form-control-sm" v-model.number="p.value" />
                             </div>
                             <div class="col-auto">

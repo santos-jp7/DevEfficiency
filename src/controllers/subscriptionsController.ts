@@ -8,7 +8,10 @@ import Project from '../models/Project'
 import Client from '../models/Client'
 import Protocol_product from '../models/Protocol_product'
 import Protocol_register from '../models/Protocol_register'
+import Product from '../models/Product'
+import { v4 as uuidv4 } from 'uuid'
 import { summarizeProtocol, sumSummaries } from '../utils/pricing'
+import { MAX_QUANTITY } from './protocolsProductController'
 
 type subscriptionsRequest = FastifyRequest<{
     Body: Subscription
@@ -74,10 +77,20 @@ class subscriptionController {
 
             if (Array.isArray(products) && products.length > 0) {
                 for (const p of products) {
-                    await Protocol_product.create(
-                        { ProductId: p.ProductId, charge_type: p.charge_type, value: p.value, ProtocolId: protocol.id },
-                        { transaction: t },
-                    )
+                    // Quantidade N = N itens com o mesmo valor unitário; cada um com sua licença quando o produto gera.
+                    const quantity = Number(p.quantity ?? 1)
+                    if (!Number.isInteger(quantity) || quantity < 1 || quantity > MAX_QUANTITY)
+                        throw new Error(`Quantidade deve ser um inteiro entre 1 e ${MAX_QUANTITY}.`)
+
+                    const product = await Product.findByPk(p.ProductId, { transaction: t })
+
+                    for (let i = 0; i < quantity; i++) {
+                        const item = await Protocol_product.create(
+                            { ProductId: p.ProductId, charge_type: p.charge_type, value: p.value, ProtocolId: protocol.id },
+                            { transaction: t },
+                        )
+                        if (product?.generate_license) await item.createLicense({ key: uuidv4(), SubscriptionId: subscription.id }, { transaction: t })
+                    }
                 }
             }
 
