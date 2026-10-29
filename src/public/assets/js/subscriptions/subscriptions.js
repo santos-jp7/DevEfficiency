@@ -87,7 +87,7 @@ const subscriptions = new Vue({
         },
 
         addProduct() {
-            this.newSub.products.push({ ProductId: null, charge_type: 'Mensal', value: 0 })
+            this.newSub.products.push({ ProductId: null, charge_type: 'Mensal', value: 0, quantity: 1 })
         },
 
         removeProduct(idx) {

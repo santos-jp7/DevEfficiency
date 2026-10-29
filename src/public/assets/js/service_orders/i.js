@@ -48,6 +48,7 @@ const service_order = new Vue({
                 manual_override: false,
             },
             protocolProduct: {
+                quantity: 1,
                 charge_type: null,
                 value: null,
                 discount: 0,
@@ -333,6 +334,7 @@ const service_order = new Vue({
                 charge_type: null,
                 value: null,
                 discount: 0,
+                quantity: 1,
                 ProductId: null,
             }
 
@@ -362,6 +364,7 @@ const service_order = new Vue({
                 value: this.$data.payloads.protocolProduct.value,
                 ProductId: this.$data.payloads.protocolProduct.ProductId,
                 ProtocolId: this.$data.Protocol.id,
+                ...(this.$data.payloads.protocolProduct.id ? {} : { quantity: this.$data.payloads.protocolProduct.quantity || 1 }),
             })
                 .then(() => {
                     window.location.reload()

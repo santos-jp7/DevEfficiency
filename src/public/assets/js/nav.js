@@ -174,12 +174,21 @@
         if (oldNav) {
             oldNav.parentNode.replaceChild(placeholder, oldNav)
         } else {
-            // Fallback: insert after navbar
-            var navbar = document.querySelector('.navbar')
-            if (navbar && navbar.nextSibling) {
-                navbar.parentNode.insertBefore(placeholder, navbar.nextSibling)
+            // Páginas sem o bloco de nav no HTML: coloca a nav num container com o mesmo alinhamento/largura do
+            // conteúdo (antes ela ficava fora do container e ocupava a largura toda da janela).
+            var main = document.querySelector('body > .container, body > .container-fluid')
+            var wrapper = document.createElement('div')
+            wrapper.className = (main && main.classList.contains('container-fluid') ? 'container-fluid' : 'container') + ' px-4 pt-4 pb-0'
+            wrapper.appendChild(placeholder)
+            wrapper.appendChild(document.createElement('hr'))
+
+            if (main) {
+                // Antes do container principal (fora da raiz do Vue, que não é alterada).
+                main.parentNode.insertBefore(wrapper, main)
             } else {
-                document.body.prepend(placeholder)
+                var navbar = document.querySelector('.navbar')
+                if (navbar && navbar.nextSibling) navbar.parentNode.insertBefore(wrapper, navbar.nextSibling)
+                else document.body.prepend(wrapper)
             }
         }
 
