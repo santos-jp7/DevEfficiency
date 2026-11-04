@@ -48,7 +48,8 @@ export default async function billingReceipt(req: FastifyRequest, res: FastifyRe
         // Em atraso: o valor recebido precisa ser confirmado (sugestão = valor + multa + juros) e pode ser alterado.
         // Os encargos são informativos: o valor da cobrança não muda; o excedente recebido vira um recibo de encargos.
         const principal = Math.round(billing.BillingProtocols.reduce((sum, bp) => sum + Number(bp.value), 0) * 100) / 100
-        const late = computeLateCharges(principal, billing.due_date, await getLateRules())
+        // Comissão de fornecedor não tem multa/juros.
+        const late = computeLateCharges(principal, billing.SupplierId ? null : billing.due_date, await getLateRules())
         const hasValue = received_value !== undefined && received_value !== null && received_value !== ''
         let received = principal
 

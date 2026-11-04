@@ -1,3 +1,4 @@
+import { amountDue, isCommission } from '../utils/protocolCommission'
 import { FastifyRequest, FastifyReply } from 'fastify'
 import { Op, fn, col, where } from 'sequelize'
 import moment from 'moment'
@@ -42,13 +43,19 @@ class DreReportController {
                 include: [Protocol_product, Protocol_register]
             })
 
-            const grossRevenue = closedProtocols.reduce((sum, p) => {
+            // Protocolo por comissão: a receita é só a comissão recebida do fornecedor (o cliente pagou o fornecedor).
+            const directProtocols = closedProtocols.filter((p) => !isCommission(p))
+            const commissionRevenue = closedProtocols
+                .filter((p) => isCommission(p))
+                .reduce((sum, p) => sum + amountDue(p, (p as any).Protocol_registers || [], (p as any).Protocol_products || []), 0)
+
+            const grossRevenue = commissionRevenue + directProtocols.reduce((sum, p) => {
                 const products = (p as any).Protocol_products?.reduce((s: number, v: any) => s + parseFloat(v.value), 0) || 0
                 const registers = (p as any).Protocol_registers?.reduce((s: number, v: any) => s + parseFloat(v.value), 0) || 0
                 return sum + products + registers
             }, 0)
 
-            const totalDiscounts = closedProtocols.reduce((sum, p) => sum + (Number(p.discount_value) || 0), 0)
+            const totalDiscounts = directProtocols.reduce((sum, p) => sum + (Number(p.discount_value) || 0), 0)
             const totalRevenue = grossRevenue - totalDiscounts
 
             // 2. Direct Costs (CPV)
@@ -59,7 +66,8 @@ class DreReportController {
                         model: Protocol,
                         where: {
                             closedAt: { [Op.between]: [startDate, endDate] },
-                            status: 'Fechado'
+                            status: 'Fechado',
+                            billing_mode: 'Direto'
                         },
                         required: true
                     },
@@ -75,7 +83,8 @@ class DreReportController {
                     model: Protocol,
                     where: {
                         closedAt: { [Op.between]: [startDate, endDate] },
-                        status: 'Fechado'
+                        status: 'Fechado',
+                        billing_mode: 'Direto'
                     },
                     required: true
                 }]

@@ -44,7 +44,8 @@ class commercialReportsController {
         const statuses = req.query.status ? String(req.query.status).split(',') : ['faturada']
 
         const billings = await Billing.findAll({
-            where: { status: { [Op.in]: statuses }, due_date: { [Op.ne]: null as any } },
+            // Só cobranças de cliente (comissões a receber de fornecedor não entram na inadimplência).
+            where: { status: { [Op.in]: statuses }, due_date: { [Op.ne]: null as any }, ClientId: { [Op.ne]: null as any } },
             include: [Client],
             order: [['due_date', 'ASC']],
         })
@@ -65,7 +66,7 @@ class commercialReportsController {
             }
 
             const client = (billing as any).Client
-            const row = clients.get(billing.ClientId) || {
+            const row = clients.get(billing.ClientId as number) || {
                 ClientId: billing.ClientId,
                 client: client?.name || '—',
                 total: 0,
@@ -84,7 +85,7 @@ class commercialReportsController {
             row.oldest_days = Math.max(row.oldest_days, days)
             row.buckets[bucketOf(days)] = round2(row.buckets[bucketOf(days)] + value)
             row.billings.push({ id: billing.id, status: billing.status, due_date: due, days_overdue: days, value, fee: late.fee, interest: late.interest })
-            clients.set(billing.ClientId, row)
+            clients.set(billing.ClientId as number, row)
 
             totals.overdue = round2(totals.overdue + value)
             totals.count++

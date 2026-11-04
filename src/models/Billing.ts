@@ -16,6 +16,7 @@ import db from '../db'
 import Client from './Client'
 import BillingProtocol from './BillingProtocol'
 import BankAccount from './BankAccount'
+import Supplier from './Supplier'
 
 import billingHooks from '../hooks/billingHooks'
 
@@ -40,7 +41,9 @@ class Billing extends Model<InferAttributes<Billing>, InferCreationAttributes<Bi
     declare late_fee_value: CreationOptional<number | null>
     declare late_interest_value: CreationOptional<number | null>
 
-    declare ClientId: ForeignKey<Client['id']>
+    // A cobrança é de um cliente (padrão) OU de um fornecedor (comissão de protocolos por comissão).
+    declare ClientId: ForeignKey<Client['id']> | null
+    declare SupplierId: CreationOptional<ForeignKey<Supplier['id']> | null>
     declare BankAccountId: ForeignKey<BankAccount['id']>
 
     declare createdAt: CreationOptional<Date>
@@ -103,6 +106,9 @@ BillingProtocol.belongsTo(Billing)
 Billing.belongsTo(BankAccount, {
     foreignKey: 'BankAccountId',
 })
+
+Billing.belongsTo(Supplier, { foreignKey: 'SupplierId' })
+Supplier.hasMany(Billing, { foreignKey: 'SupplierId' })
 
 Billing.afterUpdate(billingHooks.afterUpdate)
 

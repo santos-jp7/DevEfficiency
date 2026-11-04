@@ -46,6 +46,7 @@ export async function sendBillingEmail(billingId: number): Promise<void> {
     })
 
     if (!billing) throw new Error('Cobrança não encontrada')
+    if (billing.SupplierId) throw new Error('Cobrança de comissão ao fornecedor: o e-mail de cobrança é só para clientes. Envie o PDF ao fornecedor manualmente.')
 
     const client = (billing as any).Client as any
     const contacts: any[] = (client?.Contacts || []).filter((c: any) => c.email)

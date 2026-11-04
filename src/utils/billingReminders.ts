@@ -35,7 +35,8 @@ function dayText(n: number) {
 
 export async function sendBillingReminder(billingId: number, offset: number | 'manual', diffDays: number): Promise<SendResult> {
     const billing = await Billing.findByPk(billingId, { include: [Client, BillingFile] })
-    if (!billing) return 'ignorado'
+    // Cobrança de comissão ao fornecedor não recebe lembretes de cliente.
+    if (!billing || billing.SupplierId) return 'ignorado'
 
     const client = (billing as any).Client as Client | null
     const files: any[] = (billing as any).BillingFiles || []
@@ -112,7 +113,7 @@ async function planReminders(today: string): Promise<{ planned: PlannedReminder[
     const schedule = parseSchedule(await getConfigValue('billing_reminder_schedule', DEFAULT_SCHEDULE))
     const cutoff = await getConfigValue('billing_reminder_start_date', '')
 
-    const billings = await Billing.findAll({ where: { status: 'faturada' }, include: [Client] })
+    const billings = await Billing.findAll({ where: { status: 'faturada', SupplierId: null }, include: [Client] })
     const planned: PlannedReminder[] = []
 
     for (const billing of billings) {

@@ -4,6 +4,7 @@ import { Op } from 'sequelize'
 import db from '../db'
 import Billing from '../models/Billing'
 import Client from '../models/Client'
+import Supplier from '../models/Supplier'
 import Receipts from '../models/Receipts'
 import Payable from '../models/Payable'
 import BankAccount from '../models/BankAccount'
@@ -14,6 +15,12 @@ import BankEntryMatch from '../models/BankEntryMatch'
 import { getConfigValue } from './clientMail'
 import { fileHash, parseStatement, round2 } from './statementParser'
 import { accountLedger } from './balanceCheck'
+
+// "Cobrança #12 - Cliente" ou "Cobrança #12 - Comissão Microsoft" (cobrança ao fornecedor).
+function billingLabel(b: any): string {
+    if (b.Supplier) return `Cobrança #${b.id} - Comissão ${b.Supplier.name}`
+    return `Cobrança #${b.id}${b.Client ? ` - ${b.Client.name}` : ''}`
+}
 
 // Janela (em dias) entre a data do extrato e a data em que o sistema registrou o pagamento/recebimento.
 export const DATE_TOLERANCE_DAYS = 5
@@ -75,13 +82,13 @@ async function candidatePool(entry: BankStatementEntry): Promise<Candidate[]> {
     if (amount > 0) {
         const billings = await Billing.findAll({
             where: { status: 'pago', BankAccountId: entry.BankAccountId, payment_date: { [Op.between]: [from, to] } },
-            include: [Client],
+            include: [Client, Supplier],
         })
         const taken = await alreadyMatched('billing', billings.map((b) => b.id), { ignoreEntryId: entry.id })
 
         for (const b of billings)
             if (!taken.has(b.id))
-                out.push({ type: 'billing', id: b.id, label: `Cobrança #${b.id}${(b as any).Client ? ` - ${(b as any).Client.name}` : ''}`, value: Number(b.paid_value ?? b.total_value), date: day(b.payment_date) })
+                out.push({ type: 'billing', id: b.id, label: billingLabel(b), value: Number(b.paid_value ?? b.total_value), date: day(b.payment_date) })
 
         // Recibos de cobrança já estão cobertos pela própria cobrança; aqui entram só os recibos avulsos.
         const receiptWhere: any = {
@@ -375,8 +382,8 @@ export async function describeTarget(type: MatchType | null, id: number | null):
     if (!type || !id) return null
 
     if (type === 'billing') {
-        const b = await Billing.findByPk(id, { include: [Client] })
-        return b ? `Cobrança #${b.id}${(b as any).Client ? ` - ${(b as any).Client.name}` : ''}` : null
+        const b = await Billing.findByPk(id, { include: [Client, Supplier] })
+        return b ? billingLabel(b) : null
     }
     if (type === 'receipt') {
         const r = await Receipts.findByPk(id)

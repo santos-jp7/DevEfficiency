@@ -70,7 +70,8 @@ export const resources: Resource[] = [
     {
         name: 'protocols',
         path: '/protocols',
-        description: 'Protocolos financeiros (acordo por OS ou assinatura)',
+        description:
+            "Protocolos financeiros (acordo por OS, assinatura ou avulso). billing_mode 'Comissão': o fornecedor (CommissionSupplierId) cobra o cliente e a cobrança gerada é a da comissão contra o fornecedor; commission_value informado fixa o valor (senão é commission_percent sobre o total líquido)",
         actions: ['list', 'get', 'update'],
         model: Protocol,
         queryHelp: 'ClientId, status, page, limit',
@@ -107,10 +108,10 @@ export const resources: Resource[] = [
     {
         name: 'billings',
         path: '/billings',
-        description: 'Cobranças (consolidação de protocolos em faturas por cliente)',
+        description: 'Cobranças (consolidação de protocolos em faturas por cliente; ou, com SupplierId, cobrança de comissão ao fornecedor em protocolos por comissão)',
         actions: CRUD,
         model: Billing,
-        queryHelp: 'startDate, endDate (YYYY-MM-DD), ClientId, limit',
+        queryHelp: 'startDate, endDate (YYYY-MM-DD), ClientId, SupplierId, limit',
     },
     {
         name: 'billing_protocols',
@@ -126,7 +127,13 @@ export const resources: Resource[] = [
         actions: NO_DELETE,
         model: Product,
     },
-    { name: 'suppliers', path: '/suppliers', description: 'Fornecedores', actions: CRUD, model: Supplier },
+    {
+        name: 'suppliers',
+        path: '/suppliers',
+        description: 'Fornecedores (default_commission_percent e commission_payment_days valem para protocolos por comissão)',
+        actions: CRUD,
+        model: Supplier,
+    },
     { name: 'cost_centers', path: '/cost-centers', description: 'Centros de custo', actions: CRUD, model: CostCenter },
     {
         name: 'bank_accounts',

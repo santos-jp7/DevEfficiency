@@ -23,6 +23,7 @@ import BillingProtocol from './BillingProtocol'
 import Client from './Client'
 import Seller from './Seller'
 import Payable from './Payable'
+import Supplier from './Supplier'
 
 import protocolHooks from '../hooks/protocolHooks'
 
@@ -37,6 +38,13 @@ class Protocol extends Model<InferAttributes<Protocol>, InferCreationAttributes<
     // Lançamento avulso: sem OS/assinatura, o cliente fica direto no protocolo.
     declare ClientId: CreationOptional<ForeignKey<Client['id']> | null>
     declare SellerId: CreationOptional<ForeignKey<Seller['id']> | null>
+
+    // Cobrança: 'Direto' = eu cobro o cliente; 'Comissão' = o fornecedor cobra o cliente e eu cobro a comissão do fornecedor.
+    declare billing_mode: CreationOptional<'Direto' | 'Comissão'>
+    declare CommissionSupplierId: CreationOptional<ForeignKey<Supplier['id']> | null>
+    declare commission_percent: CreationOptional<number | null>
+    declare commission_value: CreationOptional<number | null>
+    declare commission_manual: CreationOptional<boolean>
 
     declare getService_order: HasOneGetAssociationMixin<Service_order>
     declare getSubscription: HasOneGetAssociationMixin<Subscription>
@@ -101,6 +109,33 @@ Protocol.init(
             allowNull: true,
             defaultValue: 0,
         },
+        billing_mode: {
+            type: DataTypes.ENUM,
+            values: ['Direto', 'Comissão'],
+            allowNull: false,
+            defaultValue: 'Direto',
+        },
+        commission_percent: {
+            type: DataTypes.DECIMAL(5, 2),
+            allowNull: true,
+            get() {
+                const v = this.getDataValue('commission_percent')
+                return v === null || v === undefined ? null : Number(v)
+            },
+        },
+        commission_value: {
+            type: DataTypes.DECIMAL(10, 2),
+            allowNull: true,
+            get() {
+                const v = this.getDataValue('commission_value')
+                return v === null || v === undefined ? null : Number(v)
+            },
+        },
+        commission_manual: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+        },
         closedAt: DataTypes.DATE,
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
@@ -142,6 +177,7 @@ BillingProtocol.belongsTo(Protocol)
 
 // Protocol.belongsTo(Client) fica em Client.ts (evita dependência circular na carga dos modelos)
 Protocol.belongsTo(Seller)
+Protocol.belongsTo(Supplier, { as: 'CommissionSupplier', foreignKey: 'CommissionSupplierId' })
 
 Protocol.hasMany(Payable)
 Payable.belongsTo(Protocol)

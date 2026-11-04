@@ -4,6 +4,7 @@ const service_order = new Vue({
     el: '#subscription',
     data: {
         id: 0,
+        protocolSavedStatus: 'Em aberto',
         name: null,
         status: null,
         dueAt: null,
@@ -73,6 +74,7 @@ const service_order = new Vue({
                 .get('/api/protocols/' + id)
                 .then(({ data }) => {
                     this.$data.payloads.protocol = data
+                    this.$data.protocolSavedStatus = data?.status
 
                     $('#protocolModal').modal('toggle')
                 })
@@ -88,6 +90,7 @@ const service_order = new Vue({
             __api__
                 .put('/api/protocols/' + this.$data.payloads.protocol.id, {
                     status: this.$data.payloads.protocol.status,
+                    ...ProtocolCommission.payload(this.$data.payloads.protocol),
                 })
                 .then(() => {
                     window.location.reload()

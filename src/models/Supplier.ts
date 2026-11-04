@@ -13,6 +13,9 @@ class Supplier extends Model<InferAttributes<Supplier>, InferCreationAttributes<
     declare cnpj: CreationOptional<string>
     declare email: CreationOptional<string>
     declare phone: CreationOptional<string>
+    // Protocolos por comissão: % sugerida e prazo (dias) para vencimento da cobrança ao fornecedor.
+    declare default_commission_percent: CreationOptional<number | null>
+    declare commission_payment_days: CreationOptional<number>
 
     declare createdAt: CreationOptional<Date>
     declare updatedAt: CreationOptional<Date>
@@ -41,6 +44,19 @@ Supplier.init(
         phone: {
             type: DataTypes.STRING(20),
             allowNull: true,
+        },
+        default_commission_percent: {
+            type: DataTypes.DECIMAL(5, 2),
+            allowNull: true,
+            get() {
+                const v = this.getDataValue('default_commission_percent')
+                return v === null || v === undefined ? null : Number(v)
+            },
+        },
+        commission_payment_days: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 30,
         },
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,

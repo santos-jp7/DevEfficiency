@@ -18,6 +18,12 @@
         SellerId: null,
         notes: '',
         discount_value: null,
+        // Cobrança: direta ao cliente ou comissão de terceiro (fornecedor cobra o cliente).
+        billing_mode: 'Direto',
+        CommissionSupplierId: null,
+        commission_percent: null,
+        commission_value: null,
+        commission_manual: false,
         registers: [emptyRegister()],
         products: [],
     })
@@ -139,6 +145,10 @@
                         </div>
                     </div>
 
+                    <div class="mt-3">
+                        <protocol-commission :protocol="form" :net="Math.max(subtotal - discount, 0)"></protocol-commission>
+                    </div>
+
                     <div v-if="error" class="alert alert-danger py-2 mt-3 mb-0">{{ error }}</div>
                 </div>
                 <div class="modal-footer">
@@ -237,6 +247,9 @@
 
                     if (!registers.length && !products.length) return (this.error = 'Lance ao menos um registro ou produto.')
 
+                    const commission = this.form.billing_mode === 'Comissão'
+                    if (commission && !this.form.CommissionSupplierId) return (this.error = 'Selecione o fornecedor que paga a comissão.')
+
                     this.saving = true
                     try {
                         const { data } = await api().post('/api/protocols/standalone', {
@@ -246,12 +259,17 @@
                             discount_value: this.form.discount_value || 0,
                             registers,
                             products,
+                            ...window.ProtocolCommission.payload(this.form),
                         })
 
                         bootstrap.Modal.getInstance(document.getElementById(MODAL_ID)).hide()
                         this.form = emptyForm()
 
-                        const goBilling = confirm(`Protocolo #${data.id} lançado e liberado para pagamento.\n\nAbrir a cobrança do cliente agora?`)
+                        const goBilling = confirm(
+                            commission
+                                ? `Protocolo #${data.id} lançado. A comissão entrou na cobrança do fornecedor.\n\nAbrir a cobrança do fornecedor agora?`
+                                : `Protocolo #${data.id} lançado e liberado para pagamento.\n\nAbrir a cobrança do cliente agora?`,
+                        )
                         if (goBilling && data.BillingId) location.href = `/billings/i.html?id=${data.BillingId}`
                         else location.reload()
                     } catch (e) {

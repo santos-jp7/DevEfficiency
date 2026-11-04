@@ -20,10 +20,77 @@ import Billing from '../models/Billing'
 import BillingProtocol from '../models/BillingProtocol'
 import db from '../db'
 import Seller from '../models/Seller'
+import Supplier from '../models/Supplier'
+import { isCommission, summarizeCommission } from '../utils/protocolCommission'
 import { PricingError, buildRegisterData } from './protocolsRegisterController'
 import { MAX_QUANTITY } from './protocolsProductController'
 import { v4 as uuidv4 } from 'uuid'
 import { getClientByProtocol, summarizeProtocol, sumSummaries, withPricing, pricingView } from '../utils/pricing'
+
+class CommissionInputError extends Error {}
+
+const COMMISSION_FIELDS = ['billing_mode', 'CommissionSupplierId', 'commission_percent', 'commission_value'] as const
+const blank = (v: any) => v === undefined || v === null || v === ''
+
+// Campos de cobrança por comissão vindos do corpo da requisição. Só mexe no que foi enviado:
+//  - commission_value preenchido = valor informado na mão (trava); vazio = volta a sugerir pela %;
+//  - fornecedor novo sem % informada herda a % padrão do fornecedor.
+async function commissionPatch(body: any, current?: Protocol | null): Promise<Partial<Protocol>> {
+    const sent = COMMISSION_FIELDS.filter((f) => body && f in body)
+    if (sent.length === 0) return {}
+
+    const patch: any = {}
+
+    if ('billing_mode' in body) {
+        if (!['Direto', 'Comissão'].includes(body.billing_mode)) throw new CommissionInputError('Modo de cobrança inválido.')
+        patch.billing_mode = body.billing_mode
+    }
+
+    if ('CommissionSupplierId' in body) {
+        const supplierId = blank(body.CommissionSupplierId) ? null : Number(body.CommissionSupplierId)
+        if (supplierId && !(await Supplier.findByPk(supplierId))) throw new CommissionInputError('Fornecedor não encontrado.')
+        patch.CommissionSupplierId = supplierId
+    }
+
+    if ('commission_percent' in body) {
+        const percent = blank(body.commission_percent) ? null : Number(body.commission_percent)
+        if (percent !== null && !(percent >= 0 && percent <= 100)) throw new CommissionInputError('Percentual de comissão inválido.')
+        patch.commission_percent = percent
+    }
+
+    // Sem % informada: usa a % padrão do fornecedor escolhido.
+    const supplierId = patch.CommissionSupplierId ?? current?.CommissionSupplierId
+    const percentNow = 'commission_percent' in patch ? patch.commission_percent : current?.commission_percent
+    if (supplierId && percentNow == null) {
+        const supplier = await Supplier.findByPk(supplierId)
+        if (supplier?.default_commission_percent != null) patch.commission_percent = supplier.default_commission_percent
+    }
+
+    if ('commission_value' in body) {
+        if (blank(body.commission_value)) {
+            patch.commission_manual = false
+        } else {
+            const value = Number(body.commission_value)
+            if (!(value >= 0)) throw new CommissionInputError('Valor de comissão inválido.')
+            patch.commission_value = value
+            patch.commission_manual = true
+        }
+    }
+
+    if (current) {
+        const changed = Object.keys(patch).some((k) => ((current as any)[k] ?? null) != (patch[k] ?? null))
+        // Depois de liberado, a cobrança já foi gerada com o valor/parte atuais.
+        if (changed && current.status !== 'Em aberto')
+            throw new CommissionInputError('A cobrança por comissão só pode ser alterada com o protocolo "Em aberto".')
+    }
+
+    return patch
+}
+
+const protocolJson = (protocol: Protocol, client: any) => ({
+    ...withPricing(protocol, client),
+    commission: summarizeCommission(protocol),
+})
 
 type protocolsRequest = FastifyRequest<{
     Body: Protocol
@@ -43,6 +110,7 @@ class protocolsController {
                 Receipts,
                 Client,
                 Seller,
+                { model: Supplier, as: 'CommissionSupplier' },
                 {
                     model: Service_order,
                     include: [Client],
@@ -87,7 +155,7 @@ class protocolsController {
                 (protocol as any).Service_order?.Client ||
                 (protocol as any).Subscription?.Client ||
                 (protocol as any).Client
-            return withPricing(protocol, client)
+            return protocolJson(protocol, client)
         })
 
         return res.send({
@@ -100,7 +168,13 @@ class protocolsController {
 
     static async show(req: protocolsRequest, res: FastifyReply): Promise<FastifyReply> {
         const protocol = await Protocol.findByPk(req.params.id, {
-            include: [Protocol_register, { model: Protocol_product, include: [Product] }, Receipts, Seller],
+            include: [
+                Protocol_register,
+                { model: Protocol_product, include: [Product] },
+                Receipts,
+                Seller,
+                { model: Supplier, as: 'CommissionSupplier' },
+            ],
         })
 
         if (!protocol) return res.send(protocol)
@@ -108,7 +182,7 @@ class protocolsController {
         const client = await getClientByProtocol(protocol)
 
         return res.send({
-            ...withPricing(protocol, client),
+            ...protocolJson(protocol, client),
             Client: client && {
                 id: client.id,
                 name: client.name,
@@ -122,6 +196,16 @@ class protocolsController {
     // produtos e já libera para pagamento, o que gera/atualiza a cobrança pendente do cliente pelas regras de sempre.
     static async storeStandalone(req: FastifyRequest, res: FastifyReply): Promise<FastifyReply> {
         const { ClientId, SellerId, notes, discount_value, registers, products } = (req.body || {}) as any
+
+        let commission: Partial<Protocol> = {}
+        try {
+            commission = await commissionPatch(req.body)
+        } catch (e) {
+            if (e instanceof CommissionInputError) return res.status(400).send({ message: e.message })
+            throw e
+        }
+        if (commission.billing_mode === 'Comissão' && !commission.CommissionSupplierId)
+            return res.status(400).send({ message: 'Selecione o fornecedor que paga a comissão.' })
 
         const client = ClientId ? await Client.findByPk(ClientId) : null
         if (!client) return res.status(400).send({ message: 'Selecione o cliente.' })
@@ -156,7 +240,7 @@ class protocolsController {
 
         try {
             protocol = await Protocol.create(
-                { status: 'Em aberto', ClientId: client.id, SellerId: SellerId || null, notes: notes || null } as any,
+                { status: 'Em aberto', ClientId: client.id, SellerId: SellerId || null, notes: notes || null, ...commission } as any,
                 { transaction: t },
             )
 
@@ -206,7 +290,14 @@ class protocolsController {
         }
 
         const created = await Protocol.findByPk(protocol.id, {
-            include: [Protocol_register, { model: Protocol_product, include: [Product] }, Receipts, Client, Seller],
+            include: [
+                Protocol_register,
+                { model: Protocol_product, include: [Product] },
+                Receipts,
+                Client,
+                Seller,
+                { model: Supplier, as: 'CommissionSupplier' },
+            ],
         })
         const billingProtocol = await BillingProtocol.findOne({
             where: { ProtocolId: protocol.id },
@@ -214,7 +305,7 @@ class protocolsController {
         })
 
         return res.status(201).send({
-            ...withPricing(created as Protocol, client),
+            ...protocolJson(created as Protocol, client),
             BillingId: billingProtocol?.BillingId || null,
         })
     }
@@ -241,6 +332,14 @@ class protocolsController {
             }
         }
 
+        let commission: Partial<Protocol> = {}
+        try {
+            commission = await commissionPatch(req.body, protocol)
+        } catch (e) {
+            if (e instanceof CommissionInputError) return res.status(400).send({ message: e.message })
+            throw e
+        }
+
         await protocol.update({
             status,
             notes,
@@ -248,10 +347,12 @@ class protocolsController {
             total_installments,
             discount_value: discount_value ?? null,
             ...sellerPatch,
+            ...commission,
         })
 
         // When releasing for payment, create a new billing if current billing is already faturada
-        if (status === 'Liberado para pagamento') {
+        // (protocolo por comissão: a cobrança é do fornecedor e já é gerada pelo hook).
+        if (status === 'Liberado para pagamento' && !isCommission(protocol)) {
             const existingBPs = await BillingProtocol.findAll({
                 where: { ProtocolId: id },
                 include: [Billing],
@@ -294,8 +395,10 @@ class protocolsController {
                 {
                     model: Protocol,
                     include: [{ model: Protocol_product, include: [Product] }, Protocol_register, Receipts],
+                    // Por comissão o cliente paga ao fornecedor: fica fora do extrato do que é devido a mim.
                     where: {
                         status: type,
+                        billing_mode: 'Direto',
                     },
                 },
                 Project,
@@ -307,8 +410,10 @@ class protocolsController {
                 {
                     model: Protocol,
                     include: [{ model: Protocol_product, include: [Product] }, Protocol_register, Receipts],
+                    // Por comissão o cliente paga ao fornecedor: fica fora do extrato do que é devido a mim.
                     where: {
                         status: type,
+                        billing_mode: 'Direto',
                     },
                 },
                 Project,
@@ -318,7 +423,7 @@ class protocolsController {
         // Lançamentos avulsos: protocolos ligados direto ao cliente (sem OS/assinatura) na mesma situação.
         const avulsos = client
             ? await Protocol.findAll({
-                  where: { ClientId: client.id, status: type, ServiceOrderId: null, SubscriptionId: null } as any,
+                  where: { ClientId: client.id, status: type, billing_mode: 'Direto', ServiceOrderId: null, SubscriptionId: null } as any,
                   include: [{ model: Protocol_product, include: [Product] }, Protocol_register, Receipts],
                   order: [['id', 'ASC']],
               })

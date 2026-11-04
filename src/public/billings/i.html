@@ -97,6 +97,7 @@
 
         <h5>
             Cobrança #{{id}}
+            <span v-if="billing.Supplier" class="badge bg-info text-dark ms-2">Cobrança de comissão ao fornecedor</span>
             <span v-if="billing.Client?.is_partner" class="badge bg-success ms-2">
                 Cliente parceiro · {{ pct(billing.Client.partner_discount_percent) }}
             </span>
@@ -138,8 +139,8 @@
         <form v-on:submit.prevent="updateBilling">
             <div class="row">
                 <div class="mb-3 col">
-                    <label class="form-label">Cliente</label>
-                    <input type="text" class="form-control" :value="billing.Client?.name" disabled />
+                    <label class="form-label">{{ billing.Supplier ? 'Fornecedor (comissão)' : 'Cliente' }}</label>
+                    <input type="text" class="form-control" :value="billing.Supplier ? billing.Supplier.name : billing.Client?.name" disabled />
                 </div>
                 <div class="mb-3 col">
                     <label class="form-label">Status</label>
@@ -211,12 +212,14 @@
             &bull;
             <a class="btn btn-dark mt-2" href="#" @click.prevent="openPdf({ kind: 'billing', id: id })"><i
                     class="fa-solid fa-download"></i></a>
+            <template v-if="!billing.SupplierId">
             &bull;
             <button type="button" class="btn btn-success mt-2" @click="sendEmail" :disabled="sendingEmail">
                 <i class="fa-solid fa-envelope"></i>
                 {{ sendingEmail ? 'Enviando...' : 'Enviar Email' }}
             </button>
-            <template v-if="billing.status === 'faturada'">
+            </template>
+            <template v-if="billing.status === 'faturada' && !billing.SupplierId">
                 &bull;
                 <button type="button" class="btn btn-warning mt-2" @click="sendReminder" :disabled="sendingReminder"
                     title="Envia agora um lembrete de vencimento/atraso aos contatos do cliente">

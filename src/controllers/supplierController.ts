@@ -37,8 +37,15 @@ class SupplierController {
 
     static async store(req: SupplierRequest, res: FastifyReply): Promise<FastifyReply> {
         try {
-            const { name, cnpj, email, phone } = req.body
-            const newSupplier = await Supplier.create({ name, cnpj, email, phone })
+            const { name, cnpj, email, phone, default_commission_percent, commission_payment_days } = req.body as any
+            const newSupplier = await Supplier.create({
+                name,
+                cnpj,
+                email,
+                phone,
+                default_commission_percent: default_commission_percent === '' ? null : default_commission_percent ?? null,
+                commission_payment_days: commission_payment_days === '' || commission_payment_days == null ? 30 : commission_payment_days,
+            })
             return res.status(201).send(newSupplier)
         } catch (error) {
             console.error(error)
@@ -49,7 +56,7 @@ class SupplierController {
     static async update(req: SupplierRequest, res: FastifyReply): Promise<FastifyReply> {
         try {
             const { id } = req.params
-            const { name, cnpj, email, phone } = req.body
+            const { name, cnpj, email, phone, default_commission_percent, commission_payment_days } = req.body as any
 
             const supplier = await Supplier.findByPk(id)
 
@@ -57,7 +64,18 @@ class SupplierController {
                 return res.status(404).send({ error: 'Supplier not found' })
             }
 
-            await supplier.update({ name, cnpj, email, phone })
+            await supplier.update({
+                name,
+                cnpj,
+                email,
+                phone,
+                ...(default_commission_percent !== undefined
+                    ? { default_commission_percent: default_commission_percent === '' ? null : default_commission_percent }
+                    : {}),
+                ...(commission_payment_days !== undefined && commission_payment_days !== ''
+                    ? { commission_payment_days }
+                    : {}),
+            })
 
             return res.send(supplier)
         } catch (error) {

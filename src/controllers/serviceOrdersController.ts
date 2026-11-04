@@ -8,6 +8,7 @@ import ejs from 'ejs'
 import Client from '../models/Client'
 import Project from '../models/Project'
 import Protocol from '../models/Protocol'
+import Supplier from '../models/Supplier'
 import Protocol_product from '../models/Protocol_product'
 import Protocol_register from '../models/Protocol_register'
 import Receipts from '../models/Receipts'
@@ -176,7 +177,12 @@ class serviceOrdersController {
                 Client,
                 {
                     model: Protocol,
-                    include: [Protocol_register, Receipts, { model: Protocol_product, include: [Product] }],
+                    include: [
+                        Protocol_register,
+                        Receipts,
+                        { model: Protocol_product, include: [Product] },
+                        { model: Supplier, as: 'CommissionSupplier' },
+                    ],
                 },
                 { model: Project, include: [Client] },
             ],

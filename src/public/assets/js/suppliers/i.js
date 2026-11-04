@@ -11,6 +11,8 @@ const app = new Vue({
         cnpj: '',
         email: '',
         phone: '',
+        default_commission_percent: '',
+        commission_payment_days: 30,
     },
     methods: {
         async lookupCnpj() {
@@ -45,6 +47,8 @@ const app = new Vue({
                 cnpj: this.cnpj,
                 email: this.email,
                 phone: this.phone,
+                default_commission_percent: this.default_commission_percent === null ? '' : this.default_commission_percent,
+                commission_payment_days: this.commission_payment_days === '' ? 30 : this.commission_payment_days,
             };
 
             try {
@@ -76,6 +80,8 @@ const app = new Vue({
                 this.cnpj = data.cnpj;
                 this.email = data.email;
                 this.phone = data.phone;
+                this.default_commission_percent = data.default_commission_percent ?? '';
+                this.commission_payment_days = data.commission_payment_days ?? 30;
             } catch (error) {
                 console.error(error);
                 alert("Erro ao carregar os dados do fornecedor.");

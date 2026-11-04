@@ -306,6 +306,8 @@
                             </div>
                         </div>
 
+                        <protocol-commission v-if="Protocol.id" :protocol="Protocol" :net="protocolDiscountedTotal" :locked="protocolSavedStatus !== 'Em aberto'"></protocol-commission>
+
                         <button type="submit" class="btn btn-dark">Enviar</button>
 
                         <div v-if="Protocol.SubscriptionId">
@@ -361,7 +363,7 @@
                             <span>Desconto: -{{Number(Protocol.discount_value).toLocaleString('pt-br',{style: 'currency', currency: 'BRL'})}}</span>
                         </li>
                         <li>
-                            <span>Valor a receber: {{(protocolDiscountedTotal - (Protocol?.Receipts?.reduce((sum, v) => (sum + v.value), 0) || 0)).toLocaleString('pt-br',{style: 'currency', currency: 'BRL'})}}
+                            <span>{{ Protocol.billing_mode === 'Comissão' ? 'Comissão a receber do fornecedor' : 'Valor a receber' }}: {{(protocolAmountDue - (Protocol?.Receipts?.reduce((sum, v) => (sum + v.value), 0) || 0)).toLocaleString('pt-br',{style: 'currency', currency: 'BRL'})}}
                             </span>
                         </li>
                     </ul>
@@ -797,6 +799,7 @@
     </div>
 
     <script src="../assets/js/pricing.js"></script>
+    <script src="../assets/js/protocolCommission.js"></script>
     <script src="../assets/js/pdf.js"></script>
     <script src="../assets/js/service_orders/i.js"></script>
     <script src="../assets/js/nav.js"></script>
