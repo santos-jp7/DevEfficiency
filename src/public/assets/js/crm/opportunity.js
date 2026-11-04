@@ -93,7 +93,8 @@ new Vue({
                 this.lost = { reason: '', details: '' }
                 return this.lostModal.show()
             }
-            if (stage === 'Ganho' && !confirm('Marcar esta oportunidade como ganha?')) return
+            // Ganho abre a conversão: cliente (se for lead) + OS, protocolo avulso ou só ganhar.
+            if (stage === 'Ganho') return this.$refs.win.open(this.o)
             await this.changeStage({ stage })
         },
         async changeStage(body) {
@@ -106,6 +107,11 @@ new Vue({
             } finally {
                 this.busy = false
             }
+        },
+        async onWon(result) {
+            await this.load(this.o.id)
+            if (result.BillingId && confirm('Oportunidade ganha e protocolo lançado. Abrir a cobrança gerada?'))
+                location.href = '/billings/i.html?id=' + result.BillingId
         },
         async confirmLost() {
             this.lostModal.hide()

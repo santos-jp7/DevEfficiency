@@ -7,6 +7,7 @@ import Lead from '../../models/Lead'
 import Opportunity from '../../models/Opportunity'
 import Client from '../../models/Client'
 import { blank } from '../../utils/crm'
+import { sendCrmFollowupsAlert } from '../../utils/crmFollowupsAlert'
 
 type Req = FastifyRequest<{ Params: { id: string }; Body: any; Querystring: any }>
 
@@ -85,6 +86,16 @@ class activitiesController {
             total: items.length,
             items,
         })
+    }
+
+    // Envio manual do aviso diário (teste): ignora horário e "já enviado hoje".
+    static async sendAlert(req: Req, res: FastifyReply) {
+        try {
+            return res.send(await sendCrmFollowupsAlert({ force: true }))
+        } catch (err: any) {
+            console.error(err)
+            return res.status(500).send({ message: err.message || 'Erro ao enviar o aviso.' })
+        }
     }
 
     static async store(req: Req, res: FastifyReply) {

@@ -4,6 +4,7 @@ const dashboard = new Vue({
     el: '#dashboard',
     data: {
         ticketsAttention: 0,
+        crmFollowups: { total: 0, overdue: 0, items: [] },
         currentOs: {
             id: null,
             subject: null,
@@ -69,6 +70,12 @@ const dashboard = new Vue({
             __api__
                 .get('/api/tickets/summary')
                 .then(({ data }) => (this.ticketsAttention = data.needs_attention))
+                .catch(() => {})
+
+            // Follow-ups do CRM até o fim de hoje (atrasados primeiro).
+            __api__
+                .get('/api/crm/followups?range=today')
+                .then(({ data }) => (this.crmFollowups = data))
                 .catch(() => {})
 
             try {
@@ -241,6 +248,22 @@ const dashboard = new Vue({
                     responsive: true,
                 },
             })
+        },
+        isPast(v) {
+            return !!v && moment(v).isBefore(moment())
+        },
+        followupWhen(v) {
+            const d = moment(v)
+            return d.isSame(moment(), 'day') ? 'Hoje ' + d.format('HH:mm') : d.format('DD/MM HH:mm')
+        },
+        followupWho(a) {
+            const party = a.Client ? a.Client.name : a.Lead ? a.Lead.company || a.Lead.name : ''
+            return [a.Opportunity && a.Opportunity.title, party].filter(Boolean).join(' · ')
+        },
+        followupLink(a) {
+            if (a.OpportunityId) return '/crm/opportunity.html?id=' + a.OpportunityId
+            if (a.LeadId) return '/crm/lead.html?id=' + a.LeadId
+            return '/clients/i.html?id=' + a.ClientId
         },
         billingLabel(billing) {
             if (!billing.BillingProtocols || !billing.BillingProtocols.length) return 'Cobrança #' + billing.id

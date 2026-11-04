@@ -19,11 +19,11 @@ const escapeHtml = (text: unknown) =>
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
 
-async function getConfig(type: string): Promise<string | null> {
+export async function getConfig(type: string): Promise<string | null> {
     return (await Config.findOne({ where: { type } }))?.value ?? null
 }
 
-async function setConfig(type: string, value: string): Promise<void> {
+export async function setConfig(type: string, value: string): Promise<void> {
     const [config, created] = await Config.findOrCreate({ where: { type }, defaults: { type, value, upload: false } })
     if (!created) await config.update({ value })
 }

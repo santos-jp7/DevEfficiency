@@ -189,6 +189,15 @@
                     <div class="cx-tile__sub">renovações próximas</div>
                 </div>
             </div>
+            <div class="col">
+                <a href="/crm" class="text-decoration-none text-reset">
+                    <div class="cx-tile" :style="crmFollowups.overdue ? 'border-left: 3px solid var(--cx-red)' : ''">
+                        <div class="cx-tile__label">Follow-ups CRM</div>
+                        <div class="cx-tile__value" :class="crmFollowups.overdue ? 'text-cx-red' : ''">{{ crmFollowups.total }}</div>
+                        <div class="cx-tile__sub">{{ crmFollowups.overdue }} atrasado(s) · até hoje</div>
+                    </div>
+                </a>
+            </div>
         </div>
 
         <!-- Charts -->
@@ -208,7 +217,41 @@
         </div>
 
         <!-- Urgency Tables -->
-        <div class="row mb-3" v-if="overdueBillings.length > 0 || upcomingPayables.length > 0 || upcomingSubscriptions.length > 0">
+        <div class="row mb-3" v-if="overdueBillings.length > 0 || upcomingPayables.length > 0 || upcomingSubscriptions.length > 0 || crmFollowups.items.length > 0">
+            <!-- Follow-ups do CRM (atrasados e de hoje) -->
+            <div class="col-md-4 mb-3" v-if="crmFollowups.items.length > 0">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header d-flex align-items-center gap-2" :class="crmFollowups.overdue ? 'bg-danger text-white' : 'bg-light'">
+                        <i class="fa-solid fa-handshake"></i>
+                        <span class="fw-semibold">Follow-ups do CRM</span>
+                        <a href="/crm" class="ms-auto small" :class="crmFollowups.overdue ? 'text-white' : ''">Funil</a>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-sm mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Quando</th>
+                                    <th>Atividade</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="a in crmFollowups.items.slice(0, 10)" :key="a.id" :class="isPast(a.due_at) ? 'table-danger' : ''">
+                                    <td class="small text-nowrap">{{ followupWhen(a.due_at) }}</td>
+                                    <td class="small">
+                                        {{ a.subject }}
+                                        <div class="text-muted">{{ followupWho(a) }}</div>
+                                    </td>
+                                    <td>
+                                        <a :href="followupLink(a)" class="text-dark"><i class="fa-solid fa-arrow-right"></i></a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
             <!-- Cobranças Atrasadas -->
             <div class="col-md-4 mb-3" v-if="overdueBillings.length > 0">
                 <div class="card border-0 shadow-sm h-100">
@@ -528,6 +571,7 @@
 
     <script src="./assets/js/pricing.js"></script>
     <script src="./assets/js/protocolCommission.js"></script>
+    <script src="./assets/js/standaloneItems.js"></script>
     <script src="./assets/js/standalone.js"></script>
     <script src="./assets/js/dashboard.js"></script>
     <script src="assets/js/nav.js"></script>

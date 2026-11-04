@@ -18,14 +18,11 @@ import Subscription from '../models/Subscription'
 import Config from '../models/Config'
 import Billing from '../models/Billing'
 import BillingProtocol from '../models/BillingProtocol'
-import db from '../db'
 import Seller from '../models/Seller'
 import Supplier from '../models/Supplier'
 import { isCommission, summarizeCommission } from '../utils/protocolCommission'
 import { CommissionInputError, parseCommissionInput } from '../utils/commissionInput'
-import { PricingError, buildRegisterData } from './protocolsRegisterController'
-import { MAX_QUANTITY } from './protocolsProductController'
-import { v4 as uuidv4 } from 'uuid'
+import { StandaloneError, StandaloneInput, createStandaloneProtocol } from '../utils/standaloneProtocol'
 import { getClientByProtocol, summarizeProtocol, sumSummaries, withPricing, pricingView } from '../utils/pricing'
 
 // Campos de comissão vindos do corpo; depois de liberado, a cobrança já foi gerada com o valor/parte atuais.
@@ -149,98 +146,16 @@ class protocolsController {
     // Lançamento avulso: cria o protocolo direto para um cliente (sem OS/assinatura), lança serviços/despesas e
     // produtos e já libera para pagamento, o que gera/atualiza a cobrança pendente do cliente pelas regras de sempre.
     static async storeStandalone(req: FastifyRequest, res: FastifyReply): Promise<FastifyReply> {
-        const { ClientId, SellerId, notes, discount_value, registers, products } = (req.body || {}) as any
-
-        let commission: Partial<Protocol> = {}
-        try {
-            commission = await commissionPatch(req.body)
-        } catch (e) {
-            if (e instanceof CommissionInputError) return res.status(400).send({ message: e.message })
-            throw e
-        }
-        if (commission.billing_mode === 'Comissão' && !commission.CommissionSupplierId)
-            return res.status(400).send({ message: 'Selecione o fornecedor que paga a comissão.' })
-
-        const client = ClientId ? await Client.findByPk(ClientId) : null
-        if (!client) return res.status(400).send({ message: 'Selecione o cliente.' })
-
-        const registerList: any[] = Array.isArray(registers) ? registers : []
-        const productList: any[] = Array.isArray(products) ? products : []
-
-        if (registerList.length + productList.length === 0)
-            return res.status(400).send({ message: 'Lance ao menos um registro ou produto.' })
-
-        if (SellerId && !(await Seller.findByPk(SellerId)))
-            return res.status(404).send({ message: 'Vendedor não encontrado.' })
-
-        for (const r of registerList) {
-            if (!r.description || !['Serviço', 'Despesa'].includes(r.type))
-                return res.status(400).send({ message: 'Todo registro precisa de descrição e tipo (Serviço ou Despesa).' })
-        }
-
-        for (const p of productList) {
-            if (!p.ProductId || !(Number(p.value) >= 0))
-                return res.status(400).send({ message: 'Todo produto precisa de produto e valor.' })
-            const q = Number(p.quantity ?? 1)
-            if (!Number.isInteger(q) || q < 1 || q > MAX_QUANTITY)
-                return res.status(400).send({ message: `Quantidade deve ser um inteiro entre 1 e ${MAX_QUANTITY}.` })
-            // Produto recorrente depende de assinatura; no avulso a cobrança é sempre única.
-            if (p.charge_type && p.charge_type !== 'Único')
-                return res.status(400).send({ message: 'Lançamento avulso aceita apenas produtos de cobrança única.' })
-        }
-
-        const t = await db.transaction()
         let protocol: Protocol
+        let client: Client
+        let BillingId: number | null
 
         try {
-            protocol = await Protocol.create(
-                { status: 'Em aberto', ClientId: client.id, SellerId: SellerId || null, notes: notes || null, ...commission } as any,
-                { transaction: t },
-            )
-
-            let gross = 0
-
-            for (const r of registerList) {
-                const data = await buildRegisterData(protocol, r)
-                const created = await Protocol_register.create({ ...(data as any), ProtocolId: protocol.id }, { transaction: t })
-                gross += Number(created.value)
-            }
-
-            for (const p of productList) {
-                const product = await Product.findByPk(p.ProductId, { transaction: t })
-
-                // Quantidade N = N linhas com o mesmo valor unitário; cada uma com sua licença quando o produto gera.
-                for (let i = 0; i < (Number(p.quantity) || 1); i++) {
-                    const created = await Protocol_product.create(
-                        { ProductId: p.ProductId, charge_type: 'Único', value: Number(p.value), ProtocolId: protocol.id },
-                        { transaction: t },
-                    )
-                    if (product?.generate_license) await created.createLicense({ key: uuidv4() }, { transaction: t })
-                    gross += Number(created.value)
-                }
-            }
-
-            const discount = Number(discount_value) || 0
-            if (discount < 0 || discount > gross) throw new PricingError('Desconto inválido para o total lançado.')
-
-            if (discount > 0) await protocol.update({ discount_value: discount }, { transaction: t })
-
-            await t.commit()
+            ;({ protocol, client, BillingId } = await createStandaloneProtocol((req.body || {}) as StandaloneInput))
         } catch (e) {
-            await t.rollback()
-            if (e instanceof PricingError) return res.status(400).send({ message: e.message })
+            if (e instanceof StandaloneError)
+                return res.status(e.status).send({ message: e.message, ...(e.ProtocolId ? { ProtocolId: e.ProtocolId } : {}) })
             throw e
-        }
-
-        // Libera depois de gravar tudo: a transição para "Liberado para pagamento" gera a cobrança.
-        try {
-            await protocol.update({ status: 'Liberado para pagamento' })
-        } catch (e: any) {
-            console.error('[avulso] falha ao liberar protocolo', protocol.id, e)
-            return res.status(500).send({
-                message: `Protocolo #${protocol.id} foi criado, mas não foi possível liberá-lo para pagamento: ${e.message}`,
-                ProtocolId: protocol.id,
-            })
         }
 
         const created = await Protocol.findByPk(protocol.id, {
@@ -253,14 +168,9 @@ class protocolsController {
                 { model: Supplier, as: 'CommissionSupplier' },
             ],
         })
-        const billingProtocol = await BillingProtocol.findOne({
-            where: { ProtocolId: protocol.id },
-            order: [['id', 'DESC']],
-        })
-
         return res.status(201).send({
             ...protocolJson(created as Protocol, client),
-            BillingId: billingProtocol?.BillingId || null,
+            BillingId,
         })
     }
 

@@ -11,7 +11,7 @@ import Seller from '../../models/Seller'
 import Supplier from '../../models/Supplier'
 import Service_order from '../../models/Service_order'
 import Protocol from '../../models/Protocol'
-import { CrmInputError, blank, changeStage, nextFollowups } from '../../utils/crm'
+import { CrmInputError, blank, changeStage, nextFollowups, winOpportunity } from '../../utils/crm'
 import { CommissionInputError, parseCommissionInput } from '../../utils/commissionInput'
 
 type Req = FastifyRequest<{ Params: { id: string }; Body: any; Querystring: any }>
@@ -192,6 +192,19 @@ class opportunitiesController {
         }
 
         return res.send(await Opportunity.findByPk(opportunity.id, { include }))
+    }
+
+    // Ganhar: cria o cliente (se for lead) e gera OS, protocolo avulso ou nada. Body: WinInput (utils/crm.ts).
+    static async win(req: Req, res: FastifyReply) {
+        const opportunity = await Opportunity.findByPk(req.params.id)
+        if (!opportunity) return res.status(404).send({ message: 'Oportunidade não encontrada.' })
+
+        try {
+            const result = await winOpportunity(opportunity, (req.body || {}) as any)
+            return res.status(201).send({ ...result, opportunity: await Opportunity.findByPk(opportunity.id, { include }) })
+        } catch (e) {
+            return handle(e, res)
+        }
     }
 
     // Reordena uma coluna do kanban: { ids: [3, 1, 2] }.

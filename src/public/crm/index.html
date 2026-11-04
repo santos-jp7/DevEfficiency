@@ -114,6 +114,8 @@
             </div>
         </div>
 
+        <crm-win-modal ref="win" @done="onWon" @cancel="load"></crm-win-modal>
+
         <!-- Motivo da perda -->
         <div class="modal fade" id="lostModal" tabindex="-1">
             <div class="modal-dialog">
@@ -141,6 +143,10 @@
     </div>
 
     <script src="../assets/js/crm/common.js"></script>
+    <script src="../assets/js/pricing.js"></script>
+    <script src="../assets/js/protocolCommission.js"></script>
+    <script src="../assets/js/standaloneItems.js"></script>
+    <script src="../assets/js/crm/winModal.js"></script>
     <script src="../assets/js/crm/kanban.js"></script>
     <script src="../assets/js/nav.js"></script>
 </body>

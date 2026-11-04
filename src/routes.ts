@@ -157,11 +157,13 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.post('/crm/opportunities', { preHandler: [isAuthed] }, opportunitiesController.store as any)
     instance.put('/crm/opportunities/:id', { preHandler: [isAuthed] }, opportunitiesController.update as any)
     instance.patch('/crm/opportunities/:id/stage', { preHandler: [isAuthed] }, opportunitiesController.stage as any)
+    instance.post('/crm/opportunities/:id/win', { preHandler: [isAuthed] }, opportunitiesController.win as any)
     instance.post('/crm/opportunities/reorder', { preHandler: [isAuthed] }, opportunitiesController.reorder as any)
     instance.delete('/crm/opportunities/:id', { preHandler: [isAuthed] }, opportunitiesController.destroy as any)
 
     instance.get('/crm/activities', { preHandler: [isAuthed] }, activitiesController.index as any)
     instance.get('/crm/followups', { preHandler: [isAuthed] }, activitiesController.followups as any)
+    instance.post('/crm/followups/send', { preHandler: [isAuthed] }, activitiesController.sendAlert as any)
     instance.post('/crm/activities', { preHandler: [isAuthed] }, activitiesController.store as any)
     instance.put('/crm/activities/:id', { preHandler: [isAuthed] }, activitiesController.update as any)
     instance.post('/crm/activities/:id/done', { preHandler: [isAuthed] }, activitiesController.done as any)

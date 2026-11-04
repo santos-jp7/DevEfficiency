@@ -85,7 +85,8 @@ new Vue({
                     this.lostModal.show()
                     return
                 }
-                if (stage === 'Ganho' && !confirm(`Marcar "${o.title}" como ganha?`)) return this.load()
+                // Ganho abre a conversão (cliente + OS/protocolo); oportunidade já convertida só reordena.
+                if (stage === 'Ganho' && !(o.ServiceOrderId || o.ProtocolId)) return this.$refs.win.open(o)
                 await this.saveStage(o, stage, { position: event.added.newIndex })
             } else if (event.moved) {
                 await this.saveOrder(stage)
@@ -110,6 +111,23 @@ new Vue({
             this.lostModal.hide()
             await this.saveStage(o, 'Perdido', { lost_reason: this.lost.reason, lost_details: this.lost.details })
             this.pending = null
+        },
+        async onWon(result) {
+            await this.load()
+            await this.saveOrder('Ganho')
+            const links = [
+                result.created_client ? `Cliente #${result.ClientId} criado.` : '',
+                result.ServiceOrderId ? `OS #${result.ServiceOrderId} aberta.` : '',
+                result.ProtocolId && !result.ServiceOrderId ? `Protocolo #${result.ProtocolId} lançado.` : '',
+            ].filter(Boolean)
+            const target = result.ServiceOrderId
+                ? `/service_orders/i?id=${result.ServiceOrderId}`
+                : result.BillingId
+                ? `/billings/i.html?id=${result.BillingId}`
+                : result.ProtocolId
+                ? `/protocols/i.html?id=${result.ProtocolId}`
+                : null
+            if (target && confirm(`Oportunidade ganha! ${links.join(' ')}\n\nAbrir agora?`)) location.href = target
         },
         cancelPending() {
             this.lostModal.hide()

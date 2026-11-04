@@ -49,9 +49,15 @@
         </div>
         <div v-if="converted" class="alert alert-success py-2 small">
             Convertida:
-            <a v-if="o.Service_order" :href="'../service_orders/i?id=' + o.Service_order.id">OS #{{ o.Service_order.id }}</a>
-            <a v-if="o.Protocol" :href="'../protocols/i.html?id=' + o.Protocol.id">Protocolo #{{ o.Protocol.id }}</a>
+            <a v-if="o.Client" :href="'../clients/i.html?id=' + o.Client.id">Cliente {{ o.Client.name }}</a>
+            <template v-if="o.Service_order"> &middot; <a :href="'../service_orders/i?id=' + o.Service_order.id">OS #{{ o.Service_order.id }}</a></template>
+            <template v-else-if="o.Protocol"> &middot; <a :href="'../protocols/i.html?id=' + o.Protocol.id">Protocolo #{{ o.Protocol.id }}</a></template>
         </div>
+        <div v-else-if="!isNew && o.stage === 'Ganho'" class="alert alert-warning py-2 small d-flex justify-content-between align-items-center">
+            <span>Ganha sem gerar OS/protocolo.</span>
+            <button type="button" class="btn btn-sm btn-success" @click="$refs.win.open(o)"><i class="fa-solid fa-trophy"></i> Gerar OS ou protocolo</button>
+        </div>
+        <crm-win-modal ref="win" @done="onWon"></crm-win-modal>
 
         <div class="row g-4">
             <div class="col-lg-7">
@@ -221,7 +227,10 @@
     </div>
 
     <script src="../assets/js/crm/common.js"></script>
+    <script src="../assets/js/pricing.js"></script>
     <script src="../assets/js/protocolCommission.js"></script>
+    <script src="../assets/js/standaloneItems.js"></script>
+    <script src="../assets/js/crm/winModal.js"></script>
     <script src="../assets/js/crm/opportunity.js"></script>
     <script src="../assets/js/nav.js"></script>
 </body>
