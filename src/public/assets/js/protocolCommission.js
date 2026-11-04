@@ -46,6 +46,8 @@
             net: { type: Number, default: 0 },
             // Depois de liberado a cobrança já foi gerada: só dá para mudar com o protocolo "Em aberto".
             locked: { type: Boolean, default: false },
+            // Oportunidade do CRM: sem recebimentos, só a previsão.
+            showReceived: { type: Boolean, default: true },
         },
         data: () => ({ suppliers: [] }),
         mounted() {
@@ -98,7 +100,7 @@
 
             <div v-if="commission">
                 <p class="small text-muted mb-2">
-                    O fornecedor cobra o cliente pelo valor cheio; ao liberar, a cobrança gerada é a da comissão, contra o fornecedor.
+                    O fornecedor cobra o cliente pelo valor cheio; a cobrança gerada é a da comissão, contra o fornecedor.
                 </p>
                 <div class="row g-2">
                     <div class="col-md-5">
@@ -127,7 +129,7 @@
                 <ul class="small mt-2 mb-0">
                     <li>Valor ao cliente (pago ao fornecedor): <strong>{{ brl(net) }}</strong></li>
                     <li>Comissão a receber: <strong>{{ brl(expected) }}</strong></li>
-                    <li>Recebido: {{ brl(received) }} &middot; Pendente: <strong>{{ brl(Math.max(expected - received, 0)) }}</strong></li>
+                    <li v-if="showReceived">Recebido: {{ brl(received) }} &middot; Pendente: <strong>{{ brl(Math.max(expected - received, 0)) }}</strong></li>
                 </ul>
             </div>
         </div>`,

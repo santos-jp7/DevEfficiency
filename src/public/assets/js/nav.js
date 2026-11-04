@@ -12,6 +12,15 @@
             ],
         },
         {
+            id: 'crm',
+            label: 'CRM',
+            icon: 'fa-solid fa-handshake',
+            items: [
+                { label: 'Funil de vendas', href: '/crm' },
+                { label: 'Leads', href: '/crm/leads.html' },
+            ],
+        },
+        {
             id: 'clientes',
             label: 'Clientes',
             icon: 'fa-solid fa-users',

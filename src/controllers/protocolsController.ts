@@ -22,69 +22,23 @@ import db from '../db'
 import Seller from '../models/Seller'
 import Supplier from '../models/Supplier'
 import { isCommission, summarizeCommission } from '../utils/protocolCommission'
+import { CommissionInputError, parseCommissionInput } from '../utils/commissionInput'
 import { PricingError, buildRegisterData } from './protocolsRegisterController'
 import { MAX_QUANTITY } from './protocolsProductController'
 import { v4 as uuidv4 } from 'uuid'
 import { getClientByProtocol, summarizeProtocol, sumSummaries, withPricing, pricingView } from '../utils/pricing'
 
-class CommissionInputError extends Error {}
-
-const COMMISSION_FIELDS = ['billing_mode', 'CommissionSupplierId', 'commission_percent', 'commission_value'] as const
-const blank = (v: any) => v === undefined || v === null || v === ''
-
-// Campos de cobrança por comissão vindos do corpo da requisição. Só mexe no que foi enviado:
-//  - commission_value preenchido = valor informado na mão (trava); vazio = volta a sugerir pela %;
-//  - fornecedor novo sem % informada herda a % padrão do fornecedor.
+// Campos de comissão vindos do corpo; depois de liberado, a cobrança já foi gerada com o valor/parte atuais.
 async function commissionPatch(body: any, current?: Protocol | null): Promise<Partial<Protocol>> {
-    const sent = COMMISSION_FIELDS.filter((f) => body && f in body)
-    if (sent.length === 0) return {}
-
-    const patch: any = {}
-
-    if ('billing_mode' in body) {
-        if (!['Direto', 'Comissão'].includes(body.billing_mode)) throw new CommissionInputError('Modo de cobrança inválido.')
-        patch.billing_mode = body.billing_mode
-    }
-
-    if ('CommissionSupplierId' in body) {
-        const supplierId = blank(body.CommissionSupplierId) ? null : Number(body.CommissionSupplierId)
-        if (supplierId && !(await Supplier.findByPk(supplierId))) throw new CommissionInputError('Fornecedor não encontrado.')
-        patch.CommissionSupplierId = supplierId
-    }
-
-    if ('commission_percent' in body) {
-        const percent = blank(body.commission_percent) ? null : Number(body.commission_percent)
-        if (percent !== null && !(percent >= 0 && percent <= 100)) throw new CommissionInputError('Percentual de comissão inválido.')
-        patch.commission_percent = percent
-    }
-
-    // Sem % informada: usa a % padrão do fornecedor escolhido.
-    const supplierId = patch.CommissionSupplierId ?? current?.CommissionSupplierId
-    const percentNow = 'commission_percent' in patch ? patch.commission_percent : current?.commission_percent
-    if (supplierId && percentNow == null) {
-        const supplier = await Supplier.findByPk(supplierId)
-        if (supplier?.default_commission_percent != null) patch.commission_percent = supplier.default_commission_percent
-    }
-
-    if ('commission_value' in body) {
-        if (blank(body.commission_value)) {
-            patch.commission_manual = false
-        } else {
-            const value = Number(body.commission_value)
-            if (!(value >= 0)) throw new CommissionInputError('Valor de comissão inválido.')
-            patch.commission_value = value
-            patch.commission_manual = true
-        }
-    }
+    const patch = await parseCommissionInput(body, current)
 
     if (current) {
-        const changed = Object.keys(patch).some((k) => ((current as any)[k] ?? null) != (patch[k] ?? null))
-        // Depois de liberado, a cobrança já foi gerada com o valor/parte atuais.
+        const changed = Object.keys(patch).some((k) => ((current as any)[k] ?? null) != ((patch as any)[k] ?? null))
         if (changed && current.status !== 'Em aberto')
             throw new CommissionInputError('A cobrança por comissão só pode ser alterada com o protocolo "Em aberto".')
     }
 
-    return patch
+    return patch as Partial<Protocol>
 }
 
 const protocolJson = (protocol: Protocol, client: any) => ({

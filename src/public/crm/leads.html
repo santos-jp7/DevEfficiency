@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Codlinx - CRM · Leads</title>
+    <link href="../assets/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/codlinx.css">
+    <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css">
+
+    <script src="../assets/js/vue.min.js"></script>
+    <script src="../assets/js/jquery-3.6.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2/dist/umd/popper.min.js"></script>
+    <script src="../assets/js/bootstrap.min.js"></script>
+    <script src="../assets/js/axios.min.js"></script>
+    <script src="../assets/js/moment.min.js"></script>
+</head>
+
+<body>
+    <nav class="navbar bg-light">
+        <div class="container">
+            <a class="navbar-brand" href="/dashboard">
+                <img src="../assets/img/logo_cabecalho.png" alt="Codlinx" width="40" height="40">
+            </a>
+        </div>
+    </nav>
+
+    <div class="container p-4" id="app">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3" style="gap:.5rem">
+            <h5 class="mb-0">CRM · Leads</h5>
+            <div class="d-flex" style="gap:.5rem">
+                <a class="btn btn-outline-dark btn-sm" href="./index.html"><i class="fa-solid fa-table-columns"></i> Funil</a>
+                <a class="btn btn-dark btn-sm" href="./lead.html?new=1"><i class="fa-solid fa-plus"></i> Novo lead</a>
+            </div>
+        </div>
+
+        <div class="row g-2 mb-3">
+            <div class="col-md-5"><input type="search" class="form-control form-control-sm" v-model="q" placeholder="Buscar por nome, empresa, e-mail, telefone ou documento"></div>
+            <div class="col-md-3">
+                <select class="form-select form-select-sm" v-model="status">
+                    <option value="">Todos os status</option>
+                    <option v-for="s in Crm.LEAD_STATUSES" :value="s">{{ s }}</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select form-select-sm" v-model="source">
+                    <option value="">Todas as origens</option>
+                    <option v-for="s in Crm.SOURCES" :value="s">{{ s }}</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-striped border">
+                <thead>
+                    <tr>
+                        <th>Lead</th>
+                        <th>Contato</th>
+                        <th>Origem</th>
+                        <th>Vendedor</th>
+                        <th>Oportunidades</th>
+                        <th>Status</th>
+                        <th>Abrir</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="l in filtered" :key="l.id">
+                        <td>{{ l.name }}<div class="small text-muted" v-if="l.company">{{ l.company }}</div></td>
+                        <td class="small">{{ l.email }}<div>{{ l.whatsapp || l.phone }}</div></td>
+                        <td class="small">{{ l.source }}</td>
+                        <td class="small">{{ l.Seller ? l.Seller.name : '—' }}</td>
+                        <td class="small">
+                            {{ openCount(l) }} aberta(s)
+                            <div class="text-muted" v-if="openValue(l)">{{ Crm.brl(openValue(l)) }}</div>
+                        </td>
+                        <td>
+                            <span class="badge" :class="{ 'bg-success': l.status === 'Convertido', 'bg-secondary': l.status === 'Descartado', 'bg-primary': l.status === 'Ativo' }">{{ l.status }}</span>
+                            <div class="small" v-if="l.Client"><a :href="'../clients/i.html?id=' + l.Client.id">{{ l.Client.name }}</a></div>
+                        </td>
+                        <td><a :href="'./lead.html?id=' + l.id"><i class="fa-solid fa-arrow-right"></i></a></td>
+                    </tr>
+                    <tr v-if="!filtered.length">
+                        <td colspan="7" class="text-center text-muted py-4">Nenhum lead encontrado.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="../assets/js/crm/common.js"></script>
+    <script src="../assets/js/crm/leads.js"></script>
+    <script src="../assets/js/nav.js"></script>
+</body>
+
+</html>
