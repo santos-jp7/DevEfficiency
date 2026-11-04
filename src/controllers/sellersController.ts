@@ -1,3 +1,4 @@
+import { expectedCommission, isCommission } from '../utils/protocolCommission'
 import { FastifyRequest, FastifyReply } from 'fastify'
 import { Op } from 'sequelize'
 import moment from 'moment'
@@ -153,7 +154,13 @@ class sellersController {
         const payableByProtocol = new Map(payables.map((p) => [p.ProtocolId as number, p]))
 
         const rows = protocols.map((p) => {
-            const calc = computeCommission(seller, p.Protocol_registers, p.Protocol_products, p.discount_value)
+            const calc = computeCommission(
+                seller,
+                p.Protocol_registers,
+                p.Protocol_products,
+                p.discount_value,
+                isCommission(p) ? expectedCommission(p, p.Protocol_registers, p.Protocol_products) : null,
+            )
             const payable = payableByProtocol.get(p.id)
 
             return {

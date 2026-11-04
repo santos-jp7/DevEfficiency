@@ -93,6 +93,9 @@ async function syncModels(): Promise<true> {
     await CostCenter.sync()
     await Seller.sync({ alter: { drop: false } })
 
+    // Fornecedor antes de protocolo/cobrança (protocolos por comissão referenciam o fornecedor).
+    await Supplier.sync({ alter: { drop: false } })
+
     await Protocol.sync({ alter: { drop: false } })
     await Protocol_register.sync({ alter: { drop: false } })
     await Protocol_product.sync({ alter: { drop: false } })
@@ -104,8 +107,6 @@ async function syncModels(): Promise<true> {
     await BillingProtocol.sync({ alter: { drop: false } })
     await BillingFile.sync({ alter: { drop: false } })
 
-    await CostCenter.sync()
-    await Supplier.sync()
 
     await Receipts.sync({ alter: { drop: false } })
     await Payable.sync({ alter: { drop: false } })

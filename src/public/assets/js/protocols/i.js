@@ -7,6 +7,7 @@ const app = new Vue({
             status: 'Em aberto',
         },
         id: null,
+        savedStatus: 'Em aberto',
         discountPct: null,
         payloads: {
             protocolRegister: {
@@ -58,6 +59,7 @@ const app = new Vue({
         if (params.id) {
             __api__.get(`/api/protocols/${params.id}`).then((res) => {
                 this.protocol = res.data
+                this.savedStatus = res.data?.status
             })
         }
 
@@ -135,10 +137,16 @@ const app = new Vue({
         discountedTotal() {
             return this.protocolGross - (Number(this.protocol?.discount_value) || 0)
         },
+        // Direta: total líquido; comissão de terceiro: a comissão devida pelo fornecedor.
+        amountDue() {
+            return ProtocolCommission.isCommission(this.protocol)
+                ? ProtocolCommission.expected(this.protocol, this.discountedTotal)
+                : this.discountedTotal
+        },
         installmentValue() {
             const n = this.protocol?.total_installments
             if (!n || n <= 1) return 0
-            return parseFloat((this.discountedTotal / n).toFixed(2))
+            return parseFloat((this.amountDue / n).toFixed(2))
         },
     },
     methods: {
@@ -157,13 +165,14 @@ const app = new Vue({
                 total_installments: this.protocol.total_installments || null,
                 discount_value: this.protocol.discount_value || null,
                 SellerId: this.protocol.SellerId || null,
+                ...ProtocolCommission.payload(this.protocol),
             })
                 .then((res) => {
                     alert('Protocolo atualizado com sucesso!')
                     window.location.reload()
                 })
                 .catch((err) => {
-                    alert('Erro ao atualizar protocolo.')
+                    alert(err?.response?.data?.message || 'Erro ao atualizar protocolo.')
                     console.error(err)
                 })
         },

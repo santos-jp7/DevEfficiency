@@ -18,12 +18,14 @@ import Protocol_register from '../models/Protocol_register'
 import Product from '../models/Product'
 import Receipts from '../models/Receipts'
 import Config from '../models/Config'
+import Supplier from '../models/Supplier'
 
 import puppeteer from 'puppeteer'
 import CloudFlareR2 from '../providers/CloudFlareR2'
 import { pricingView, summarizeProtocol, sumSummaries } from '../utils/pricing'
 import { alreadyMatched } from '../utils/reconciliation'
 import { computeLateCharges, getLateRules } from '../utils/lateCharges'
+import { summarizeCommission } from '../utils/protocolCommission'
 
 type billingRequest = FastifyRequest<{
     Body: Billing
@@ -47,12 +49,17 @@ export function billingPricing(billing: any, client?: any) {
 
 class billingController {
     static async index(req: billingRequest, res: FastifyReply): Promise<FastifyReply> {
-        const { startDate, endDate, ClientId, limit } = req.query
+        const { startDate, endDate, ClientId, SupplierId, limit } = req.query as any
 
         const where: any = {}
 
         if (ClientId) {
             where.ClientId = ClientId
+        }
+
+        // Cobranças de comissão ao fornecedor (protocolos por comissão).
+        if (SupplierId) {
+            where.SupplierId = SupplierId
         }
 
         if (startDate && endDate) {
@@ -65,7 +72,7 @@ class billingController {
         }
 
         const billings = await Billing.findAll({
-            include: [Client],
+            include: [Client, Supplier],
             order: [['createdAt', 'DESC']],
             where,
             ...{ ...(limit ? { limit: parseInt(limit) } : {}) },
@@ -74,7 +81,8 @@ class billingController {
         const reconciled = await alreadyMatched('billing', billings.filter((b) => b.status === 'pago').map((b) => b.id))
 
         const rules = await getLateRules()
-        const open = (b: Billing) => ['pendente', 'faturada'].includes(b.status as string)
+        // Multa/juros só para cobranças de cliente; comissão de fornecedor não tem encargos.
+        const open = (b: Billing) => !b.SupplierId && ['pendente', 'faturada'].includes(b.status as string)
 
         return res.send(
             billings.map((b) => ({
@@ -90,6 +98,7 @@ class billingController {
         const billing = await Billing.findByPk(req.params.id, {
             include: [
                 Client,
+                Supplier,
                 BillingFile,
                 {
                     model: BillingProtocol,
@@ -104,6 +113,8 @@ class billingController {
                                 Subscription,
                                 Protocol_register,
                                 { model: Protocol_product, include: [Product] },
+                                Receipts,
+                                { model: Supplier, as: 'CommissionSupplier' },
                             ],
                         },
                     ],
@@ -115,12 +126,15 @@ class billingController {
 
         const reconciled = billing.status === 'pago' ? await alreadyMatched('billing', [billing.id]) : new Set<number>()
 
+        const json: any = billing.toJSON()
+        for (const bp of json.BillingProtocols || []) if (bp.Protocol) bp.Protocol.commission = summarizeCommission(bp.Protocol)
+
         return res.send({
-            ...billing.toJSON(),
+            ...json,
             pricing: billingPricing(billing, (billing as any).Client),
             reconciled: reconciled.has(billing.id),
             // Informativo: multa/juros por atraso calculados hoje; não alteram total_value.
-            late_charges: ['pendente', 'faturada'].includes(billing.status as string) ? computeLateCharges(Number(billing.total_value), billing.due_date, await getLateRules()) : null,
+            late_charges: !billing.SupplierId && ['pendente', 'faturada'].includes(billing.status as string) ? computeLateCharges(Number(billing.total_value), billing.due_date, await getLateRules()) : null,
             late_rules: await getLateRules(),
         })
     }
@@ -171,8 +185,10 @@ class billingController {
     // A criação de cobranças é automática via hooks.
     // Este método pode ser usado para uma criação manual excepcional.
     static async store(req: billingRequest, res: FastifyReply): Promise<FastifyReply> {
-        const { ClientId, due_date, total_value, status, method, BankAccountId } = req.body
-        const billing = await Billing.create({ ClientId, due_date, total_value, status, method, BankAccountId })
+        const { ClientId, SupplierId, due_date, total_value, status, method, BankAccountId } = req.body
+        if (!ClientId === !SupplierId)
+            return res.status(400).send({ message: 'Informe o cliente OU o fornecedor da cobrança.' })
+        const billing = await Billing.create({ ClientId: ClientId || null, SupplierId: SupplierId || null, due_date, total_value, status, method, BankAccountId })
         return res.status(201).send(billing)
     }
 
@@ -216,6 +232,7 @@ class billingController {
         const billing = await Billing.findByPk(id, {
             include: [
                 Client,
+                Supplier,
                 {
                     model: BillingProtocol,
                     include: [
@@ -230,6 +247,8 @@ class billingController {
                                     include: [Project],
                                 },
                                 Subscription,
+                                Client,
+                                { model: Supplier, as: 'CommissionSupplier' },
                             ],
                         },
                     ],
@@ -237,9 +256,13 @@ class billingController {
             ],
         })
 
-        // return res.send(billing)
+        if (!billing) return res.status(404).send({ message: 'Cobrança não encontrada' })
 
-        const client = await Client.findByPk(billing?.ClientId)
+        // Cobrança de comissão: o "cliente" da fatura é o fornecedor.
+        const supplier = (billing as any).Supplier as Supplier | null
+        const client: any = supplier
+            ? { id: supplier.id, name: supplier.name, email: supplier.email, cnpj: supplier.cnpj, is_supplier: true }
+            : await Client.findByPk(billing.ClientId as number)
 
         const config = await Config.findAll({})
         const configMap: { [key: string]: string | null } = {}
@@ -259,8 +282,11 @@ class billingController {
         })
 
         const template = fs.readFileSync(path.resolve('src', 'views', 'billing.ejs'), 'utf-8')
-        const pricing = billingPricing(billing, client)
-        const html = ejs.render(template, { billing, client, configMap, pricing, pv: pricingView })
+        const pricing = billingPricing(billing, supplier ? null : client)
+        const commissions = new Map(
+            (billing.BillingProtocols || []).map((bp: any) => [bp.ProtocolId, summarizeCommission(bp.Protocol)]),
+        )
+        const html = ejs.render(template, { billing, client, configMap, pricing, pv: pricingView, isSupplier: !!supplier, commissions })
 
         const browser = await puppeteer.launch({
             headless: 'new',
@@ -278,7 +304,7 @@ class billingController {
         res.header('Content-Type', 'application/pdf')
         res.header(
             'Content-Disposition',
-            `attachment; filename=charge_${client?.name.toLowerCase().split(' ').join('_')}_${Date.now()}.pdf`,
+            `attachment; filename=charge_${String(client?.name || '').toLowerCase().split(' ').join('_')}_${Date.now()}.pdf`,
         )
 
         return res.send(pdf)

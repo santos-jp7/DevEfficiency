@@ -30,8 +30,20 @@ export function computeCommission(
     registers: RegisterLike[],
     products: ProductLike[],
     discountValue: number | string | null | undefined,
+    // Protocolo por comissão: o que de fato entra é a comissão do fornecedor — ela vira a base (e o total).
+    supplierCommission?: number | null,
 ): CommissionResult {
     const percent = num(seller.commission_percent)
+
+    if (supplierCommission !== null && supplierCommission !== undefined) {
+        const base = round2(num(supplierCommission))
+        const min = num(seller.min_protocol_value)
+        if (min > 0 && base < min)
+            return { eligible: false, reason: `Protocolo abaixo do valor mínimo (${min.toFixed(2)})`, protocol_total: base, base, percent, commission: 0 }
+        if (!(percent > 0))
+            return { eligible: false, reason: 'Vendedor sem percentual de comissão', protocol_total: base, base, percent, commission: 0 }
+        return { eligible: true, reason: null, protocol_total: base, base, percent, commission: round2((base * percent) / 100) }
+    }
 
     const services = registers.filter((r) => r.type === 'Serviço')
     const allItemsTotal = registers.reduce((s, r) => s + num(r.value), 0) + products.reduce((s, p) => s + num(p.value), 0)

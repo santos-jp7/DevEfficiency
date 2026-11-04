@@ -250,6 +250,10 @@
                                 </div>
                             </div>
 
+                            <protocol-commission v-if="payloads.protocol.id" :protocol="payloads.protocol"
+                                :net="(payloads.protocol.pricing && payloads.protocol.pricing.total_net) || 0"
+                                :locked="protocolSavedStatus !== 'Em aberto'"></protocol-commission>
+
                             <button type="submit" class="btn btn-dark">Enviar</button> &bull; <a class="btn btn-dark"
                                 :href="'../protocols/i.html?id=' + payloads.protocol.id"><i class=" fa-solid
                                 fa-maximize"></i> Abir em tela cheia</a>
@@ -377,6 +381,7 @@
     </div>
 
     <script src="../assets/js/pricing.js"></script>
+    <script src="../assets/js/protocolCommission.js"></script>
     <script src="../assets/js/subscriptions/i.js"></script>
     <script src="../assets/js/nav.js"></script>
 </body>

@@ -121,7 +121,8 @@
                             <tr v-for="billing of billings" :key="billing.id" :class="rowClass(billing)">
                                 <td class="cx-num text-cx-muted">{{ billing.id }}</td>
                                 <td>
-                                    <div class="fw-500">{{ billing.Client.name }}</div>
+                                    <div class="fw-500" v-if="billing.Supplier">{{ billing.Supplier.name }} <span class="badge bg-info text-dark ms-1">Comissão</span></div>
+                                    <div class="fw-500" v-else>{{ billing.Client && billing.Client.name }}</div>
                                 </td>
                                 <td>
                                     <span :class="isOverdue(billing) ? 'text-cx-red fw-600' : ''">

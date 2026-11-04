@@ -21,6 +21,7 @@ const service_order = new Vue({
         Ticket: null,
         clientSlaConfigs: [],
         slaLevels: [],
+        protocolSavedStatus: 'Em aberto',
         Protocol: {
             id: null,
             status: null,
@@ -117,10 +118,16 @@ const service_order = new Vue({
         protocolDiscountedTotal() {
             return this.protocolGross - (Number(this.Protocol?.discount_value) || 0)
         },
+        // Direta: total líquido; comissão de terceiro: a comissão devida pelo fornecedor.
+        protocolAmountDue() {
+            return ProtocolCommission.isCommission(this.Protocol)
+                ? ProtocolCommission.expected(this.Protocol, this.protocolDiscountedTotal)
+                : this.protocolDiscountedTotal
+        },
         protocolInstallmentValue() {
             const n = this.Protocol?.total_installments
             if (!n || n <= 1) return 0
-            return parseFloat((this.protocolDiscountedTotal / n).toFixed(2))
+            return parseFloat((this.protocolAmountDue / n).toFixed(2))
         },
         slaResponseStatus() {
             return this._slaDeadlineStatus(this.sla_response_deadline)
@@ -208,6 +215,7 @@ const service_order = new Vue({
                     current_installment: this.$data.Protocol.current_installment || null,
                     total_installments: this.$data.Protocol.total_installments || null,
                     discount_value: this.$data.Protocol.discount_value || null,
+                    ...ProtocolCommission.payload(this.$data.Protocol),
                 })
                 .then(() => {
                     window.location.reload()
@@ -516,6 +524,7 @@ const service_order = new Vue({
                     .get('/api/protocols/' + data.Protocol.id)
                     .then(({ data }) => {
                         this.$data.Protocol = data
+                        this.$data.protocolSavedStatus = data?.status
                     })
                     .catch((error) => {
                         console.log(error)

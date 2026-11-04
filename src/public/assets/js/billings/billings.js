@@ -76,7 +76,7 @@ const app = new Vue({
             }
             if (this.q) {
                 const q = this.q.toLowerCase()
-                result = result.filter((b) => b.Client?.name?.toLowerCase().includes(q))
+                result = result.filter((b) => (b.Client?.name || b.Supplier?.name || '').toLowerCase().includes(q))
             }
             this.billings = result
         },

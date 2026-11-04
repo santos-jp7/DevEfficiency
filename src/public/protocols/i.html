@@ -100,6 +100,9 @@
 
         <h5>
             Protocolo #{{protocol.id}}
+            <span v-if="protocol.billing_mode === 'Comissão'" class="badge bg-info text-dark ms-2">
+                Comissão{{ protocol.commission && protocol.commission.supplier ? ' · ' + protocol.commission.supplier.name : '' }}
+            </span>
             <span v-if="isPartner" class="badge bg-success ms-2">
                 Cliente parceiro · {{ pct(partnerPercent) }}
             </span>
@@ -174,6 +177,8 @@
                 </div>
             </div>
 
+            <protocol-commission :protocol="protocol" :net="discountedTotal" :locked="savedStatus !== 'Em aberto'"></protocol-commission>
+
             <button type="submit" class="btn btn-dark">Salvar Alterações</button>
 
             <div v-if="!protocol.SubscriptionId && !protocol.ServiceOrderId && protocol.Client">
@@ -236,7 +241,7 @@
                         <span>Desconto: -{{Number(protocol.discount_value).toLocaleString('pt-br',{style: 'currency', currency: 'BRL'})}}</span>
                     </li>
                     <li>
-                        <span>Valor a receber: {{(discountedTotal - (protocol?.Receipts?.reduce((sum, v) => (sum + v.value), 0) || 0)).toLocaleString('pt-br',{style: 'currency', currency: 'BRL'})}}
+                        <span>{{ protocol.billing_mode === 'Comissão' ? 'Comissão a receber do fornecedor' : 'Valor a receber' }}: {{(amountDue - (protocol?.Receipts?.reduce((sum, v) => (sum + v.value), 0) || 0)).toLocaleString('pt-br',{style: 'currency', currency: 'BRL'})}}
                         </span>
                     </li>
                 </ul>
@@ -587,6 +592,7 @@
     </div>
 
     <script src="../assets/js/pricing.js"></script>
+    <script src="../assets/js/protocolCommission.js"></script>
     <script src="../assets/js/protocols/i.js"></script>
     <script src="../assets/js/nav.js"></script>
 </body>

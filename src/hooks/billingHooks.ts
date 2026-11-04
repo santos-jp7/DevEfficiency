@@ -1,13 +1,12 @@
-import moment from 'moment'
-
 import Billing from '../models/Billing'
 import Protocol from '../models/Protocol'
 import Service_order from '../models/Service_order'
 import Subscription from '../models/Subscription'
 import BillingProtocol from '../models/BillingProtocol'
 import { InstanceUpdateOptions } from 'sequelize/types/model'
-import Client from '../models/Client'
 import Receipts from '../models/Receipts'
+import { amountDue } from '../utils/protocolCommission'
+import { createPendingBilling, findOrCreatePendingBilling, partyOf, refreshBillingTotal } from '../utils/billingParty'
 
 // Marca a assinatura como paga, exceto quando a renovação já foi liberada (cobrança nova pendente).
 async function markSubscriptionPaid(subscriptionId: number, transaction?: any) {
@@ -41,12 +40,10 @@ class billingHooks {
 
                 const receipts = await protocol.getReceipts({ transaction: options.transaction })
 
-                const productsTotal = protocol_products.reduce((sum, v) => sum + v.value, 0) || 0
-                const registersTotal = protocol_registers.reduce((sum, v) => sum + v.value, 0) || 0
                 const receiptsTotal = receipts.reduce((sum, v) => sum + v.value, 0) || 0
-                const protocolTotal = productsTotal + registersTotal
-                const discountAmt = Number(protocol.discount_value) || 0
-                const discountedTotal = protocolTotal - discountAmt
+                // Direto: total líquido do protocolo; por comissão: a comissão devida pelo fornecedor.
+                const discountedTotal = amountDue(protocol, protocol_registers, protocol_products)
+                const party = partyOf(billing)
 
                 // Installment-based logic
                 if (protocol.total_installments && protocol.total_installments > 1) {
@@ -68,19 +65,16 @@ class billingHooks {
                             { transaction: options.transaction },
                         )
 
-                        const client = await Client.findByPk(billing.ClientId, { transaction: options.transaction })
-                        const nextDueDate = moment().set('date', client?.due_day || 1)
-                        if (nextDueDate.isBefore(moment(), 'day')) nextDueDate.add(1, 'month')
+                        if (!party) continue
 
-                        const nextBilling = await Billing.create(
-                            { ClientId: billing.ClientId, status: 'pendente', due_date: nextDueDate.toDate(), total_value: installmentValue },
-                            { transaction: options.transaction },
-                        )
+                        const nextBilling = await createPendingBilling(party, options.transaction)
 
                         await BillingProtocol.create(
                             { BillingId: nextBilling.id, ProtocolId: protocol.id, value: installmentValue },
                             { transaction: options.transaction },
                         )
+
+                        await refreshBillingTotal(nextBilling, options.transaction)
                     }
                     continue
                 }
@@ -102,26 +96,9 @@ class billingHooks {
 
                     if (protocol.SubscriptionId) await markSubscriptionPaid(protocol.SubscriptionId, options.transaction)
                 } else {
-                    const client = await Client.findByPk(billing.ClientId, { transaction: options.transaction })
+                    if (!party) continue
 
-                    let currentBilling = await Billing.findOne({
-                        where: { ClientId: billing.ClientId, status: 'pendente' },
-                        transaction: options.transaction,
-                    })
-
-                    if (!currentBilling) {
-                        const nextDueDate = moment().set('date', client?.due_day || 1)
-                        if (nextDueDate.isBefore(moment(), 'day')) {
-                            nextDueDate.add(1, 'month')
-                        }
-
-                        currentBilling = await Billing.create(
-                            { ClientId: billing.ClientId, status: 'pendente', due_date: nextDueDate.toDate() },
-                            {
-                                transaction: options.transaction,
-                            },
-                        )
-                    }
+                    const currentBilling = await findOrCreatePendingBilling(party, options.transaction)
 
                     await BillingProtocol.create(
                         {
@@ -132,13 +109,7 @@ class billingHooks {
                         { transaction: options.transaction },
                     )
 
-                    const billingProtocols = await currentBilling.getBillingProtocols({
-                        transaction: options.transaction,
-                    })
-
-                    const total_value = billingProtocols.reduce((sum, v) => sum + v.value, 0)
-
-                    await currentBilling.update({ total_value: total_value }, { transaction: options.transaction })
+                    await refreshBillingTotal(currentBilling, options.transaction)
                 }
             }
         }
