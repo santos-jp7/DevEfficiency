@@ -23,6 +23,9 @@ import SlaLevel from '../models/SlaLevel'
 import Subproject from '../models/Subproject'
 import Subscription from '../models/Subscription'
 import Supplier from '../models/Supplier'
+import Lead from '../models/Lead'
+import Opportunity from '../models/Opportunity'
+import CrmActivity from '../models/CrmActivity'
 
 export type Action = 'list' | 'get' | 'create' | 'update' | 'delete'
 
@@ -171,6 +174,32 @@ export const resources: Resource[] = [
         description: 'Níveis de SLA',
         actions: ['list', 'create', 'update', 'delete'],
         model: SlaLevel,
+    },
+    {
+        name: 'crm_leads',
+        path: '/crm/leads',
+        description: 'CRM: leads (pessoa/empresa que ainda não é cliente; ClientId quando já é de um cliente)',
+        actions: CRUD,
+        model: Lead,
+        queryHelp: 'q, status (Ativo|Convertido|Descartado), source, SellerId',
+    },
+    {
+        name: 'crm_opportunities',
+        path: '/crm/opportunities',
+        description:
+            'CRM: oportunidades (negócios) de um lead (LeadId) ou cliente (ClientId). Para mudar a etapa use crm_opportunity_stage; para ganhar e gerar cliente/OS/protocolo use crm_opportunity_win',
+        actions: CRUD,
+        model: Opportunity,
+        queryHelp: 'status (open|closed|all, padrão open), SellerId, source, LeadId, ClientId, q',
+    },
+    {
+        name: 'crm_activities',
+        path: '/crm/activities',
+        description:
+            'CRM: atividades e follow-ups (ligação, reunião, e-mail, WhatsApp, tarefa, nota) ligadas a lead, oportunidade ou cliente. Follow-up = due_at sem done_at; para concluir envie update com data { done: true }',
+        actions: CRUD,
+        model: CrmActivity,
+        queryHelp: 'LeadId, OpportunityId, ClientId, pending (true)',
     },
 ]
 

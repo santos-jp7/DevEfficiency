@@ -158,7 +158,65 @@ export default function registerTools(server: McpServer, app: FastifyInstance): 
         },
     )
 
+    register(
+        'crm_opportunity_stage',
+        {
+            title: 'CRM: mudar etapa da oportunidade',
+            description:
+                'Move a oportunidade no funil (Novo, Qualificado, Proposta, Negociação, Ganho, Perdido) gravando histórico. Perdido exige lost_reason (Preço, Concorrente, Sem orçamento, Sem resposta, Timing, Escopo, Outro). Ganho aqui só marca como ganha; para gerar cliente/OS/protocolo use crm_opportunity_win.',
+            inputSchema: {
+                opportunity_id: z.number().int(),
+                stage: z.enum(['Novo', 'Qualificado', 'Proposta', 'Negociação', 'Ganho', 'Perdido']),
+                lost_reason: z.string().optional(),
+                lost_details: z.string().optional(),
+                probability: z.number().int().min(0).max(100).optional(),
+            },
+            annotations: { destructiveHint: false, openWorldHint: false },
+        },
+        async ({ opportunity_id, ...body }: any) =>
+            toResult(await callApi(app, 'PATCH', `/crm/opportunities/${opportunity_id}/stage`, { body })),
+    )
+
+    register(
+        'crm_opportunity_win',
+        {
+            title: 'CRM: ganhar oportunidade',
+            description:
+                'Ganha a oportunidade e gera o resultado: cria o cliente (e contato) a partir do lead quando ainda não é cliente e, conforme mode, abre uma OS (mode=os: subject, gravidade, prazo, ProjectId), lança um protocolo avulso liberado para pagamento (mode=protocol: registers [{type Serviço|Despesa, description, estimated_hours|value}], products [{ProductId, value, quantity}], discount_value — gera cobrança ao cliente, ou ao fornecedor se billing_mode=Comissão) ou só marca como ganha (mode=none). Campos de cobrança (billing_mode, CommissionSupplierId, commission_percent, commission_value) vêm da oportunidade se omitidos.',
+            inputSchema: {
+                opportunity_id: z.number().int(),
+                mode: z.enum(['os', 'protocol', 'none']),
+                data: dataShape,
+            },
+            annotations: { destructiveHint: true, openWorldHint: false },
+        },
+        async ({ opportunity_id, mode, data }: any) =>
+            toResult(await callApi(app, 'POST', `/crm/opportunities/${opportunity_id}/win`, { body: { ...(data || {}), mode } })),
+    )
+
+    register(
+        'crm_followups',
+        {
+            title: 'CRM: follow-ups pendentes',
+            description: 'Atividades pendentes do CRM. range: overdue (atrasadas), today (até o fim de hoje, padrão) ou week (próximos 7 dias).',
+            inputSchema: { range: z.enum(['overdue', 'today', 'week']).optional() },
+            annotations: { readOnlyHint: true, openWorldHint: false },
+        },
+        async ({ range }: any) => toResult(await callApi(app, 'GET', '/crm/followups', { query: range ? { range } : {} })),
+    )
+
     const reports: [string, string, string, Record<string, z.ZodTypeAny>][] = [
+        [
+            'crm_report',
+            '/crm/reports',
+            'Relatório de vendas do CRM: funil atual, ganhas/perdidas no período, conversão, ticket e ciclo médios, por vendedor e por origem, motivos de perda, tempo por etapa e previsão.',
+            {
+                startDate: z.string().optional(),
+                endDate: z.string().optional(),
+                SellerId: z.number().int().optional(),
+                source: z.string().optional(),
+            },
+        ],
         [
             'financial_history',
             '/financial-history',

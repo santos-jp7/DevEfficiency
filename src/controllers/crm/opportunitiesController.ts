@@ -86,7 +86,8 @@ class opportunitiesController {
         else if (status === 'closed') where.stage = ['Ganho', 'Perdido']
         if (SellerId) where.SellerId = SellerId
         if (LeadId) where.LeadId = LeadId
-        if (ClientId) where.ClientId = ClientId
+        // Do cliente: as dele e as que nasceram de lead desse cliente (histórico de antes da conversão).
+        if (ClientId) where[Op.and] = [{ [Op.or]: [{ ClientId }, { '$Lead.ClientId$': ClientId }] }]
         if (q) {
             const like = { [Op.like]: `%${q}%` }
             where[Op.or] = [{ title: like }, { '$Lead.name$': like }, { '$Lead.company$': like }, { '$Client.name$': like }]

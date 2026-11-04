@@ -273,6 +273,46 @@
 
         <br />
 
+        <div class="row mb-2" v-if="id">
+            <div class="col border rounded p-2">
+                <div class="d-flex justify-content-between mb-2">
+                    <h5>Oportunidades (CRM)</h5>
+                    <a class="btn" :href="'../crm/opportunity.html?new=1&ClientId=' + id"><i class="fa-solid fa-plus"></i> Nova oportunidade</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-striped border">
+                        <thead>
+                            <tr>
+                                <th scope="col">Oportunidade</th>
+                                <th scope="col">Etapa</th>
+                                <th scope="col">Valor</th>
+                                <th scope="col">Vendedor</th>
+                                <th scope="col">Próximo follow-up</th>
+                                <th scope="col">Abrir</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="o of Opportunities" :key="o.id">
+                                <td>
+                                    {{ o.title }}
+                                    <span v-if="o.billing_mode === 'Comissão'" class="badge bg-info text-dark ms-1">Comissão</span>
+                                    <div class="small text-muted" v-if="o.Lead && !o.ClientId">quando era lead</div>
+                                </td>
+                                <td><span class="badge" :style="{ background: Crm.STAGE_COLORS[o.stage] }">{{ o.stage }}</span></td>
+                                <td>{{ o.estimated_value != null ? Crm.brlFull(o.estimated_value) : '—' }}</td>
+                                <td>{{ o.Seller ? o.Seller.name : '—' }}</td>
+                                <td :class="o.next_followup && Crm.isOverdue(o.next_followup.due_at) ? 'text-danger' : ''">
+                                    {{ o.next_followup ? Crm.dueLabel(o.next_followup.due_at) + ' — ' + o.next_followup.subject : '—' }}
+                                </td>
+                                <td><a :href="'../crm/opportunity.html?id=' + o.id"><i class="fa-solid fa-arrow-right"></i></a></td>
+                            </tr>
+                            <tr v-if="!Opportunities.length"><td colspan="6" class="text-center text-muted">Nenhuma oportunidade.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <div class="row" style="gap: 10px">
             <div class="col border rounded p-2">
                 <div class="d-flex justify-content-between mb-2">
@@ -911,6 +951,7 @@
         </div>
 
     <script src="../assets/js/pdf.js"></script>
+    <script src="../assets/js/crm/common.js"></script>
     <script src="../assets/js/clients/i.js"></script>
     <script src="../assets/js/nav.js"></script>
 </body>

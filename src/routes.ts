@@ -49,6 +49,7 @@ import ticketsController from './controllers/ticketsController'
 import leadsController from './controllers/crm/leadsController'
 import opportunitiesController from './controllers/crm/opportunitiesController'
 import activitiesController from './controllers/crm/activitiesController'
+import crmReportsController from './controllers/crm/crmReportsController'
 import { previewBillingReminders, runBillingReminders, sendBillingReminder } from './utils/billingReminders'
 import Billing from './models/Billing'
 import mcp from './mcp/server'
@@ -161,6 +162,7 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.post('/crm/opportunities/reorder', { preHandler: [isAuthed] }, opportunitiesController.reorder as any)
     instance.delete('/crm/opportunities/:id', { preHandler: [isAuthed] }, opportunitiesController.destroy as any)
 
+    instance.get('/crm/reports', { preHandler: [isAuthed] }, crmReportsController.index as any)
     instance.get('/crm/activities', { preHandler: [isAuthed] }, activitiesController.index as any)
     instance.get('/crm/followups', { preHandler: [isAuthed] }, activitiesController.followups as any)
     instance.post('/crm/followups/send', { preHandler: [isAuthed] }, activitiesController.sendAlert as any)

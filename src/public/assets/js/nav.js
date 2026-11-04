@@ -18,6 +18,7 @@
             items: [
                 { label: 'Funil de vendas', href: '/crm' },
                 { label: 'Leads', href: '/crm/leads.html' },
+                { label: 'Relatório de vendas', href: '/crm/reports.html' },
             ],
         },
         {
