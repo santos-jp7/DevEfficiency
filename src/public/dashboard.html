@@ -444,13 +444,15 @@
                                 <div>
                                     <div class="fw-600">{{currentOs.subject}}</div>
                                     <small class="text-cx-muted">
-                                        <a :href="'/projects/i?id='+currentOs.Project.id" class="text-decoration-none text-cx-muted">
+                                        <a v-if="currentOs.Project" :href="'/projects/i?id='+currentOs.Project.id" class="text-decoration-none text-cx-muted">
                                             {{currentOs.Project.name}}
                                         </a>
-                                        &middot;
-                                        <a :href="'/clients/i?id='+currentOs.Project.Client.id" class="text-decoration-none text-cx-muted">
-                                            {{currentOs.Project.Client.name}}
-                                        </a>
+                                        <template v-if="currentOs.Project?.Client || currentOs.Client">
+                                            <span v-if="currentOs.Project">&middot;</span>
+                                            <a :href="'/clients/i?id='+(currentOs.Project?.Client || currentOs.Client).id" class="text-decoration-none text-cx-muted">
+                                                {{(currentOs.Project?.Client || currentOs.Client).name}}
+                                            </a>
+                                        </template>
                                     </small>
                                 </div>
                                 <span class="badge bg-primary" style="white-space:nowrap">Em correções</span>
