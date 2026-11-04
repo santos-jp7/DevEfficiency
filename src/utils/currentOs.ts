@@ -8,7 +8,8 @@ export default async function currentOs(req: FastifyRequest, res: FastifyReply):
     return res.send(
         await Service_order.findOne({
             where: { status: 'Em correções' },
-            include: [{ model: Project, include: [Client] }],
+            // OS pode não ter projeto: o cliente da própria OS serve de fallback no dashboard.
+            include: [Client, { model: Project, include: [Client] }],
         }),
     )
 }
