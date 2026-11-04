@@ -11,7 +11,7 @@ import Seller from '../../models/Seller'
 import Supplier from '../../models/Supplier'
 import Service_order from '../../models/Service_order'
 import Protocol from '../../models/Protocol'
-import { CrmInputError, blank, changeStage, nextFollowups, winOpportunity } from '../../utils/crm'
+import { CrmInputError, blank, changeStage, nextFollowups, opportunityFromServiceOrder, syncSourceServiceOrder, winOpportunity } from '../../utils/crm'
 import { CommissionInputError, parseCommissionInput } from '../../utils/commissionInput'
 
 type Req = FastifyRequest<{ Params: { id: string }; Body: any; Querystring: any }>
@@ -22,6 +22,7 @@ const include = [
     Seller,
     { model: Supplier, as: 'CommissionSupplier' },
     { model: Service_order, attributes: ['id', 'subject', 'status'] },
+    { model: Service_order, as: 'SourceServiceOrder', attributes: ['id', 'subject', 'status'] },
     { model: Protocol, attributes: ['id', 'status', 'billing_mode'] },
 ]
 
@@ -79,13 +80,14 @@ function handle(e: any, res: FastifyReply) {
 class opportunitiesController {
     // Kanban/lista. status=open (padrão) | closed | all; filtros: SellerId, source (do lead), LeadId, ClientId, q.
     static async index(req: Req, res: FastifyReply) {
-        const { status = 'open', SellerId, source, LeadId, ClientId, q } = (req.query || {}) as any
+        const { status = 'open', SellerId, source, LeadId, ClientId, SourceServiceOrderId, q } = (req.query || {}) as any
 
         const where: any = {}
         if (status === 'open') where.stage = OPEN_STAGES
         else if (status === 'closed') where.stage = ['Ganho', 'Perdido']
         if (SellerId) where.SellerId = SellerId
         if (LeadId) where.LeadId = LeadId
+        if (SourceServiceOrderId) where.SourceServiceOrderId = SourceServiceOrderId
         // Do cliente: as dele e as que nasceram de lead desse cliente (histórico de antes da conversão).
         if (ClientId) where[Op.and] = [{ [Op.or]: [{ ClientId }, { '$Lead.ClientId$': ClientId }] }]
         if (q) {
@@ -182,6 +184,7 @@ class opportunitiesController {
         const { stage, position, ...extra } = (req.body || {}) as any
         if (!OPPORTUNITY_STAGES.includes(stage)) return res.status(400).send({ message: 'Etapa inválida.' })
 
+        const from = opportunity.stage
         const t = await db.transaction()
         try {
             await changeStage(opportunity, stage, extra, t)
@@ -192,7 +195,11 @@ class opportunitiesController {
             return handle(e, res)
         }
 
-        return res.send(await Opportunity.findByPk(opportunity.id, { include }))
+        // OS de origem acompanha o desfecho (ganho → fila; perda → cancelada).
+        const sync = from !== stage ? await syncSourceServiceOrder(opportunity, stage) : {}
+
+        const json: any = (await Opportunity.findByPk(opportunity.id, { include }))!.toJSON()
+        return res.send(sync.warning ? { ...json, warning: sync.warning } : json)
     }
 
     // Ganhar: cria o cliente (se for lead) e gera OS, protocolo avulso ou nada. Body: WinInput (utils/crm.ts).
@@ -203,6 +210,16 @@ class opportunitiesController {
         try {
             const result = await winOpportunity(opportunity, (req.body || {}) as any)
             return res.status(201).send({ ...result, opportunity: await Opportunity.findByPk(opportunity.id, { include }) })
+        } catch (e) {
+            return handle(e, res)
+        }
+    }
+
+    // Envia uma OS em aberto para o funil (cliente, assunto, valor do protocolo, vendedor e cobrança).
+    static async fromServiceOrder(req: Req, res: FastifyReply) {
+        try {
+            const opportunity = await opportunityFromServiceOrder(Number(req.params.id))
+            return res.status(201).send(await Opportunity.findByPk(opportunity.id, { include }))
         } catch (e) {
             return handle(e, res)
         }

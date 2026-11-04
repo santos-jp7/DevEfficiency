@@ -101,6 +101,7 @@
                             <span>
                                 <span v-if="o.billing_mode === 'Comissão'" class="badge bg-info text-dark">Comissão</span>
                                 <span v-if="o.Client && o.LeadId == null" class="badge bg-secondary">Cliente</span>
+                                <span v-if="o.SourceServiceOrderId" class="badge bg-dark">OS #{{ o.SourceServiceOrderId }}</span>
                             </span>
                             <span v-if="o.expected_close_date">Fecha {{ Crm.date(o.expected_close_date) }}</span>
                         </div>
@@ -133,6 +134,9 @@
                         </select>
                         <label class="form-label">Detalhes (opcional)</label>
                         <input type="text" class="form-control" v-model="lost.details" maxlength="255">
+                        <div v-if="pending && pending.o.SourceServiceOrderId" class="alert alert-warning py-2 small mt-3 mb-0">
+                            A OS #{{ pending.o.SourceServiceOrderId }} e o protocolo dela serão cancelados (se não houver recebimentos).
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" @click="cancelPending">Cancelar</button>

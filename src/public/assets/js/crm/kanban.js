@@ -86,7 +86,10 @@ new Vue({
                     return
                 }
                 // Ganho abre a conversão (cliente + OS/protocolo); oportunidade já convertida só reordena.
-                if (stage === 'Ganho' && !(o.ServiceOrderId || o.ProtocolId)) return this.$refs.win.open(o)
+                if (stage === 'Ganho' && o.SourceServiceOrderId && !o.ServiceOrderId) {
+                    // Veio de uma OS: ganhar é seguir com a própria OS (vai para a fila).
+                    if (!confirm(`Ganhar "${o.title}"? A OS #${o.SourceServiceOrderId} vai para "Na fila".`)) return this.load()
+                } else if (stage === 'Ganho' && !(o.ServiceOrderId || o.ProtocolId)) return this.$refs.win.open(o)
                 await this.saveStage(o, stage, { position: event.added.newIndex })
             } else if (event.moved) {
                 await this.saveOrder(stage)
@@ -96,6 +99,7 @@ new Vue({
             try {
                 const { data } = await __api__.patch(`/api/crm/opportunities/${o.id}/stage`, { stage, ...extra })
                 Object.assign(o, data)
+                if (data.warning) alert(data.warning)
                 await this.saveOrder(stage)
             } catch (e) {
                 alert(Crm.errorMessage(e, 'Não foi possível mover a oportunidade.'))

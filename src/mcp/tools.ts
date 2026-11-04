@@ -163,7 +163,7 @@ export default function registerTools(server: McpServer, app: FastifyInstance): 
         {
             title: 'CRM: mudar etapa da oportunidade',
             description:
-                'Move a oportunidade no funil (Novo, Qualificado, Proposta, Negociação, Ganho, Perdido) gravando histórico. Perdido exige lost_reason (Preço, Concorrente, Sem orçamento, Sem resposta, Timing, Escopo, Outro). Ganho aqui só marca como ganha; para gerar cliente/OS/protocolo use crm_opportunity_win.',
+                'Move a oportunidade no funil (Novo, Qualificado, Proposta, Negociação, Ganho, Perdido) gravando histórico. Perdido exige lost_reason (Preço, Concorrente, Sem orçamento, Sem resposta, Timing, Escopo, Outro). Ganho aqui só marca como ganha; para gerar cliente/OS/protocolo use crm_opportunity_win. Oportunidade vinda de OS (SourceServiceOrderId): Ganho move a OS para Na fila e Perdido cancela a OS.',
             inputSchema: {
                 opportunity_id: z.number().int(),
                 stage: z.enum(['Novo', 'Qualificado', 'Proposta', 'Negociação', 'Ganho', 'Perdido']),
@@ -192,6 +192,18 @@ export default function registerTools(server: McpServer, app: FastifyInstance): 
         },
         async ({ opportunity_id, mode, data }: any) =>
             toResult(await callApi(app, 'POST', `/crm/opportunities/${opportunity_id}/win`, { body: { ...(data || {}), mode } })),
+    )
+
+    register(
+        'crm_opportunity_from_os',
+        {
+            title: 'CRM: enviar OS para o funil',
+            description:
+                'Cria uma oportunidade a partir de uma OS em aberto (cliente, assunto, valor do protocolo, vendedor e cobrança). Ganhar essa oportunidade move a OS para "Na fila"; perder cancela a OS e o protocolo (se não houver recebimentos).',
+            inputSchema: { service_order_id: z.number().int() },
+            annotations: { destructiveHint: false, openWorldHint: false },
+        },
+        async ({ service_order_id }: any) => toResult(await callApi(app, 'POST', `/crm/opportunities/from-os/${service_order_id}`)),
     )
 
     register(

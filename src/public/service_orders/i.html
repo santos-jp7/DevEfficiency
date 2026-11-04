@@ -202,6 +202,15 @@
             <button type="button" class="btn btn-dark" @click="handlerNewInvoice">
                 <i class="fa-solid fa-file-invoice-dollar"></i> Invoice (Exterior)
             </button>
+            &bull;
+            <a v-if="crmOpportunity" class="btn btn-outline-dark" :href="'../crm/opportunity.html?id=' + crmOpportunity.id"
+                :title="'Oportunidade #' + crmOpportunity.id + ' — ' + crmOpportunity.stage">
+                <i class="fa-solid fa-handshake"></i> Ver no CRM ({{ crmOpportunity.stage }})
+            </a>
+            <button v-else-if="!['Finalizado', 'Cancelado'].includes(status)" type="button" class="btn btn-outline-dark" :disabled="sendingToCrm" @click="sendToCrm"
+                title="Cria uma oportunidade no funil com cliente, assunto, valor do protocolo e vendedor. Ganhar no CRM põe a OS na fila; perder cancela a OS.">
+                <i class="fa-solid fa-handshake"></i> {{ sendingToCrm ? 'Enviando…' : 'Enviar para o CRM' }}
+            </button>
             <hr />
         </form>
 

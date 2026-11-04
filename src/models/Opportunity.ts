@@ -64,6 +64,9 @@ class Opportunity extends Model<InferAttributes<Opportunity>, InferCreationAttri
     declare commission_value: CreationOptional<number | null>
     declare commission_manual: CreationOptional<boolean>
 
+    // OS de origem (oportunidade criada a partir de uma OS em aberto): ganhar move a OS para a fila; perder cancela.
+    declare SourceServiceOrderId: CreationOptional<ForeignKey<Service_order['id']> | null>
+
     // Resultado da conversão (ganho).
     declare ServiceOrderId: CreationOptional<ForeignKey<Service_order['id']> | null>
     declare ProtocolId: CreationOptional<ForeignKey<Protocol['id']> | null>
@@ -105,6 +108,7 @@ Client.hasMany(Opportunity)
 Opportunity.belongsTo(Seller)
 Opportunity.belongsTo(Supplier, { as: 'CommissionSupplier', foreignKey: 'CommissionSupplierId' })
 Opportunity.belongsTo(Service_order)
+Opportunity.belongsTo(Service_order, { as: 'SourceServiceOrder', foreignKey: 'SourceServiceOrderId' })
 Opportunity.belongsTo(Protocol)
 
 export default Opportunity

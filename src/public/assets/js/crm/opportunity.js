@@ -94,14 +94,20 @@ new Vue({
                 return this.lostModal.show()
             }
             // Ganho abre a conversão: cliente (se for lead) + OS, protocolo avulso ou só ganhar.
+            if (stage === 'Ganho' && this.o.SourceServiceOrderId) {
+                // Veio de uma OS: ganhar é seguir com a própria OS (vai para a fila).
+                if (!confirm(`Ganhar esta oportunidade? A OS #${this.o.SourceServiceOrderId} vai para "Na fila".`)) return
+                return this.changeStage({ stage })
+            }
             if (stage === 'Ganho') return this.$refs.win.open(this.o)
             await this.changeStage({ stage })
         },
         async changeStage(body) {
             this.busy = true
             try {
-                await __api__.patch(`/api/crm/opportunities/${this.o.id}/stage`, body)
+                const { data } = await __api__.patch(`/api/crm/opportunities/${this.o.id}/stage`, body)
                 await this.load(this.o.id)
+                if (data.warning) alert(data.warning)
             } catch (e) {
                 alert(Crm.errorMessage(e, 'Não foi possível mudar a etapa.'))
             } finally {

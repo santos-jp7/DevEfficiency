@@ -9,6 +9,7 @@ import Client from '../models/Client'
 import Contact from '../models/Contact'
 import Project from '../models/Project'
 import Protocol from '../models/Protocol'
+import Service_order from '../models/Service_order'
 import { createServiceOrder } from './serviceOrderFactory'
 import { StandaloneError, createStandaloneProtocol, validateStandalone } from './standaloneProtocol'
 import { CommissionInputError, parseCommissionInput } from './commissionInput'
@@ -105,6 +106,8 @@ export type WinResult = {
     ServiceOrderId: number | null
     ProtocolId: number | null
     BillingId: number | null
+    // Ganho de oportunidade vinda de OS em que a OS não pôde ser atualizada.
+    warning?: string
 }
 
 const COMMISSION_KEYS = ['billing_mode', 'CommissionSupplierId', 'commission_percent', 'commission_value'] as const
@@ -155,6 +158,28 @@ export async function winOpportunity(opportunity: Opportunity, input: WinInput):
     const mode = input?.mode
     if (!['os', 'protocol', 'none'].includes(mode)) throw new CrmInputError('Escolha o que gerar: OS, protocolo avulso ou nada.')
     if (opportunity.ServiceOrderId || opportunity.ProtocolId) throw new CrmInputError('Oportunidade já convertida.')
+
+    // Oportunidade que veio de uma OS: ganhar é só seguir com a própria OS (vai para a fila), sem gerar nada novo.
+    if (opportunity.SourceServiceOrderId) {
+        const t = await db.transaction()
+        try {
+            await changeStage(opportunity, 'Ganho', {}, t)
+            await t.commit()
+        } catch (e) {
+            await t.rollback()
+            throw e
+        }
+        const sync = await syncSourceServiceOrder(opportunity, 'Ganho')
+        return {
+            opportunity,
+            ClientId: opportunity.ClientId ?? null,
+            created_client: false,
+            ServiceOrderId: opportunity.ServiceOrderId ?? null,
+            ProtocolId: opportunity.ProtocolId ?? null,
+            BillingId: null,
+            ...(sync.warning ? { warning: sync.warning } : {}),
+        }
+    }
 
     const lead = opportunity.LeadId ? await Lead.findByPk(opportunity.LeadId) : null
     if (lead?.status === 'Descartado') throw new CrmInputError('Lead descartado: reative o lead antes de ganhar a oportunidade.')
@@ -277,4 +302,100 @@ export async function winOpportunity(opportunity: Opportunity, input: WinInput):
     if (created) await CrmActivity.update({ ClientId }, { where: { LeadId: lead!.id, ClientId: null } as any })
 
     return { opportunity, ClientId, created_client: !!created, ServiceOrderId, ProtocolId, BillingId }
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// OS → oportunidade: orçamentos em aberto entram no funil; o desfecho no CRM volta para a OS.
+
+// Etapa inicial conforme o andamento da OS.
+const STAGE_FROM_OS: Record<string, OpportunityStage> = { 'Em avaliação': 'Qualificado', 'Orçamento enviado': 'Proposta' }
+// OS ainda antes da execução: ao ganhar vai para "Na fila".
+const PRE_EXECUTION = ['Backlog', 'Em avaliação', 'Orçamento enviado', 'Pendente']
+
+export async function opportunityFromServiceOrder(serviceOrderId: number): Promise<Opportunity> {
+    const os = await Service_order.findByPk(serviceOrderId, { include: [Project] })
+    if (!os) throw new CrmInputError('OS não encontrada.')
+    if (['Finalizado', 'Cancelado'].includes(os.status as string)) throw new CrmInputError(`OS ${os.status?.toLowerCase()}: não pode virar oportunidade.`)
+
+    const existing = await Opportunity.findOne({ where: { SourceServiceOrderId: os.id } })
+    if (existing) throw new CrmInputError(`Esta OS já está no CRM (oportunidade #${existing.id}).`)
+
+    const ClientId = os.ClientId || (os as any).Project?.ClientId || null
+    if (!ClientId) throw new CrmInputError('Vincule a OS a um cliente antes de enviar para o CRM.')
+
+    const protocol = await Protocol.findOne({ where: { ServiceOrderId: os.id }, include: ['Protocol_registers', 'Protocol_products'] })
+    const total = protocol ? summarizeProtocol(protocol).total_net : 0
+    const stage = STAGE_FROM_OS[os.status as string] || 'Novo'
+
+    const t = await db.transaction()
+    try {
+        const opportunity = await Opportunity.create(
+            {
+                title: String(os.subject || `OS #${os.id}`).slice(0, 160),
+                notes: os.description || null,
+                ClientId,
+                SellerId: protocol?.SellerId ?? null,
+                estimated_value: total > 0 ? total : null,
+                kind: 'Serviço',
+                stage,
+                probability: STAGE_PROBABILITY[stage],
+                stage_changed_at: new Date(),
+                SourceServiceOrderId: os.id,
+                billing_mode: protocol?.billing_mode || 'Direto',
+                CommissionSupplierId: protocol?.CommissionSupplierId ?? null,
+                commission_percent: protocol?.commission_percent ?? null,
+                commission_value: protocol?.commission_manual ? protocol.commission_value : null,
+                commission_manual: !!protocol?.commission_manual,
+            },
+            { transaction: t },
+        )
+        await OpportunityStageHistory.create({ OpportunityId: opportunity.id, from_stage: null, to_stage: stage }, { transaction: t })
+        await t.commit()
+        return opportunity
+    } catch (e) {
+        await t.rollback()
+        throw e
+    }
+}
+
+// Leva o desfecho da oportunidade para a OS de origem. Nunca lança: problemas viram warning (a etapa já mudou).
+export async function syncSourceServiceOrder(opportunity: Opportunity, to: OpportunityStage): Promise<{ warning?: string }> {
+    if (!opportunity.SourceServiceOrderId || !['Ganho', 'Perdido'].includes(to)) return {}
+
+    const os = await Service_order.findByPk(opportunity.SourceServiceOrderId)
+    if (!os) return { warning: 'A OS de origem não existe mais.' }
+    const protocol = await Protocol.findOne({ where: { ServiceOrderId: os.id } })
+
+    try {
+        if (to === 'Ganho') {
+            // Vendedor e cobrança definidos no CRM valem para o protocolo enquanto ele está em aberto.
+            if (protocol && protocol.status === 'Em aberto') {
+                const commission = await parseCommissionInput({
+                    billing_mode: opportunity.billing_mode || 'Direto',
+                    CommissionSupplierId: opportunity.CommissionSupplierId ?? null,
+                    commission_percent: opportunity.commission_percent ?? '',
+                    commission_value: opportunity.commission_manual ? opportunity.commission_value ?? '' : '',
+                })
+                await protocol.update({ SellerId: opportunity.SellerId ?? protocol.SellerId ?? null, ...(commission as any) })
+            }
+            await opportunity.update({ ServiceOrderId: os.id, ProtocolId: protocol?.id ?? null })
+            if (os.status === 'Cancelado') return { warning: `Ganho registrado, mas a OS #${os.id} está cancelada: reabra a OS se for executar.` }
+            if (PRE_EXECUTION.includes(os.status as string)) await os.update({ status: 'Na fila' })
+            return {}
+        }
+
+        // Perdido: cancela protocolo e OS (o protocolo recusa se já houver recebimentos).
+        if (['Finalizado', 'Cancelado'].includes(os.status as string)) return {}
+        if (protocol && protocol.status !== 'Cancelado') await protocol.update({ status: 'Cancelado' })
+        await os.update({ status: 'Cancelado' })
+        return {}
+    } catch (e: any) {
+        console.error('[crm] falha ao atualizar a OS de origem', os.id, e)
+        return {
+            warning:
+                to === 'Perdido'
+                    ? `Perda registrada, mas a OS #${os.id} não foi cancelada: ${e.message}`
+                    : `Ganho registrado, mas a OS #${os.id} não foi atualizada: ${e.message}`,
+        }
+    }
 }
