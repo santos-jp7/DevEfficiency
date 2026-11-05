@@ -22,6 +22,8 @@ export function billingLabel(b: any): string {
     return `Cobrança #${b.id}${b.Client ? ` - ${b.Client.name}` : ''}`
 }
 
+export const brlText = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(v) || 0)
+
 // Janela (em dias) entre a data do extrato e a data em que o sistema registrou o pagamento/recebimento.
 export const DATE_TOLERANCE_DAYS = 5
 const BILLING_RECEIPT_NOTE = 'Recebido via cobrança'
@@ -37,8 +39,11 @@ export type Candidate = {
     type: MatchType
     id: number
     label: string
+    // Valor ainda sem extrato (o total, se nada foi conciliado; o restante, se já entrou parte).
     value: number
     date: string
+    total?: number
+    partial?: boolean
 }
 
 const same = (a: number, b: number, tol: number) => Math.abs(round2(a) - round2(b)) <= tol + 1e-9
@@ -51,26 +56,70 @@ function window(date: string) {
     ] as const
 }
 
-// Lançamentos do sistema já vinculados a alguma linha do extrato. Para transferências, cada conta tem o seu lado
-// (saída/entrada): só conta o vínculo feito por linha da mesma conta.
-export async function alreadyMatched(
+// Quanto de cada lançamento do sistema já está ligado a linhas do extrato. Um lançamento pode ser coberto por várias
+// linhas (ex.: depósito em espécie de 6k que entrou como 5k + 1k). Transferência: só conta o lado da mesma conta.
+export async function matchedAmounts(
     type: MatchType,
     ids: number[],
-    options: { ignoreEntryId?: number; accountId?: number } = {},
-): Promise<Set<number>> {
-    if (ids.length === 0) return new Set()
+    options: { ignoreEntryId?: number | number[]; accountId?: number } = {},
+): Promise<Map<number, number>> {
+    const totals = new Map<number, number>()
+    if (ids.length === 0) return totals
 
+    const ignore = new Set(([] as number[]).concat(options.ignoreEntryId ?? []))
     const rows = await BankEntryMatch.findAll({
         where: { target_type: type, target_id: { [Op.in]: ids } },
         include: [{ model: BankStatementEntry, attributes: ['id', 'BankAccountId'], required: true }],
     })
 
-    return new Set(
-        rows
-            .filter((r) => (options.ignoreEntryId ? (r as any).BankStatementEntry.id !== options.ignoreEntryId : true))
-            .filter((r) => (type === 'transfer' && options.accountId ? (r as any).BankStatementEntry.BankAccountId === options.accountId : true))
-            .map((r) => Number(r.target_id)),
-    )
+    for (const r of rows) {
+        const entry = (r as any).BankStatementEntry
+        if (ignore.has(entry.id)) continue
+        if (type === 'transfer' && options.accountId && entry.BankAccountId !== options.accountId) continue
+        totals.set(Number(r.target_id), round2((totals.get(Number(r.target_id)) || 0) + Number(r.value)))
+    }
+    return totals
+}
+
+// Valor de cada lançamento do sistema (o que precisa aparecer no extrato).
+async function targetValues(type: MatchType, ids: number[]): Promise<Map<number, number>> {
+    const map = new Map<number, number>()
+    if (ids.length === 0) return map
+    if (type === 'billing') for (const b of await Billing.findAll({ where: { id: ids } })) map.set(b.id, Number(b.paid_value ?? b.total_value))
+    if (type === 'receipt') for (const r of await Receipts.findAll({ where: { id: ids } })) map.set(r.id, Number(r.value))
+    if (type === 'payable') for (const p of await Payable.findAll({ where: { id: ids } })) map.set(p.id, Number(p.value))
+    if (type === 'transfer') for (const t of await BankTransfer.findAll({ where: { id: ids } })) map.set(t.id, Number(t.amount))
+    return map
+}
+
+// Lançamentos do sistema totalmente conciliados (a soma das linhas do extrato ligadas cobre o valor).
+// Coberto em parte não conta: o restante continua aparecendo para conciliar.
+export async function alreadyMatched(
+    type: MatchType,
+    ids: number[],
+    options: { ignoreEntryId?: number | number[]; accountId?: number; values?: Map<number, number> } = {},
+): Promise<Set<number>> {
+    if (ids.length === 0) return new Set()
+    const matched = await matchedAmounts(type, ids, options)
+    if (matched.size === 0) return new Set()
+    const values = options.values || (await targetValues(type, [...matched.keys()]))
+    const tol = await getTolerance()
+    return new Set([...matched.entries()].filter(([id, sum]) => sum >= (values.get(id) ?? 0) - tol - 1e-9).map(([id]) => id))
+}
+
+// Restante sem extrato de cada lançamento (valor − já conciliado).
+export async function remainingAmounts(
+    type: MatchType,
+    values: Map<number, number>,
+    options: { ignoreEntryId?: number | number[]; accountId?: number } = {},
+): Promise<Map<number, { remaining: number; total: number; partial: boolean }>> {
+    const matched = await matchedAmounts(type, [...values.keys()], options)
+    const out = new Map<number, { remaining: number; total: number; partial: boolean }>()
+    for (const [id, total] of values) {
+        const done = matched.get(id) || 0
+        out.set(id, { remaining: round2(total - done), total, partial: done > 0 })
+    }
+    return out
 }
 
 // Todos os lançamentos do sistema do sinal certo, na janela de datas e ainda sem vínculo — sem filtrar por valor.
@@ -78,17 +127,32 @@ async function candidatePool(entry: BankStatementEntry): Promise<Candidate[]> {
     const amount = Number(entry.amount)
     const [from, to] = window(entry.date)
     const out: Candidate[] = []
+    const tol = await getTolerance()
+
+    // Só entra o que ainda tem restante sem extrato; o valor oferecido é esse restante.
+    const push = async (type: MatchType, items: { id: number; label: string; value: number; date: string }[], accountId?: number) => {
+        const left = await remainingAmounts(type, new Map(items.map((i) => [i.id, i.value])), { ignoreEntryId: entry.id, accountId })
+        for (const i of items) {
+            const r = left.get(i.id)!
+            if (r.remaining <= tol) continue
+            out.push({
+                type,
+                id: i.id,
+                label: r.partial ? `${i.label} (restante de ${brlText(r.total)})` : i.label,
+                value: r.remaining,
+                date: i.date,
+                total: r.total,
+                partial: r.partial,
+            })
+        }
+    }
 
     if (amount > 0) {
         const billings = await Billing.findAll({
             where: { status: 'pago', BankAccountId: entry.BankAccountId, payment_date: { [Op.between]: [from, to] } },
             include: [Client, Supplier],
         })
-        const taken = await alreadyMatched('billing', billings.map((b) => b.id), { ignoreEntryId: entry.id })
-
-        for (const b of billings)
-            if (!taken.has(b.id))
-                out.push({ type: 'billing', id: b.id, label: billingLabel(b), value: Number(b.paid_value ?? b.total_value), date: day(b.payment_date) })
+        await push('billing', billings.map((b) => ({ id: b.id, label: billingLabel(b), value: Number(b.paid_value ?? b.total_value), date: day(b.payment_date) })))
 
         // Recibos de cobrança já estão cobertos pela própria cobrança; aqui entram só os recibos avulsos.
         const receiptWhere: any = {
@@ -97,20 +161,12 @@ async function candidatePool(entry: BankStatementEntry): Promise<Candidate[]> {
             [Op.or]: [{ note: null }, { note: { [Op.notLike]: `${BILLING_RECEIPT_NOTE}%` } }],
         }
         const receipts: Receipts[] = await Receipts.findAll({ where: receiptWhere })
-        const takenR = await alreadyMatched('receipt', receipts.map((r) => r.id), { ignoreEntryId: entry.id })
-
-        for (const r of receipts)
-            if (!takenR.has(r.id))
-                out.push({ type: 'receipt', id: r.id, label: `Recibo #${r.id} (protocolo #${r.ProtocolId})${r.note ? ` - ${r.note}` : ''}`, value: Number(r.value), date: day(r.createdAt) })
+        await push('receipt', receipts.map((r) => ({ id: r.id, label: `Recibo #${r.id} (protocolo #${r.ProtocolId})${r.note ? ` - ${r.note}` : ''}`, value: Number(r.value), date: day(r.createdAt) })))
     } else if (amount < 0) {
         const payables = await Payable.findAll({
             where: { status: 'pago', BankAccountId: entry.BankAccountId, paymentDate: { [Op.between]: [day(from), day(to)] } },
         })
-        const taken = await alreadyMatched('payable', payables.map((p) => p.id), { ignoreEntryId: entry.id })
-
-        for (const p of payables)
-            if (!taken.has(p.id))
-                out.push({ type: 'payable', id: p.id, label: `Conta a pagar #${p.id} - ${p.description}`, value: Number(p.value), date: day(p.paymentDate) })
+        await push('payable', payables.map((p) => ({ id: p.id, label: `Conta a pagar #${p.id} - ${p.description}`, value: Number(p.value), date: day(p.paymentDate) })))
     }
 
     // Transferências entre contas: saída (valor negativo) na origem, entrada na conta de destino.
@@ -122,13 +178,19 @@ async function candidatePool(entry: BankStatementEntry): Promise<Candidate[]> {
         },
         include: [{ all: true }],
     })
-    const takenT = await alreadyMatched('transfer', transfers.map((t) => t.id), { ignoreEntryId: entry.id, accountId: entry.BankAccountId })
-
-    for (const t of transfers) {
-        if (takenT.has(t.id)) continue
-        const other = amount > 0 ? (t as any).SourceAccount : (t as any).DestinationAccount
-        out.push({ type: 'transfer', id: t.id, label: `Transferência #${t.id} ${amount > 0 ? 'de' : 'para'} ${other?.name || `conta #${amount > 0 ? t.sourceAccountId : t.destinationAccountId}`}`, value: Number(t.amount), date: day(t.date) })
-    }
+    await push(
+        'transfer',
+        transfers.map((t) => {
+            const other = amount > 0 ? (t as any).SourceAccount : (t as any).DestinationAccount
+            return {
+                id: t.id,
+                label: `Transferência #${t.id} ${amount > 0 ? 'de' : 'para'} ${other?.name || `conta #${amount > 0 ? t.sourceAccountId : t.destinationAccountId}`}`,
+                value: Number(t.amount),
+                date: day(t.date),
+            }
+        }),
+        entry.BankAccountId,
+    )
 
     return out
 }
@@ -181,6 +243,64 @@ export async function matchEntry(
             { status: 'conciliado', matched_type: targets[0].type, matched_id: targets[0].id, matched_at: new Date(), match_difference: options.difference ?? null },
             { transaction },
         )
+    })
+}
+
+export type MatchTarget = { type: MatchType; id: number; value: number }
+export type Allocation = { entry: BankStatementEntry; links: MatchTarget[]; difference: number | null }
+
+// Distribui os lançamentos do sistema pelas linhas do extrato, na ordem (data/valor), como "encher baldes":
+// cada linha recebe partes dos lançamentos até completar o seu valor. Exemplos:
+//  - 1 linha × N lançamentos (PIX que pagou duas faturas, fatura do cartão com várias compras);
+//  - N linhas × 1 lançamento (cobrança de 6k que entrou como 5k + 1k no caixa eletrônico).
+// coverTargets: o que sobrar dos lançamentos vai para a última linha (diferença aceita, lançamento quitado).
+// Sem coverTargets, a sobra fica como restante do lançamento, para outra linha do extrato conciliar depois.
+export function allocate(entries: BankStatementEntry[], targets: MatchTarget[], options: { coverTargets: boolean }): Allocation[] {
+    const buckets = entries.map((entry) => ({ entry, cap: Math.round(Math.abs(Number(entry.amount)) * 100), links: [] as MatchTarget[] }))
+    let b = 0
+    for (const t of targets) {
+        let left = Math.round(t.value * 100)
+        while (left > 0 && b < buckets.length) {
+            const bucket = buckets[b]
+            const used = bucket.links.reduce((s, l) => s + Math.round(l.value * 100), 0)
+            const room = bucket.cap - used
+            if (room <= 0) {
+                b++
+                continue
+            }
+            const part = Math.min(room, left)
+            bucket.links.push({ type: t.type, id: t.id, value: part / 100 })
+            left -= part
+        }
+        if (left > 0 && options.coverTargets && buckets.length) {
+            const last = buckets[buckets.length - 1]
+            const existing = last.links.find((l) => l.type === t.type && l.id === t.id)
+            if (existing) existing.value = round2(existing.value + left / 100)
+            else last.links.push({ type: t.type, id: t.id, value: left / 100 })
+        }
+    }
+    return buckets.map((x) => {
+        const linked = x.links.reduce((s, l) => s + Math.round(l.value * 100), 0)
+        const diff = (x.cap - linked) / 100
+        return { entry: x.entry, links: x.links, difference: Math.abs(diff) > 0.009 ? round2(diff) : null }
+    })
+}
+
+// Grava a conciliação de várias linhas de uma vez (todas ou nenhuma).
+export async function matchAllocations(allocations: Allocation[]) {
+    await db.transaction(async (transaction) => {
+        for (const a of allocations) {
+            if (!a.links.length) throw new Error(`A linha do extrato de ${Number(a.entry.amount).toFixed(2)} ficou sem lançamento para vincular.`)
+            await BankEntryMatch.destroy({ where: { BankStatementEntryId: a.entry.id }, transaction })
+            await BankEntryMatch.bulkCreate(
+                a.links.map((t) => ({ BankStatementEntryId: a.entry.id, target_type: t.type, target_id: t.id, value: t.value })),
+                { transaction },
+            )
+            await a.entry.update(
+                { status: 'conciliado', matched_type: a.links[0].type, matched_id: a.links[0].id, matched_at: new Date(), match_difference: a.difference },
+                { transaction },
+            )
+        }
     })
 }
 
@@ -326,6 +446,10 @@ export async function entriesForTarget(type: MatchType, id: number, accountId?: 
 
     const tol = await getTolerance()
     const [from, to] = window(target.date)
+    // O que já entrou por outras linhas do extrato não precisa aparecer de novo.
+    const done = (await matchedAmounts(type, [id], { accountId })).get(id) || 0
+    const remaining = round2(target.value - done)
+    if (remaining <= tol) return { target, entries: [] as BankStatementEntry[] }
 
     const entries = await BankStatementEntry.findAll({
         where: {
@@ -336,7 +460,7 @@ export async function entriesForTarget(type: MatchType, id: number, accountId?: 
         },
     })
 
-    return { target, entries: entries.filter((e) => same(Math.abs(Number(e.amount)), target.value, tol)) }
+    return { target: { ...target, value: remaining }, entries: entries.filter((e) => same(Math.abs(Number(e.amount)), remaining, tol)) }
 }
 
 // Chamado depois de fechar um pagamento (cobrança paga, recibo, conta paga, transferência): se o extrato já foi

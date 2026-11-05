@@ -23,6 +23,8 @@ new Vue({
         manual: null,
         manualOptions: [],
         selected: [],
+        optionFilter: '',
+        picked: [], // linhas do extrato marcadas para vincular juntas
         compare: null,
         tolerance: 0.05,
         balanceForm: { amount: '', date: moment().format('YYYY-MM-DD') },
@@ -30,7 +32,21 @@ new Vue({
     },
     computed: {
         selectedSum() {
-            return this.selected.reduce((s, i) => s + i.value, 0)
+            return Math.round(this.selected.reduce((s, i) => s + i.value, 0) * 100) / 100
+        },
+        pickedEntries() {
+            return this.entries.filter((e) => this.picked.includes(e.id) && e.status === 'pendente')
+        },
+        pickedTotal() {
+            return Math.round(this.pickedEntries.reduce((s, e) => s + Number(e.amount), 0) * 100) / 100
+        },
+        pickedMixed() {
+            return new Set(this.pickedEntries.map((e) => Math.sign(Number(e.amount)))).size > 1
+        },
+        visibleOptions() {
+            const q = this.optionFilter.trim().toLowerCase()
+            if (!q) return this.manualOptions
+            return this.manualOptions.filter((i) => [i.label, String(i.id), String(i.value), this.brl(i.value)].join(' ').toLowerCase().includes(q))
         },
     },
     methods: {
@@ -104,22 +120,44 @@ new Vue({
         match(entry, target) {
             return this.matchMany(entry, [target])
         },
-        async matchMany(entry, targets, force = false) {
+        matchMany(entry, targets) {
+            return this.link(`/api/reconciliation/entries/${entry.id}/match`, {}, targets)
+        },
+        matchGroup(group, targets) {
+            return this.link('/api/reconciliation/group-match', { entryIds: group.ids }, targets)
+        },
+        // Linhas do extrato somando menos que os lançamentos: dá para registrar como parte (o restante espera outra linha)
+        // ou aceitar a diferença. Somando mais: só aceitando a diferença.
+        async link(url, base, targets, options = {}) {
             try {
-                await __api__.post(`/api/reconciliation/entries/${entry.id}/match`, {
-                    targets: targets.map((t) => ({ type: t.type, id: t.id })),
-                    force,
-                })
+                await __api__.post(url, { ...base, targets: targets.map((t) => ({ type: t.type, id: t.id })), ...options })
+                this.picked = []
                 this.closeManual()
                 await this.loadAll()
             } catch (error) {
-                if (error.response?.data?.diverges && !force) {
-                    const diff = error.response.data.difference
-                    if (confirm(`Os valores divergem em ${this.brl(diff)} (extrato − lançamentos). Vincular mesmo assim? A diferença fica registrada.`)) return this.matchMany(entry, targets, true)
+                const data = error.response?.data
+                if (data?.diverges && !options.force && !options.partial) {
+                    if (data.can_partial) {
+                        const left = Math.abs(data.difference)
+                        if (confirm(`O extrato soma ${this.brl(data.entries_total)} e os lançamentos ${this.brl(data.targets_total)}.\n\nRegistrar como PARTE do pagamento? Os ${this.brl(left)} restantes ficam aguardando outra linha do extrato (ex.: depósito em espécie dividido).`))
+                            return this.link(url, base, targets, { partial: true })
+                    }
+                    if (confirm(`Os valores divergem em ${this.brl(data.difference)} (extrato − lançamentos). Vincular mesmo assim e dar por quitado? A diferença fica registrada.`))
+                        return this.link(url, base, targets, { force: true })
                     return
                 }
                 this.fail(error, 'Não foi possível conciliar.')
             }
+        },
+        openGroup() {
+            const list = this.pickedEntries
+            if (!list.length) return
+            const first = list.reduce((a, b) => (a.date <= b.date ? a : b))
+            this.openManual({ group: true, ids: list.map((e) => e.id), amount: this.pickedTotal, date: first.date, description: '' })
+        },
+        selectVisible() {
+            const keys = new Set(this.selected.map((i) => i.type + i.id))
+            for (const i of this.visibleOptions) if (!keys.has(i.type + i.id)) this.selected.push(i)
         },
         async createExpense(entry) {
             const description = prompt(`Lançar ${this.brl(Math.abs(entry.amount))} como despesa paga (a conta bancária já reflete esse débito).\n\nDescrição:`, entry.description || 'Tarifa bancária')
@@ -142,6 +180,7 @@ new Vue({
         async openManual(entry) {
             this.manual = entry
             this.selected = []
+            this.optionFilter = ""
             const { data } = await __api__.get('/api/reconciliation/unreconciled', {
                 params: {
                     BankAccountId: this.accountId,

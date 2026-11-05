@@ -131,6 +131,7 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.post('/reconciliation/import', { preHandler: [isAuthed] }, reconciliationController.import as any)
     instance.post('/reconciliation/auto-match', { preHandler: [isAuthed] }, reconciliationController.autoMatch as any)
     instance.post('/reconciliation/entries/:id/match', { preHandler: [isAuthed] }, reconciliationController.match as any)
+    instance.post('/reconciliation/group-match', { preHandler: [isAuthed] }, reconciliationController.groupMatch as any)
     instance.post('/reconciliation/entries/:id/unmatch', { preHandler: [isAuthed] }, reconciliationController.unmatch as any)
     instance.post('/reconciliation/entries/:id/ignore', { preHandler: [isAuthed] }, reconciliationController.ignore as any)
     instance.post('/reconciliation/entries/:id/unignore', { preHandler: [isAuthed] }, reconciliationController.unignore as any)
