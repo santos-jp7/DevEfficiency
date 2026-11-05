@@ -5,7 +5,8 @@
     "main": "index.ts",
     "scripts": {
         "start": "node ./dist/index.js",
-        "build": "tsc --build && cp -r ./src/public ./dist/src"
+        "build": "tsc --build && cp -r ./src/public ./dist/src",
+        "test": "tsc -p . --outDir .test-build && node tests/run.js"
     },
     "keywords": [],
     "author": "",

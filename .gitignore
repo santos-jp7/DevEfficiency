@@ -105,6 +105,7 @@ dist
 
 # Build Files
 dist/
+.test-build/
 
 # Tmp
 tmp/*
