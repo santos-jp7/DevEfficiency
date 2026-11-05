@@ -27,7 +27,7 @@
     let catalog = null // { products, projects, hourlyRate } carregado uma vez
 
     Vue.component('crm-win-modal', {
-        data: () => ({ o: null, form: emptyForm(null), products: [], projects: [], hourlyRate: 120, saving: false, error: '', modal: null, done: false }),
+        data: () => ({ o: null, form: emptyForm(null), products: [], projects: [], hourlyRate: 120, saving: false, error: '', modal: null, done: false, clientMatches: [] }),
         computed: {
             client() {
                 return this.o?.Client || null
@@ -77,6 +77,14 @@
                 const api = window.Crm.api()
                 if (!api) return
                 await this.loadCatalog(api)
+                // Lead ainda sem cliente: clientes já cadastrados que parecem ser o mesmo (CNPJ/CPF ou e-mail).
+                this.clientMatches = []
+                if (!opportunity.ClientId && opportunity.LeadId && !opportunity.SourceServiceOrderId) {
+                    const { data } = await api.get(`/api/crm/leads/${opportunity.LeadId}/matches`).catch(() => ({ data: { clients: [] } }))
+                    this.clientMatches = data.clients || []
+                    const byDoc = this.clientMatches.find((c) => c.reason === 'documento')
+                    this.$set(this.form, 'client_choice', byDoc ? byDoc.id : 'new')
+                }
                 this.modal = this.modal || new bootstrap.Modal(this.$refs.modal, { backdrop: 'static' })
                 this.modal.show()
             },
@@ -88,6 +96,7 @@
                 this.error = ''
                 const f = this.form
                 const body = { mode: f.mode, ...window.ProtocolCommission.payload(f) }
+                if (!this.o.ClientId && f.client_choice !== undefined) body.client_choice = f.client_choice
 
                 if (f.mode === 'os') {
                     if (!f.subject.trim()) return (this.error = 'Informe o assunto da OS.')
@@ -123,7 +132,18 @@
                         <button type="button" class="btn-close" @click="cancel"></button>
                     </div>
                     <div class="modal-body">
-                        <div v-if="!o.ClientId" class="alert alert-info py-2 small">
+                        <div v-if="!o.ClientId && clientMatches.length" class="alert alert-warning py-2 small">
+                            <div class="mb-1"><i class="fa-solid fa-clone"></i> Já existe cliente parecido com o lead <strong>{{ leadLabel }}</strong>:</div>
+                            <div class="form-check" v-for="c in clientMatches" :key="c.id">
+                                <input class="form-check-input" type="radio" :id="'cm' + c.id" :value="c.id" v-model="form.client_choice">
+                                <label class="form-check-label" :for="'cm' + c.id">Usar o cliente <strong>{{ c.name }}</strong> (mesmo {{ c.reason }})</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" id="cmnew" value="new" v-model="form.client_choice">
+                                <label class="form-check-label" for="cmnew">Criar um cliente novo</label>
+                            </div>
+                        </div>
+                        <div v-else-if="!o.ClientId" class="alert alert-info py-2 small">
                             <i class="fa-solid fa-user-plus"></i> O lead <strong>{{ leadLabel }}</strong> vai virar cliente (com contato), e o lead fica como Convertido.
                         </div>
                         <div v-else class="small text-muted mb-2">Cliente: <strong>{{ o.Client && o.Client.name }}</strong></div>

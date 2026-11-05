@@ -37,6 +37,16 @@
             <a v-if="!isNew" class="btn btn-dark btn-sm" :href="'./opportunity.html?new=1&LeadId=' + lead.id"><i class="fa-solid fa-plus"></i> Nova oportunidade</a>
         </div>
 
+        <div v-if="!isNew && (matches.clients.length || matches.leads.length)" class="alert alert-warning py-2 small">
+            <i class="fa-solid fa-clone"></i> Possível duplicado:
+            <span v-for="c in matches.clients" :key="'c' + c.id" class="me-2">
+                cliente <a :href="'../clients/i.html?id=' + c.id">{{ c.name }}</a> (mesmo {{ c.reason }})<template v-if="lead.ClientId !== c.id && lead.status !== 'Convertido'"> — <a href="#" @click.prevent="lead.ClientId = c.id">vincular a este cliente</a></template>
+            </span>
+            <span v-for="l in matches.leads" :key="'l' + l.id" class="me-2">
+                lead <a :href="'./lead.html?id=' + l.id">{{ l.company || l.name }}</a> (mesmo {{ l.reason }}, {{ l.status }})
+            </span>
+        </div>
+
         <div class="row g-4">
             <div class="col-lg-7">
                 <form @submit.prevent="save" class="border rounded p-3">

@@ -148,6 +148,8 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
 
     // CRM
     instance.get('/crm/leads', { preHandler: [isAuthed] }, leadsController.index as any)
+    instance.get('/crm/leads/check', { preHandler: [isAuthed] }, leadsController.check as any)
+    instance.get('/crm/leads/:id/matches', { preHandler: [isAuthed] }, leadsController.matches as any)
     instance.get('/crm/leads/:id', { preHandler: [isAuthed] }, leadsController.show as any)
     instance.post('/crm/leads', { preHandler: [isAuthed] }, leadsController.store as any)
     instance.put('/crm/leads/:id', { preHandler: [isAuthed] }, leadsController.update as any)

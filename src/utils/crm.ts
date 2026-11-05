@@ -93,6 +93,8 @@ export type WinInput = {
     products?: any[]
     discount_value?: number | string | null
     notes?: string | null
+    // Lead sem cliente: 'new' força criar; um ClientId usa esse cliente; vazio usa o de mesmo CNPJ/CPF se existir.
+    client_choice?: 'new' | number | string | null
     // Condição de pagamento do protocolo gerado (OS ou avulso): "15/30/60" e/ou vencimentos manuais.
     payment_terms?: string | null
     installments?: { due_date: string; value: number | string }[] | null
@@ -188,8 +190,22 @@ export async function winOpportunity(opportunity: Opportunity, input: WinInput):
     const lead = opportunity.LeadId ? await Lead.findByPk(opportunity.LeadId) : null
     if (lead?.status === 'Descartado') throw new CrmInputError('Lead descartado: reative o lead antes de ganhar a oportunidade.')
 
-    const existingClientId = opportunity.ClientId || lead?.ClientId || null
+    let existingClientId = opportunity.ClientId || lead?.ClientId || null
     if (!existingClientId && !lead) throw new CrmInputError('Oportunidade sem lead nem cliente.')
+
+    // Lead que já é cliente cadastrado: usa o escolhido ou, sem escolha, o de mesmo CNPJ/CPF (nunca duplica).
+    let linkLeadToClient: number | null = null
+    if (!existingClientId && lead) {
+        if (input.client_choice && input.client_choice !== 'new') {
+            const chosen = await Client.findByPk(Number(input.client_choice))
+            if (!chosen) throw new CrmInputError('Cliente escolhido não encontrado.')
+            linkLeadToClient = chosen.id
+        } else if (input.client_choice !== 'new') {
+            const sameDoc = (await findClientMatches({ document: lead.document })).find((m) => m.reason === 'documento')
+            if (sameDoc) linkLeadToClient = sameDoc.id
+        }
+        if (linkLeadToClient) existingClientId = linkLeadToClient
+    }
 
     // 1) Valida tudo antes de gravar qualquer coisa.
     const commission = commissionInputFor(opportunity, input)
@@ -234,7 +250,8 @@ export async function winOpportunity(opportunity: Opportunity, input: WinInput):
         }
     }
 
-    // 2) Cliente: existente ou criado a partir do lead.
+    // 2) Cliente: existente (inclusive o encontrado pelo CNPJ) ou criado a partir do lead.
+    if (linkLeadToClient && lead) await lead.update({ status: 'Convertido', ClientId: linkLeadToClient })
     let ClientId = existingClientId
     let created: { client: Client; contact: Contact | null } | null = null
     if (!ClientId && lead) {
@@ -405,4 +422,52 @@ export async function syncSourceServiceOrder(opportunity: Opportunity, to: Oppor
                     : `Ganho registrado, mas a OS #${os.id} não foi atualizada: ${e.message}`,
         }
     }
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Duplicidade: clientes e leads que parecem ser a mesma pessoa/empresa (CNPJ/CPF, e-mail ou telefone).
+
+const digitsOf = (v: any) => String(v || '').replace(/\D/g, '')
+const emailOf = (v: any) => String(v || '').trim().toLowerCase()
+
+export type MatchInput = { document?: string | null; email?: string | null; phone?: string | null; whatsapp?: string | null }
+export type ClientMatch = { id: number; name: string; document: string | null; email: string | null; reason: 'documento' | 'e-mail' }
+export type LeadMatch = { id: number; name: string; company: string | null; status: string; ClientId: number | null; reason: 'documento' | 'e-mail' | 'telefone' }
+
+export async function findClientMatches(input: MatchInput): Promise<ClientMatch[]> {
+    const doc = digitsOf(input.document)
+    const email = emailOf(input.email)
+    const found = new Map<number, ClientMatch>()
+
+    if (doc.length >= 11) {
+        for (const c of await Client.findAll({ where: { document: doc } }))
+            found.set(c.id, { id: c.id, name: c.name, document: c.document ?? null, email: c.email ?? null, reason: 'documento' })
+    }
+    if (email) {
+        const byEmail = await Client.findAll({ where: { email } as any })
+        const contacts = await Contact.findAll({ where: { email } as any })
+        const ids = new Set([...byEmail.map((c) => c.id), ...contacts.map((c) => c.ClientId as number).filter(Boolean)])
+        for (const c of await Client.findAll({ where: { id: [...ids] } }))
+            if (!found.has(c.id)) found.set(c.id, { id: c.id, name: c.name, document: c.document ?? null, email: c.email ?? null, reason: 'e-mail' })
+    }
+    return [...found.values()]
+}
+
+export async function findLeadMatches(input: MatchInput, excludeId?: number | null): Promise<LeadMatch[]> {
+    const doc = digitsOf(input.document)
+    const email = emailOf(input.email)
+    const phones = [digitsOf(input.phone), digitsOf(input.whatsapp)].filter((p) => p.length >= 8)
+    if (!doc && !email && !phones.length) return []
+
+    const leads = await Lead.findAll({ where: excludeId ? { id: { [Op.ne]: excludeId } } : {} })
+    const out: LeadMatch[] = []
+    for (const l of leads) {
+        let reason: LeadMatch['reason'] | null = null
+        if (doc.length >= 11 && digitsOf(l.document) === doc) reason = 'documento'
+        else if (email && emailOf(l.email) === email) reason = 'e-mail'
+        else if (phones.some((p) => [digitsOf(l.phone), digitsOf(l.whatsapp)].some((q) => q && (q.endsWith(p) || p.endsWith(q)) && q.length >= 8)))
+            reason = 'telefone'
+        if (reason) out.push({ id: l.id, name: l.name, company: l.company ?? null, status: l.status as string, ClientId: l.ClientId ?? null, reason })
+    }
+    return out
 }

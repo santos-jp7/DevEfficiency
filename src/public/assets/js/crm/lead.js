@@ -5,7 +5,7 @@ const emptyActivity = () => ({ type: 'Ligação', subject: '', due_at: '' })
 
 new Vue({
     el: '#app',
-    data: { Crm: window.Crm, isNew: true, busy: false, lookup: false, lead: emptyLead(), clients: [], sellers: [], activity: emptyActivity() },
+    data: { Crm: window.Crm, isNew: true, busy: false, lookup: false, lead: emptyLead(), clients: [], sellers: [], activity: emptyActivity(), matches: { clients: [], leads: [] } },
     computed: {
         activities() {
             return [...(this.lead.CrmActivities || [])].sort((a, b) => {
@@ -27,9 +27,24 @@ new Vue({
             const { name, company, document, email, phone, whatsapp, source, status, notes, ClientId, SellerId } = this.lead
             return { name, company, document, email, phone, whatsapp, source, status, notes, ClientId: ClientId || null, SellerId: SellerId || null }
         },
+        // Possíveis duplicados (mesmo CNPJ/CPF, e-mail ou telefone) entre clientes e outros leads.
+        async checkDuplicates() {
+            const { document, email, phone, whatsapp } = this.lead
+            const params = { document, email, phone, whatsapp }
+            if (!this.isNew) params.exclude = this.lead.id
+            const { data } = await __api__.get('/api/crm/leads/check', { params })
+            this.matches = data
+            return data
+        },
         async save() {
             this.busy = true
             try {
+                const dup = await this.checkDuplicates().catch(() => ({ clients: [], leads: [] }))
+                const lines = [
+                    ...dup.clients.map((c) => `Cliente "${c.name}" (mesmo ${c.reason})`),
+                    ...dup.leads.map((l) => `Lead "${l.company || l.name}" (mesmo ${l.reason}, ${l.status})`),
+                ]
+                if (this.isNew && lines.length && !confirm('Possível duplicado:\n- ' + lines.join('\n- ') + '\n\nCadastrar mesmo assim?')) return
                 if (this.isNew) {
                     const { data } = await __api__.post('/api/crm/leads', this.payload())
                     location.href = './lead.html?id=' + data.id
@@ -92,6 +107,9 @@ new Vue({
             __api__.get('/api/sellers').then(({ data }) => (this.sellers = (data || []).filter((s) => s.active))).catch(() => {}),
         ])
         const params = Crm.params()
-        if (params.id) await this.load(params.id).catch((e) => alert(Crm.errorMessage(e, 'Lead não encontrado.')))
+        if (params.id) {
+            await this.load(params.id).catch((e) => alert(Crm.errorMessage(e, 'Lead não encontrado.')))
+            if (!this.isNew) this.checkDuplicates().catch(() => {})
+        }
     },
 })

@@ -6,7 +6,7 @@ import Opportunity from '../../models/Opportunity'
 import CrmActivity from '../../models/CrmActivity'
 import Client from '../../models/Client'
 import Seller from '../../models/Seller'
-import { blank } from '../../utils/crm'
+import { blank, findClientMatches, findLeadMatches } from '../../utils/crm'
 
 type Req = FastifyRequest<{ Params: { id: string }; Body: any; Querystring: any }>
 
@@ -45,6 +45,20 @@ class leadsController {
             order: [['createdAt', 'DESC']],
         })
         return res.send(leads)
+    }
+
+    // Possíveis duplicados (cadastro e conversão): clientes e leads com mesmo CNPJ/CPF, e-mail ou telefone.
+    // GET /crm/leads/check?document=&email=&phone=&whatsapp=&exclude=  ou  GET /crm/leads/:id/matches
+    static async check(req: Req, res: FastifyReply) {
+        const q = (req.query || {}) as any
+        const input = { document: q.document, email: q.email, phone: q.phone, whatsapp: q.whatsapp }
+        return res.send({ clients: await findClientMatches(input), leads: await findLeadMatches(input, q.exclude ? Number(q.exclude) : null) })
+    }
+
+    static async matches(req: Req, res: FastifyReply) {
+        const lead = await Lead.findByPk(req.params.id)
+        if (!lead) return res.status(404).send({ message: 'Lead não encontrado.' })
+        return res.send({ clients: await findClientMatches(lead), leads: await findLeadMatches(lead, lead.id) })
     }
 
     static async show(req: Req, res: FastifyReply) {
