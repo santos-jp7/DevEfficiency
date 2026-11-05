@@ -47,6 +47,8 @@ export default new (class subscriptionsWorker {
         // Libera a cobrança quando o vencimento entra na janela (configurável: subscription_release_days).
         if (protocol.status == 'Em aberto') {
             if (!isWithinReleaseWindow(subscription.dueAt, releaseDays)) return
+            // Renovação com comissão a revisar: espera a confirmação do valor (aparece no dashboard).
+            if (protocol.commission_review_pending) return
 
             await protocol.update({ status: 'Liberado para pagamento' })
             await subscription.update({ status: 'Pendente' })

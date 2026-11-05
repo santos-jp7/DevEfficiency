@@ -38,6 +38,10 @@ async function createRenewalProtocol(
             commission_manual: !!previous.commission_manual,
             // Condição de pagamento se repete (vencimentos manuais não: são datas do ciclo anterior).
             payment_terms: previous.payment_terms ?? null,
+            // Comissão na mão em renovação anual (licença): o fornecedor costuma mudar preço/imposto — revisar antes de cobrar.
+            // Mensal (ex.: 365) repete o valor.
+            commission_review_pending:
+                previous.billing_mode === 'Comissão' && !!previous.commission_manual && protocol_products.some((p) => p.charge_type === 'Anual'),
         },
         { transaction: options.transaction },
     )
@@ -66,6 +70,8 @@ async function createRenewalProtocol(
     }
 
     if (!isWithinReleaseWindow(subscription.dueAt, await getReleaseDays())) return false
+    // Comissão a revisar: fica em aberto até a confirmação do valor (a cobrança ao fornecedor sai depois).
+    if (newProtocol.commission_review_pending) return false
 
     await newProtocol.update({ status: 'Liberado para pagamento' }, { transaction: options.transaction })
     return true
@@ -135,6 +141,9 @@ class protocolHooks {
 
         const total_due = amountDue(protocol, protocol_registers || [], protocol_products || [])
         const total_receipt = receipts?.reduce((sum, v) => sum + v.value, 0) || 0
+
+        if (protocol.status === 'Liberado para pagamento' && protocol.changed('status') && protocol.commission_review_pending)
+            throw new Error('Comissão da renovação a revisar: confirme (ou corrija) o valor da comissão antes de liberar.')
 
         // Condição de pagamento: parcelas precisam fechar com o valor em aberto antes de liberar.
         if (protocol.status === 'Liberado para pagamento' && protocol.changed('status') && protocol.id) {

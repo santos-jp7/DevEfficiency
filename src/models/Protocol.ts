@@ -50,6 +50,8 @@ class Protocol extends Model<InferAttributes<Protocol>, InferCreationAttributes<
     // Condição de pagamento: dias após a liberação (ex.: "15/30/60"); vazio = cobrança única pelas regras de sempre.
     // installments_manual = vencimentos/valores definidos à mão (ProtocolInstallment) em vez de calculados pela condição.
     declare payment_terms: CreationOptional<string | null>
+    // Renovação anual com comissão informada na mão: o valor precisa ser revisto antes de liberar a cobrança.
+    declare commission_review_pending: CreationOptional<boolean>
     declare installments_manual: CreationOptional<boolean>
 
     declare getService_order: HasOneGetAssociationMixin<Service_order>
@@ -147,6 +149,11 @@ Protocol.init(
             allowNull: true,
         },
         installments_manual: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+        },
+        commission_review_pending: {
             type: DataTypes.BOOLEAN,
             allowNull: false,
             defaultValue: false,

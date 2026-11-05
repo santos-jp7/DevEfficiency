@@ -223,7 +223,30 @@
         </div>
 
         <!-- Urgency Tables -->
-        <div class="row mb-3" v-if="overdueBillings.length > 0 || upcomingPayables.length > 0 || upcomingSubscriptions.length > 0 || crmFollowups.items.length > 0">
+        <div class="row mb-3" v-if="overdueBillings.length > 0 || upcomingPayables.length > 0 || upcomingSubscriptions.length > 0 || crmFollowups.items.length > 0 || commissionReviews.length > 0">
+            <!-- Renovações com comissão a revisar (licenças anuais com comissão informada na mão) -->
+            <div class="col-md-4 mb-3" v-if="commissionReviews.length > 0">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-warning d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-scale-balanced"></i>
+                        <span class="fw-semibold">Comissões a revisar ({{ commissionReviews.length }})</span>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-sm mb-0">
+                            <thead class="table-light"><tr><th>Protocolo</th><th>Assinatura</th><th>Comissão</th><th></th></tr></thead>
+                            <tbody>
+                                <tr v-for="p in commissionReviews" :key="p.id">
+                                    <td class="small">#{{ p.id }}</td>
+                                    <td class="small">{{ p.Subscription ? (p.Subscription.name || 'Assinatura #' + p.Subscription.id) : '—' }}</td>
+                                    <td class="small">{{ Number(p.commission_value) | currency }}</td>
+                                    <td><a :href="'/protocols/i.html?id=' + p.id" class="text-dark"><i class="fa-solid fa-arrow-right"></i></a></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
             <!-- Follow-ups do CRM (atrasados e de hoje) -->
             <div class="col-md-4 mb-3" v-if="crmFollowups.items.length > 0">
                 <div class="card border-0 shadow-sm h-100">

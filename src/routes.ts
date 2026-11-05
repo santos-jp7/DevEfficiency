@@ -231,6 +231,7 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.post('/protocols/standalone', { preHandler: [isAuthed] }, protocolsController.storeStandalone)
     instance.get('/protocols/:id', { preHandler: [isAuthed] }, protocolsController.show)
     instance.put('/protocols/:id', { preHandler: [isAuthed] }, protocolsController.update)
+    instance.post('/protocols/:id/confirm-commission', { preHandler: [isAuthed] }, protocolsController.confirmCommission as any)
 
     instance.get('/protocols/registers', { preHandler: [isAuthed] }, protocolsRegisterController.index)
     instance.get('/protocols/registers/:id', { preHandler: [isAuthed] }, protocolsRegisterController.show)

@@ -50,7 +50,7 @@
             // Oportunidade do CRM: sem recebimentos, só a previsão.
             showReceived: { type: Boolean, default: true },
         },
-        data: () => ({ suppliers: [] }),
+        data: () => ({ suppliers: [], reviewValue: null, confirming: false }),
         mounted() {
             loadSuppliers().then((list) => (this.suppliers = list))
         },
@@ -83,6 +83,26 @@
                 this.$set(this.protocol, 'commission_value', value === '' ? null : Number(value))
                 this.$set(this.protocol, 'commission_manual', value !== '')
             },
+            // Renovação anual com comissão na mão: confirma (ou corrige) o valor e libera se já estiver na janela.
+            async confirmReview() {
+                this.confirming = true
+                try {
+                    const token = localStorage.getItem('token')
+                    const type = localStorage.getItem('type')
+                    const value = this.reviewValue === null || this.reviewValue === '' ? undefined : this.reviewValue
+                    const { data } = await axios.post(
+                        `/api/protocols/${this.protocol.id}/confirm-commission`,
+                        { commission_value: value },
+                        { headers: { Authorization: [type, token].join(' ') } },
+                    )
+                    alert(data.released ? 'Comissão confirmada e cobrança ao fornecedor liberada.' : 'Comissão confirmada. A cobrança sai quando o vencimento entrar na janela de liberação.')
+                    window.location.reload()
+                } catch (e) {
+                    alert((e.response && e.response.data && e.response.data.message) || 'Não foi possível confirmar a comissão.')
+                } finally {
+                    this.confirming = false
+                }
+            },
             useSuggested() {
                 this.$set(this.protocol, 'commission_manual', false)
                 this.$set(this.protocol, 'commission_value', this.suggested)
@@ -97,6 +117,15 @@
                     <button type="button" class="btn" :class="commission ? 'btn-dark' : 'btn-outline-dark'" :disabled="locked" @click="setMode('Comissão')">Comissão de terceiro</button>
                 </div>
                 <small class="text-muted" v-if="locked">Altere com o protocolo "Em aberto".</small>
+            </div>
+
+            <div v-if="protocol.commission_review_pending" class="alert alert-warning py-2 small">
+                <strong>Comissão da renovação a revisar.</strong> Licença anual com comissão informada na mão: confirme se o valor
+                continua {{ brl(protocol.commission_value) }} ou informe o novo. A cobrança ao fornecedor só sai depois da confirmação.
+                <div class="d-flex gap-2 mt-2 align-items-center">
+                    <input type="number" step="0.01" min="0" class="form-control form-control-sm" style="max-width:160px" :placeholder="String(protocol.commission_value || '')" v-model="reviewValue">
+                    <button type="button" class="btn btn-sm btn-warning" :disabled="confirming" @click="confirmReview">{{ reviewValue ? 'Corrigir e confirmar' : 'Confirmar valor atual' }}</button>
+                </div>
             </div>
 
             <div v-if="commission">

@@ -24,6 +24,7 @@ import { isCommission, summarizeCommission } from '../utils/protocolCommission'
 import { CommissionInputError, parseCommissionInput } from '../utils/commissionInput'
 import { StandaloneError, StandaloneInput, createStandaloneProtocol } from '../utils/standaloneProtocol'
 import ProtocolInstallment from '../models/ProtocolInstallment'
+import { getReleaseDays, isWithinReleaseWindow } from '../utils/subscriptionRelease'
 import { PaymentTermsError, installmentsInputChanged, saveInstallmentsInput } from '../utils/paymentTerms'
 import { getClientByProtocol, summarizeProtocol, sumSummaries, withPricing, pricingView } from '../utils/pricing'
 
@@ -54,7 +55,7 @@ type protocolsRequest = FastifyRequest<{
 
 class protocolsController {
     static async index(req: protocolsRequest, res: FastifyReply): Promise<FastifyReply> {
-        const { ClientId, page = 1, limit = 10, status } = req.query as any
+        const { ClientId, page = 1, limit = 10, status, commission_review } = req.query as any
 
         let opts: any = {
             include: [
@@ -100,6 +101,9 @@ class protocolsController {
                 },
             }
         }
+
+        // Renovações com comissão a revisar (dashboard).
+        if (commission_review === 'true' || commission_review === '1') opts.where = { ...opts.where, commission_review_pending: true }
 
         const { count, rows } = await Protocol.findAndCountAll(opts)
 
@@ -176,6 +180,33 @@ class protocolsController {
             ...protocolJson(created as Protocol, client),
             BillingId,
         })
+    }
+
+    // Confirma (ou corrige) a comissão de uma renovação anual; se o vencimento já está na janela, libera a cobrança.
+    static async confirmCommission(req: protocolsRequest, res: FastifyReply): Promise<FastifyReply> {
+        const protocol = await Protocol.findByPk(req.params.id, { include: [Subscription] })
+        if (!protocol) return res.status(404).send({ message: 'Protocolo não encontrado.' })
+        if (!protocol.commission_review_pending) return res.status(400).send({ message: 'Este protocolo não tem comissão a revisar.' })
+
+        const { commission_value } = (req.body || {}) as any
+        const patch: any = { commission_review_pending: false }
+        if (commission_value !== undefined && commission_value !== null && commission_value !== '') {
+            const value = Number(commission_value)
+            if (!(value > 0)) return res.status(400).send({ message: 'Valor de comissão inválido.' })
+            patch.commission_value = value
+            patch.commission_manual = true
+        }
+        await protocol.update(patch)
+
+        let released = false
+        const subscription = (protocol as any).Subscription as Subscription | null
+        if (protocol.status === 'Em aberto' && subscription && isWithinReleaseWindow(subscription.dueAt, await getReleaseDays())) {
+            await protocol.update({ status: 'Liberado para pagamento' })
+            await subscription.update({ status: 'Pendente' })
+            released = true
+        }
+
+        return res.send({ ...protocol.toJSON(), released })
     }
 
     static async update(req: protocolsRequest, res: FastifyReply): Promise<FastifyReply> {

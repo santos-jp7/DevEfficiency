@@ -5,6 +5,7 @@ const dashboard = new Vue({
     data: {
         ticketsAttention: 0,
         crmFollowups: { total: 0, overdue: 0, items: [] },
+        commissionReviews: [],
         currentOs: {
             id: null,
             subject: null,
@@ -72,6 +73,12 @@ const dashboard = new Vue({
             __api__
                 .get('/api/tickets/summary')
                 .then(({ data }) => (this.ticketsAttention = data.needs_attention))
+                .catch(() => {})
+
+            // Renovações anuais com comissão informada na mão aguardando revisão do valor.
+            __api__
+                .get('/api/protocols?commission_review=1&limit=-1')
+                .then(({ data }) => (this.commissionReviews = data.data || []))
                 .catch(() => {})
 
             // Follow-ups do CRM até o fim de hoje (atrasados primeiro).
