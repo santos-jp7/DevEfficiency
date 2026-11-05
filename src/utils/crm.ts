@@ -471,3 +471,33 @@ export async function findLeadMatches(input: MatchInput, excludeId?: number | nu
     }
     return out
 }
+
+// ---------------------------------------------------------------------------------------------------------------
+// Valor real: o total do protocolo ligado à oportunidade (convertida ou vinda de OS) vale mais que a estimativa.
+
+export async function protocolValues(opportunities: Opportunity[]): Promise<Map<number, number>> {
+    const byProtocol = new Map<number, number>()
+    const bySourceOs = new Map<number, number>()
+    for (const o of opportunities) {
+        if (o.ProtocolId) byProtocol.set(o.ProtocolId, o.id)
+        else if (o.SourceServiceOrderId) bySourceOs.set(o.SourceServiceOrderId, o.id)
+    }
+    const result = new Map<number, number>()
+    if (!byProtocol.size && !bySourceOs.size) return result
+
+    const or: any[] = []
+    if (byProtocol.size) or.push({ id: [...byProtocol.keys()] })
+    if (bySourceOs.size) or.push({ ServiceOrderId: [...bySourceOs.keys()] })
+    const protocols = await Protocol.findAll({ where: { [Op.or]: or }, include: ['Protocol_registers', 'Protocol_products'] })
+
+    for (const p of protocols) {
+        const oppId = byProtocol.get(p.id) ?? (p.ServiceOrderId ? bySourceOs.get(p.ServiceOrderId) : undefined)
+        if (oppId === undefined) continue
+        const total = summarizeProtocol(p).total_net
+        if (total > 0) result.set(oppId, total)
+    }
+    return result
+}
+
+// Valor usado em telas e relatórios: do protocolo quando existe, senão o estimado.
+export const realValue = (o: Opportunity, values: Map<number, number>) => values.get(o.id) ?? (Number(o.estimated_value) || 0)

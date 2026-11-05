@@ -99,6 +99,7 @@
                         <div class="mb-3 col-md-4">
                             <label class="form-label">Valor estimado (R$)</label>
                             <input type="number" step="0.01" min="0" class="form-control" v-model.number="o.estimated_value">
+                            <div class="form-text" v-if="o.protocol_value != null">Valor do protocolo: <strong>{{ Crm.brlFull(o.protocol_value) }}</strong> (usado no funil e nos relatórios)</div>
                         </div>
                         <div class="mb-3 col-md-3">
                             <label class="form-label">Probabilidade (%)</label>

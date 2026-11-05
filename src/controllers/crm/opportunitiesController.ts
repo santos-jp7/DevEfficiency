@@ -11,7 +11,7 @@ import Seller from '../../models/Seller'
 import Supplier from '../../models/Supplier'
 import Service_order from '../../models/Service_order'
 import Protocol from '../../models/Protocol'
-import { CrmInputError, blank, changeStage, nextFollowups, opportunityFromServiceOrder, syncSourceServiceOrder, winOpportunity } from '../../utils/crm'
+import { CrmInputError, blank, changeStage, nextFollowups, opportunityFromServiceOrder, protocolValues, syncSourceServiceOrder, winOpportunity } from '../../utils/crm'
 import { CommissionInputError, parseCommissionInput } from '../../utils/commissionInput'
 
 type Req = FastifyRequest<{ Params: { id: string }; Body: any; Querystring: any }>
@@ -106,11 +106,14 @@ class opportunitiesController {
         })
 
         const followups = await nextFollowups(opportunities.map((o) => o.id))
+        const values = await protocolValues(opportunities)
 
         return res.send(
             opportunities.map((o) => ({
                 ...o.toJSON(),
                 next_followup: followups.get(o.id) || null,
+                // Total do protocolo ligado (convertida ou vinda de OS); null = só a estimativa.
+                protocol_value: values.get(o.id) ?? null,
             })),
         )
     }
@@ -124,7 +127,8 @@ class opportunitiesController {
             ],
         })
         if (!opportunity) return res.status(404).send({ message: 'Oportunidade não encontrada.' })
-        return res.send(opportunity)
+        const values = await protocolValues([opportunity])
+        return res.send({ ...opportunity.toJSON(), protocol_value: values.get(opportunity.id) ?? null })
     }
 
     static async store(req: Req, res: FastifyReply) {

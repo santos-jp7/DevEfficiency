@@ -299,7 +299,7 @@
                                     <div class="small text-muted" v-if="o.Lead && !o.ClientId">quando era lead</div>
                                 </td>
                                 <td><span class="badge" :style="{ background: Crm.STAGE_COLORS[o.stage] }">{{ o.stage }}</span></td>
-                                <td>{{ o.estimated_value != null ? Crm.brlFull(o.estimated_value) : '—' }}</td>
+                                <td>{{ Crm.hasValue(o) ? Crm.brlFull(Crm.valueOf(o)) : '—' }}</td>
                                 <td>{{ o.Seller ? o.Seller.name : '—' }}</td>
                                 <td :class="o.next_followup && Crm.isOverdue(o.next_followup.due_at) ? 'text-danger' : ''">
                                     {{ o.next_followup ? Crm.dueLabel(o.next_followup.due_at) + ' — ' + o.next_followup.subject : '—' }}

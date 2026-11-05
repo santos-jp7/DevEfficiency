@@ -94,7 +94,7 @@
                         <a class="title" :href="'./opportunity.html?id=' + o.id">{{ o.title }}</a>
                         <div class="party">{{ Crm.partyName(o) }}</div>
                         <div class="meta">
-                            <span>{{ o.estimated_value != null ? Crm.brl(o.estimated_value) : 'Sem valor' }} &middot; {{ o.probability }}%</span>
+                            <span :title="o.protocol_value != null ? 'Valor do protocolo' : 'Valor estimado'">{{ Crm.hasValue(o) ? Crm.brl(Crm.valueOf(o)) : 'Sem valor' }}<i v-if="o.protocol_value != null" class="fa-solid fa-file-invoice-dollar ms-1 text-muted"></i> &middot; {{ o.probability }}%</span>
                             <span v-if="o.Seller">{{ o.Seller.name }}</span>
                         </div>
                         <div class="meta">

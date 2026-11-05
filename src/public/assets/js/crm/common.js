@@ -56,6 +56,9 @@
             return d.format('DD/MM HH:mm')
         },
         isOverdue: (v) => !!v && moment(v).isBefore(moment()),
+        // Valor da oportunidade: o total do protocolo ligado quando existe, senão o estimado.
+        valueOf: (o) => (o && o.protocol_value != null ? Number(o.protocol_value) : Number(o && o.estimated_value) || 0),
+        hasValue: (o) => !!o && (o.protocol_value != null || o.estimated_value != null),
         // Nome de quem é a oportunidade: cliente (upsell) ou lead.
         partyName(o) {
             if (o?.Client) return o.Client.name

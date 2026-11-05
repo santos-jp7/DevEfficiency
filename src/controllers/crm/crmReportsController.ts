@@ -7,11 +7,11 @@ import OpportunityStageHistory from '../../models/OpportunityStageHistory'
 import Lead from '../../models/Lead'
 import Seller from '../../models/Seller'
 import { round2 } from '../../utils/pricing'
+import { protocolValues } from '../../utils/crm'
 
 type Req = FastifyRequest<{ Querystring: Record<string, any> }>
 
-const value = (o: Opportunity) => Number(o.estimated_value) || 0
-const weighted = (o: Opportunity) => (value(o) * (Number(o.probability) || 0)) / 100
+type Valuer = (o: Opportunity) => number
 const pct = (part: number, total: number) => (total > 0 ? round2((part / total) * 100) : 0)
 const DAY = 86400000
 
@@ -20,7 +20,7 @@ const sourceOf = (o: any) => o.Lead?.source || NO_LEAD_SOURCE
 
 type Group = { key: string | number | null; name: string; open_count: number; open_value: number; won: number; won_value: number; lost: number; conversion_rate: number }
 
-function groupBy(open: Opportunity[], won: Opportunity[], lost: Opportunity[], keyOf: (o: any) => [string | number | null, string]): Group[] {
+function groupBy(value: Valuer, open: Opportunity[], won: Opportunity[], lost: Opportunity[], keyOf: (o: any) => [string | number | null, string]): Group[] {
     const map = new Map<string, Group>()
     const get = (o: any) => {
         const [key, name] = keyOf(o)
@@ -95,6 +95,11 @@ class crmReportsController {
             Opportunity.count({ where: { ...base, createdAt: { [Op.between]: [from, to] } }, include }),
         ])
 
+        // Valor real (protocolo ligado) quando existe; senão o estimado.
+        const values = await protocolValues([...open, ...won, ...lost])
+        const value: Valuer = (o) => values.get(o.id) ?? (Number(o.estimated_value) || 0)
+        const weighted: Valuer = (o) => (value(o) * (Number(o.probability) || 0)) / 100
+
         // Funil atual (fotografia das abertas).
         const pipelineStages = OPEN_STAGES.map((stage) => {
             const items = open.filter((o) => o.stage === stage)
@@ -162,8 +167,8 @@ class crmReportsController {
                 avg_ticket: won.length ? round2(wonValue / won.length) : 0,
                 avg_cycle_days: cycles.length ? round2(cycles.reduce((s, d) => s + d, 0) / cycles.length) : null,
             },
-            by_seller: groupBy(open, won, lost, (o) => (o.Seller ? [o.Seller.id, o.Seller.name] : [null, 'Sem vendedor'])),
-            by_source: groupBy(open, won, lost, (o) => [sourceOf(o), sourceOf(o)]),
+            by_seller: groupBy(value, open, won, lost, (o) => (o.Seller ? [o.Seller.id, o.Seller.name] : [null, 'Sem vendedor'])),
+            by_source: groupBy(value, open, won, lost, (o) => [sourceOf(o), sourceOf(o)]),
             lost_reasons: [...lostReasons.values()].sort((a, b) => b.count - a.count || b.value - a.value),
             stage_time: stageTime(histories, closed),
             forecast,

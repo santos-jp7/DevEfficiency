@@ -23,8 +23,8 @@ new Vue({
             let overdue = 0
             for (const s of Crm.OPEN_STAGES)
                 for (const o of this.visible(s)) {
-                    open += Number(o.estimated_value) || 0
-                    weighted += ((Number(o.estimated_value) || 0) * (Number(o.probability) || 0)) / 100
+                    open += Crm.valueOf(o)
+                    weighted += (Crm.valueOf(o) * (Number(o.probability) || 0)) / 100
                     if (o.next_followup && Crm.isOverdue(o.next_followup.due_at)) overdue++
                 }
             return { open, weighted, overdue }
@@ -45,10 +45,10 @@ new Vue({
             return this.columns[stage].filter((o) => this.matches(o))
         },
         sum(stage) {
-            return this.visible(stage).reduce((s, o) => s + (Number(o.estimated_value) || 0), 0)
+            return this.visible(stage).reduce((s, o) => s + Crm.valueOf(o), 0)
         },
         weighted(stage) {
-            return this.visible(stage).reduce((s, o) => s + ((Number(o.estimated_value) || 0) * (Number(o.probability) || 0)) / 100, 0)
+            return this.visible(stage).reduce((s, o) => s + (Crm.valueOf(o) * (Number(o.probability) || 0)) / 100, 0)
         },
         async load() {
             this.loading = true
