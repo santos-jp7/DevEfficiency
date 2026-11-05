@@ -52,7 +52,7 @@ new Vue({
                 if (this.isNew && lines.length && !confirm('Possível duplicado:\n- ' + lines.join('\n- ') + '\n\nCadastrar mesmo assim?')) return
                 if (this.isNew) {
                     const { data } = await __api__.post('/api/crm/leads', this.payload())
-                    location.href = './lead.html?id=' + data.id
+                    location.href = '/crm/lead.html?id=' + data.id
                     return
                 }
                 await __api__.put('/api/crm/leads/' + this.lead.id, this.payload())
@@ -67,7 +67,7 @@ new Vue({
             if (!confirm('Excluir este lead?')) return
             try {
                 await __api__.delete('/api/crm/leads/' + this.lead.id)
-                location.href = './leads.html'
+                location.href = '/crm/leads.html'
             } catch (e) {
                 alert(Crm.errorMessage(e, 'Não foi possível excluir.'))
             }

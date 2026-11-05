@@ -47,9 +47,15 @@
             locked: { type: Boolean, default: false },
         },
         data: () => ({ suppliers: [], custom: false }),
+        // A tela pode trocar o objeto do protocolo depois de montar (ex.: OS carrega um resumo e depois o protocolo
+        // completo, com as parcelas). Sempre que o protocolo ou as parcelas gravadas mudam, recarrega as linhas.
+        watch: {
+            protocol: { handler: 'init', immediate: true },
+            'protocol.ProtocolInstallments'() {
+                this.init(true)
+            },
+        },
         mounted() {
-            if (!this.protocol._installments) this.$set(this.protocol, '_installments', editable(this.protocol).map((i) => ({ due_date: i.due_date, value: Number(i.value) })))
-            this.custom = !!this.protocol.payment_terms && !PRESETS.includes(this.protocol.payment_terms)
             if (window.ProtocolCommission && window.ProtocolCommission.loadSuppliers)
                 window.ProtocolCommission.loadSuppliers().then((list) => (this.suppliers = list))
         },
@@ -79,6 +85,12 @@
         methods: {
             brl,
             br,
+            init(force) {
+                const p = this.protocol
+                if (!p) return
+                if (force || !p._installments) this.$set(p, '_installments', editable(p).map((i) => ({ due_date: i.due_date, value: Number(i.value) })))
+                this.custom = !!p.payment_terms && !PRESETS.includes(p.payment_terms)
+            },
             pick(value) {
                 if (value === '__custom') {
                     this.custom = true

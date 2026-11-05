@@ -47,9 +47,9 @@
         <div class="d-flex flex-wrap justify-content-between align-items-center mb-3" style="gap:.5rem">
             <h5 class="mb-0">CRM · Funil de vendas</h5>
             <div class="d-flex flex-wrap" style="gap:.5rem">
-                <a class="btn btn-outline-dark btn-sm" href="./reports.html"><i class="fa-solid fa-chart-line"></i> Relatório</a>
-                <a class="btn btn-outline-dark btn-sm" href="./leads.html"><i class="fa-solid fa-address-book"></i> Leads</a>
-                <a class="btn btn-dark btn-sm" href="./opportunity.html?new=1"><i class="fa-solid fa-plus"></i> Nova oportunidade</a>
+                <a class="btn btn-outline-dark btn-sm" href="/crm/reports.html"><i class="fa-solid fa-chart-line"></i> Relatório</a>
+                <a class="btn btn-outline-dark btn-sm" href="/crm/leads.html"><i class="fa-solid fa-address-book"></i> Leads</a>
+                <a class="btn btn-dark btn-sm" href="/crm/opportunity.html?new=1"><i class="fa-solid fa-plus"></i> Nova oportunidade</a>
             </div>
         </div>
 
@@ -99,7 +99,7 @@
                 <draggable class="crm-list" :list="col(stage).items" group="opportunities" ghost-class="ghost" :data-stage="stage"
                     @change="onChange($event, stage)" :move="canMove">
                     <div class="crm-card" v-for="o in col(stage).items" :key="o.id">
-                        <a class="title" :href="'./opportunity.html?id=' + o.id">{{ o.title }}</a>
+                        <a class="title" :href="'/crm/opportunity.html?id=' + o.id">{{ o.title }}</a>
                         <div class="party">{{ Crm.partyName(o) }}</div>
                         <div class="meta">
                             <span :title="o.protocol_value != null ? 'Valor do protocolo' : 'Valor estimado'">{{ Crm.hasValue(o) ? Crm.brl(Crm.valueOf(o)) : 'Sem valor' }}<i v-if="o.protocol_value != null" class="fa-solid fa-file-invoice-dollar ms-1 text-muted"></i> &middot; {{ o.probability }}%</span>

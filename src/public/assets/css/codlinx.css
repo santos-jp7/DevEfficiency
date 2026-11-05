@@ -377,6 +377,12 @@ h1, h2, h3, h4, h5, h6 {
 
 /* ── Navigation ────────────────────────────────────────────── */
 
+/* Faixa do menu: logo abaixo da barra do topo, mesma largura em todas as telas */
+.cx-nav-row {
+    background: var(--cx-surface);
+    border-bottom: 1px solid var(--cx-border);
+}
+
 /* Desktop nav strip */
 .cx-desktop-nav {
     display: none;
