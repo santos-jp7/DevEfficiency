@@ -123,18 +123,32 @@
                     <div class="col-auto"><button class="btn btn-outline-dark btn-sm" @click="autoMatch"><i class="fa-solid fa-wand-magic-sparkles"></i> Conciliar automaticamente</button></div>
                 </div>
 
+                <div v-if="pickedEntries.length" class="alert alert-info py-2 d-flex flex-wrap align-items-center justify-content-between" style="gap:.5rem">
+                    <span>
+                        <strong>{{ pickedEntries.length }}</strong> linha(s) do extrato selecionada(s) · total <strong>{{ brl(pickedTotal) }}</strong>
+                        <span class="small text-muted d-block">Use quando um lançamento do sistema entrou em partes no banco (ex.: 6k em espécie que entrou como 5k + 1k).</span>
+                    </span>
+                    <span class="d-flex" style="gap:.5rem">
+                        <button class="btn btn-sm btn-outline-secondary" @click="picked = []">Limpar</button>
+                        <button class="btn btn-sm btn-dark" :disabled="pickedMixed" @click="openGroup" :title="pickedMixed ? 'Selecione só entradas ou só saídas' : ''">
+                            <i class="fa-solid fa-object-group"></i> Vincular as linhas selecionadas
+                        </button>
+                    </span>
+                </div>
+
                 <div class="table-responsive">
                     <table class="table table-striped border align-middle">
-                        <thead><tr><th>Data</th><th>Descrição</th><th class="text-end">Valor</th><th>Situação</th><th>Vínculo / sugestão</th><th></th></tr></thead>
+                        <thead><tr><th style="width:30px" title="Selecionar várias linhas para vincular juntas"><i class="fa-regular fa-square-check"></i></th><th>Data</th><th>Descrição</th><th class="text-end">Valor</th><th>Situação</th><th>Vínculo / sugestão</th><th></th></tr></thead>
                         <tbody>
                             <tr v-for="e in entries" :key="e.id">
+                                <td><input v-if="e.status === 'pendente'" type="checkbox" class="form-check-input" :value="e.id" v-model="picked"></td>
                                 <td>{{ date(e.date) }}</td>
                                 <td class="small">{{ e.description }}</td>
                                 <td class="text-end" :class="e.amount >= 0 ? 'text-success' : 'text-danger'">{{ brl(e.amount) }}</td>
                                 <td><span :class="'badge bg-' + statusColor(e.status)">{{ e.status }}</span></td>
                                 <td class="small">
                                     <div v-if="e.status === 'conciliado'">
-                                        <div v-for="m in (e.matches || [])">{{ m.label || (m.type + ' #' + m.id) }}<span v-if="e.matches.length > 1" class="text-muted"> · {{ brl(m.value) }}</span></div>
+                                        <div v-for="m in (e.matches || [])">{{ m.label || (m.type + ' #' + m.id) }}<span v-if="e.matches.length > 1 || Math.abs(m.value - Math.abs(e.amount)) > 0.009" class="text-muted"> · {{ brl(m.value) }}</span></div>
                                         <span v-if="e.match_difference" class="badge bg-warning text-dark" title="Diferença aceita ao conciliar">dif. {{ brl(e.match_difference) }}</span>
                                     </div>
                                     <div v-else-if="e.status === 'pendente'">
@@ -161,7 +175,7 @@
                                     <button v-if="e.status === 'conciliado'" class="btn btn-sm btn-outline-danger" @click="act(e, 'unmatch')" title="Desfazer conciliação"><i class="fa-solid fa-link-slash"></i></button>
                                 </td>
                             </tr>
-                            <tr v-if="!entries.length"><td colspan="6" class="text-center text-muted py-4">Nenhum lançamento. Importe um extrato OFX ou CSV.</td></tr>
+                            <tr v-if="!entries.length"><td colspan="7" class="text-center text-muted py-4">Nenhum lançamento. Importe um extrato OFX ou CSV.</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -204,24 +218,31 @@
             <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h6 class="modal-title" v-if="manual">Vincular {{ date(manual.date) }} · {{ brl(manual.amount) }} · {{ manual.description }}</h6>
+                        <h6 class="modal-title" v-if="manual && manual.group">Vincular {{ manual.ids.length }} linhas do extrato · total {{ brl(manual.amount) }}</h6>
+                        <h6 class="modal-title" v-else-if="manual">Vincular {{ date(manual.date) }} · {{ brl(manual.amount) }} · {{ manual.description }}</h6>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
-                        <p class="small text-muted">Lançamentos do sistema ainda sem vínculo (mesma conta, {{ manual && manual.amount > 0 ? 'entradas' : 'saídas' }}, incluindo transferências). Marque mais de um quando um único depósito/pagamento quitou vários lançamentos. Valores divergentes pedem confirmação.</p>
+                        <p class="small text-muted">Lançamentos do sistema ainda sem extrato (mesma conta, {{ manual && manual.amount > 0 ? 'entradas' : 'saídas' }}, incluindo transferências). Marque quantos precisar (ex.: as compras de uma fatura do cartão). Quem já entrou em parte aparece com o restante. Valores divergentes pedem confirmação.</p>
+                        <div class="d-flex flex-wrap align-items-center mb-2" style="gap:.5rem">
+                            <input type="search" class="form-control form-control-sm" style="max-width:280px" v-model="optionFilter" placeholder="Filtrar por descrição, nº ou valor">
+                            <button type="button" class="btn btn-sm btn-outline-dark" @click="selectVisible">Selecionar todos visíveis ({{ visibleOptions.length }})</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" @click="selected = []" :disabled="!selected.length">Limpar</button>
+                            <span class="small text-muted">{{ selected.length }} selecionado(s)</span>
+                        </div>
                         <table class="table table-sm">
                             <tbody>
-                                <tr v-for="i in manualOptions" :key="i.type + i.id">
+                                <tr v-for="i in visibleOptions" :key="i.type + i.id">
                                     <td style="width:30px"><input type="checkbox" class="form-check-input" :value="i" v-model="selected"></td>
                                     <td>{{ date(i.date) }}</td><td>{{ i.label }}</td><td class="text-end">{{ brl(i.value) }}</td>
                                 </tr>
-                                <tr v-if="!manualOptions.length"><td class="text-muted text-center py-3">Nenhum lançamento disponível.</td></tr>
+                                <tr v-if="!visibleOptions.length"><td class="text-muted text-center py-3">Nenhum lançamento disponível.</td></tr>
                             </tbody>
                         </table>
                         <div class="d-flex justify-content-between align-items-center" v-if="manual">
                             <div class="small">Selecionado: <strong>{{ brl(selectedSum) }}</strong> de <strong>{{ brl(Math.abs(manual.amount)) }}</strong>
                                 <span :class="Math.abs(Math.abs(manual.amount) - selectedSum) <= (tolerance || 0.05) ? 'text-success' : 'text-danger'">(diferença {{ brl(Math.abs(manual.amount) - selectedSum) }})</span></div>
-                            <button class="btn btn-dark btn-sm" :disabled="!selected.length" @click="matchMany(manual, selected)">Vincular selecionados</button>
+                            <button class="btn btn-dark btn-sm" :disabled="!selected.length" @click="manual.group ? matchGroup(manual, selected) : matchMany(manual, selected)">Vincular selecionados</button>
                         </div>
                     </div>
                 </div>
