@@ -120,9 +120,12 @@
             </div>
             <div class="col-md-3">
                 <div class="cx-kpi cx-kpi--amber">
-                    <div class="cx-kpi__label">Faturas Pendentes</div>
-                    <div class="cx-kpi__value">{{ metrics.billings.pending_value | currency }}</div>
-                    <div class="cx-kpi__sub">{{ metrics.billings.total_pending }} faturas em aberto</div>
+                    <div class="cx-kpi__label">Total a Receber</div>
+                    <div class="cx-kpi__value">{{ metrics.receivable_total | currency }}</div>
+                    <div class="cx-kpi__sub">
+                        Clientes {{ metrics.billings.pending_value | currency }} ({{ metrics.billings.total_pending }})
+                        · Comissões {{ metrics.commissions.value | currency }} ({{ metrics.commissions.count }})
+                    </div>
                 </div>
             </div>
             <div class="col-md-3">
@@ -158,7 +161,10 @@
                 <div class="cx-tile" style="border-left: 3px solid var(--cx-red)">
                     <div class="cx-tile__label">Cobranças Atrasadas</div>
                     <div class="cx-tile__value text-cx-red">{{ metrics.overdueBillingsValue | currency }}</div>
-                    <div class="cx-tile__sub">{{ metrics.overdueBillingsCount }} fatura(s) vencidas</div>
+                    <div class="cx-tile__sub">{{ metrics.overdueBillingsCount }} fatura(s) de clientes vencida(s)</div>
+                    <div class="cx-tile__sub text-cx-red" v-if="metrics.commissions.overdue_count">
+                        + {{ metrics.commissions.overdue_count }} comissão(ões) de fornecedor vencida(s): {{ metrics.commissions.overdue_value | currency }}
+                    </div>
                 </div>
             </div>
             <div class="col">

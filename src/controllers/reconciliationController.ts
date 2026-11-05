@@ -4,6 +4,7 @@ import moment from 'moment'
 
 import Billing from '../models/Billing'
 import Client from '../models/Client'
+import Supplier from '../models/Supplier'
 import Receipts from '../models/Receipts'
 import Payable from '../models/Payable'
 import BankAccount from '../models/BankAccount'
@@ -15,6 +16,7 @@ import { StatementError } from '../utils/statementParser'
 import {
     alreadyMatched,
     autoMatchPending,
+    billingLabel,
     compareStatementBalance,
     createExpenseFromEntry,
     describeMatches,
@@ -277,7 +279,7 @@ class reconciliationController {
 
         const billings = await Billing.findAll({
             where: { status: 'pago', BankAccountId, payment_date: { [Op.between]: [from, to] }, id: { [Op.notIn]: mb.length ? mb : [0] } },
-            include: [Client],
+            include: [Client, Supplier],
         })
 
         const receiptWhere: any = {
@@ -311,7 +313,7 @@ class reconciliationController {
             billings: billings.map((b) => ({
                 type: 'billing',
                 id: b.id,
-                label: `Cobrança #${b.id}${(b as any).Client ? ` - ${(b as any).Client.name}` : ''}`,
+                label: billingLabel(b),
                 value: Number(b.paid_value ?? b.total_value),
                 date: moment(b.payment_date).format('YYYY-MM-DD'),
             })),

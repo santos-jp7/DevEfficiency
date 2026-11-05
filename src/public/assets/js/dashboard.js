@@ -29,6 +29,8 @@ const dashboard = new Vue({
                 pending_value: 0,
                 total_pending: 0,
             },
+            commissions: { count: 0, value: 0, overdue_count: 0, overdue_value: 0 },
+            receivable_total: 0,
             subscriptions: {
                 total_active: 0,
                 mrr: 0,
@@ -109,9 +111,20 @@ const dashboard = new Vue({
 
                 // Billings Metrics
                 const { data: billings } = await __api__.get('/api/billings')
-                const pendingBillings = billings.filter((b) => b.status === 'pendente' || b.status === 'faturada')
+                const openBillings = billings.filter((b) => b.status === 'pendente' || b.status === 'faturada')
+                // Clientes x comissões a receber de fornecedores (protocolos por comissão): contas separadas, total junto.
+                const pendingBillings = openBillings.filter((b) => !b.SupplierId)
+                const supplierBillings = openBillings.filter((b) => b.SupplierId)
+                const sumOf = (list) => list.reduce((sum, b) => sum + parseFloat(b.total_value), 0)
                 this.metrics.billings.total_pending = pendingBillings.length
-                this.metrics.billings.pending_value = pendingBillings.reduce((sum, b) => sum + parseFloat(b.total_value), 0)
+                this.metrics.billings.pending_value = sumOf(pendingBillings)
+                this.metrics.commissions.count = supplierBillings.length
+                this.metrics.commissions.value = sumOf(supplierBillings)
+                const todayStart = moment().startOf('day')
+                const overdueCommissions = supplierBillings.filter((b) => b.due_date && moment.utc(b.due_date).isBefore(todayStart))
+                this.metrics.commissions.overdue_count = overdueCommissions.length
+                this.metrics.commissions.overdue_value = sumOf(overdueCommissions)
+                this.metrics.receivable_total = this.metrics.billings.pending_value + this.metrics.commissions.value
 
                 // Overdue billings (pendente + due_date < today)
                 const today = moment().startOf('day')
