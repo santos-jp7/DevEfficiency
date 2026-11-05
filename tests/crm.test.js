@@ -148,3 +148,22 @@ test('OS em aberto vira oportunidade; desfecho volta para a OS', async () => {co
   r=await call(O.fromServiceOrder,{params:{id:99999999}}); ok(r.code===400,'OS inexistente: 400')
   
 })
+
+test('reabrir oportunidade perdida reabre a OS que o CRM cancelou (status anterior)', async () => {
+    const { createServiceOrder } = load('utils/serviceOrderFactory')
+    const client = await m('Client').create({ name: 'Cliente Reabrir' })
+    const os = await createServiceOrder({ subject: 'Reabrir', ClientId: client.id, notify_client: false })
+    await os.update({ status: 'Orçamento enviado' })
+    const opp = (await call(O.fromServiceOrder, { params: { id: os.id } })).body
+    await call(O.stage, { params: { id: opp.id }, body: { stage: 'Perdido', lost_reason: 'Preço' } })
+    await os.reload()
+    assert.equal(os.status, 'Cancelado')
+    const r = await call(O.stage, { params: { id: opp.id }, body: { stage: 'Negociação' } })
+    assert.equal(r.code, 200)
+    assert.equal(r.body.warning, undefined)
+    await os.reload()
+    assert.equal(os.status, 'Orçamento enviado')
+    const protocol = await m('Protocol').findOne({ where: { ServiceOrderId: os.id } })
+    assert.equal(protocol.status, 'Em aberto')
+    assert.equal((await m('Opportunity').findByPk(opp.id)).source_os_prev_status, null)
+})

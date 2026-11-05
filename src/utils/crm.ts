@@ -1,6 +1,6 @@
 import { Op, Transaction } from 'sequelize'
 
-import Opportunity, { LOST_REASONS, OPPORTUNITY_STAGES, OpportunityStage, STAGE_PROBABILITY } from '../models/Opportunity'
+import Opportunity, { LOST_REASONS, OPEN_STAGES, OPPORTUNITY_STAGES, OpportunityStage, STAGE_PROBABILITY } from '../models/Opportunity'
 import OpportunityStageHistory from '../models/OpportunityStageHistory'
 import CrmActivity from '../models/CrmActivity'
 import db from '../db'
@@ -383,12 +383,29 @@ export async function opportunityFromServiceOrder(serviceOrderId: number): Promi
 }
 
 // Leva o desfecho da oportunidade para a OS de origem. Nunca lança: problemas viram warning (a etapa já mudou).
-export async function syncSourceServiceOrder(opportunity: Opportunity, to: OpportunityStage): Promise<{ warning?: string }> {
-    if (!opportunity.SourceServiceOrderId || !['Ganho', 'Perdido'].includes(to)) return {}
+export async function syncSourceServiceOrder(opportunity: Opportunity, to: OpportunityStage, from?: OpportunityStage | null): Promise<{ warning?: string }> {
+    if (!opportunity.SourceServiceOrderId) return {}
+    const reopening = from === 'Perdido' && OPEN_STAGES.includes(to) && !!opportunity.source_os_prev_status
+    if (!['Ganho', 'Perdido'].includes(to) && !reopening) return {}
 
     const os = await Service_order.findByPk(opportunity.SourceServiceOrderId)
     if (!os) return { warning: 'A OS de origem não existe mais.' }
     const protocol = await Protocol.findOne({ where: { ServiceOrderId: os.id } })
+
+    // Reaberta depois de perdida: desfaz o cancelamento feito pelo CRM (OS volta ao status anterior, protocolo em aberto).
+    if (reopening) {
+        try {
+            if (os.status === 'Cancelado') {
+                if (protocol && protocol.status === 'Cancelado') await protocol.update({ status: 'Em aberto' })
+                await os.update({ status: opportunity.source_os_prev_status as any })
+            }
+            await opportunity.update({ source_os_prev_status: null })
+            return {}
+        } catch (e: any) {
+            console.error('[crm] falha ao reabrir a OS de origem', os.id, e)
+            return { warning: `Oportunidade reaberta, mas a OS #${os.id} não foi reaberta: ${e.message}` }
+        }
+    }
 
     try {
         if (to === 'Ganho') {
@@ -410,8 +427,10 @@ export async function syncSourceServiceOrder(opportunity: Opportunity, to: Oppor
 
         // Perdido: cancela protocolo e OS (o protocolo recusa se já houver recebimentos).
         if (['Finalizado', 'Cancelado'].includes(os.status as string)) return {}
+        const previous = os.status as string
         if (protocol && protocol.status !== 'Cancelado') await protocol.update({ status: 'Cancelado' })
         await os.update({ status: 'Cancelado' })
+        await opportunity.update({ source_os_prev_status: previous })
         return {}
     } catch (e: any) {
         console.error('[crm] falha ao atualizar a OS de origem', os.id, e)

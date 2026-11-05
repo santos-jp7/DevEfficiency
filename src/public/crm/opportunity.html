@@ -56,7 +56,7 @@
         <div v-if="!isNew && o.SourceServiceOrder && !converted" class="alert alert-secondary py-2 small">
             <i class="fa-solid fa-screwdriver-wrench"></i> Veio da
             <a :href="'../service_orders/i?id=' + o.SourceServiceOrder.id">OS #{{ o.SourceServiceOrder.id }} — {{ o.SourceServiceOrder.subject }}</a>
-            ({{ o.SourceServiceOrder.status }}). Ganhar coloca a OS na fila; perder cancela a OS.
+            ({{ o.SourceServiceOrder.status }}). Ganhar coloca a OS na fila; perder cancela a OS (reabrir a oportunidade reabre a OS).
         </div>
         <div v-else-if="!isNew && o.stage === 'Ganho' && !o.SourceServiceOrderId" class="alert alert-warning py-2 small d-flex justify-content-between align-items-center">
             <span>Ganha sem gerar OS/protocolo.</span>

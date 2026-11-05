@@ -200,7 +200,7 @@ class opportunitiesController {
         }
 
         // OS de origem acompanha o desfecho (ganho → fila; perda → cancelada).
-        const sync = from !== stage ? await syncSourceServiceOrder(opportunity, stage) : {}
+        const sync = from !== stage ? await syncSourceServiceOrder(opportunity, stage, from) : {}
 
         const json: any = (await Opportunity.findByPk(opportunity.id, { include }))!.toJSON()
         return res.send(sync.warning ? { ...json, warning: sync.warning } : json)

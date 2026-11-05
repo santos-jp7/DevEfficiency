@@ -66,6 +66,8 @@ class Opportunity extends Model<InferAttributes<Opportunity>, InferCreationAttri
 
     // OS de origem (oportunidade criada a partir de uma OS em aberto): ganhar move a OS para a fila; perder cancela.
     declare SourceServiceOrderId: CreationOptional<ForeignKey<Service_order['id']> | null>
+    // Status da OS de origem antes de a perda no CRM cancelá-la (para reabrir se a oportunidade voltar ao funil).
+    declare source_os_prev_status: CreationOptional<string | null>
 
     // Resultado da conversão (ganho).
     declare ServiceOrderId: CreationOptional<ForeignKey<Service_order['id']> | null>
@@ -95,6 +97,7 @@ Opportunity.init(
         commission_percent: money('commission_percent', 5),
         commission_value: money('commission_value', 10),
         commission_manual: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+        source_os_prev_status: { type: DataTypes.STRING(40), allowNull: true },
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
     },
