@@ -4,6 +4,8 @@ const service_order = new Vue({
     el: '#service_order',
     data: {
         id: 0,
+        crmOpportunity: null,
+        sendingToCrm: false,
         subject: null,
         description: null,
         status: null,
@@ -124,6 +126,10 @@ const service_order = new Vue({
                 ? ProtocolCommission.expected(this.Protocol, this.protocolDiscountedTotal)
                 : this.protocolDiscountedTotal
         },
+        protocolAmountDueOpen() {
+            const received = (this.Protocol?.Receipts || []).reduce((s, v) => s + (Number(v.value) || 0), 0)
+            return Math.max(Math.round((this.protocolAmountDue - received) * 100) / 100, 0)
+        },
         protocolInstallmentValue() {
             const n = this.Protocol?.total_installments
             if (!n || n <= 1) return 0
@@ -205,6 +211,18 @@ const service_order = new Vue({
             if (!this.protocolDiscountPct) return
             this.Protocol.discount_value = parseFloat(((this.protocolGross / 100) * this.protocolDiscountPct).toFixed(2))
         },
+        async sendToCrm() {
+            if (!confirm('Enviar esta OS para o funil do CRM como oportunidade?')) return
+            this.sendingToCrm = true
+            try {
+                const { data } = await __api__.post('/api/crm/opportunities/from-os/' + this.id)
+                location.href = '../crm/opportunity.html?id=' + data.id
+            } catch (e) {
+                alert((e.response && e.response.data && e.response.data.message) || 'Não foi possível enviar para o CRM.')
+            } finally {
+                this.sendingToCrm = false
+            }
+        },
         handlerProtocolSubmit(e) {
             e.preventDefault()
 
@@ -216,6 +234,7 @@ const service_order = new Vue({
                     total_installments: this.$data.Protocol.total_installments || null,
                     discount_value: this.$data.Protocol.discount_value || null,
                     ...ProtocolCommission.payload(this.$data.Protocol),
+                    ...PaymentTerms.payload(this.$data.Protocol),
                 })
                 .then(() => {
                     window.location.reload()
@@ -519,6 +538,12 @@ const service_order = new Vue({
                         .then(({ data: configs }) => { this.clientSlaConfigs = configs })
                         .catch(() => {})
                 }
+
+                // Oportunidade do CRM criada a partir desta OS (se houver).
+                __api__
+                    .get('/api/crm/opportunities?status=all&SourceServiceOrderId=' + data.id)
+                    .then(({ data: opps }) => (this.crmOpportunity = opps[0] || null))
+                    .catch(() => {})
 
                 __api__
                     .get('/api/protocols/' + data.Protocol.id)

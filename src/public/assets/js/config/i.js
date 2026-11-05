@@ -43,6 +43,17 @@ const configForm = new Vue({
                 this.sendingAlert = false
             }
         },
+        async sendCrmAlert() {
+            this.sendingAlert = true
+            try {
+                const { data } = await __api__.post('/api/crm/followups/send')
+                alert(data.sent ? `Aviso enviado para ${data.to.join(', ')} (${data.count} pendência(s)).` : data.reason || 'Nada para enviar.')
+            } catch (error) {
+                alert(error.response?.data?.message || 'Não foi possível enviar o aviso.')
+            } finally {
+                this.sendingAlert = false
+            }
+        },
         async saveConfig() {
             try {
                 const url = `/api/config/${this.config.type}`

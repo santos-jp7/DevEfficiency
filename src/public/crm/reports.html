@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Codlinx - CRM · Relatório de vendas</title>
+    <link href="../assets/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/codlinx.css">
+    <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css">
+
+    <script src="../assets/js/vue.min.js"></script>
+    <script src="../assets/js/jquery-3.6.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2/dist/umd/popper.min.js"></script>
+    <script src="../assets/js/bootstrap.min.js"></script>
+    <script src="../assets/js/axios.min.js"></script>
+    <script src="../assets/js/moment.min.js"></script>
+</head>
+
+<body>
+    <nav class="navbar bg-light">
+        <div class="container">
+            <a class="navbar-brand" href="/dashboard">
+                <img src="../assets/img/logo_cabecalho.png" alt="Codlinx" width="40" height="40">
+            </a>
+        </div>
+    </nav>
+
+    <div class="container p-4" id="app">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3" style="gap:.5rem">
+            <h5 class="mb-0">CRM · Relatório de vendas</h5>
+            <div class="d-flex" style="gap:.5rem">
+                <a class="btn btn-outline-dark btn-sm" href="./index.html"><i class="fa-solid fa-table-columns"></i> Funil</a>
+                <button type="button" class="btn btn-outline-dark btn-sm" @click="exportCsv" :disabled="!report"><i class="fa-solid fa-file-csv"></i> Exportar CSV</button>
+            </div>
+        </div>
+
+        <div class="row g-2 mb-3 align-items-end">
+            <div class="col-md-2">
+                <label class="form-label small mb-0">De</label>
+                <input type="date" class="form-control form-control-sm" v-model="startDate" @change="load">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small mb-0">Até</label>
+                <input type="date" class="form-control form-control-sm" v-model="endDate" @change="load">
+            </div>
+            <div class="col-md-3">
+                <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-outline-dark" @click="preset('month')">Mês</button>
+                    <button type="button" class="btn btn-outline-dark" @click="preset('quarter')">Trimestre</button>
+                    <button type="button" class="btn btn-outline-dark" @click="preset('year')">Ano</button>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select form-select-sm" v-model="SellerId" @change="load">
+                    <option value="">Todos os vendedores</option>
+                    <option v-for="s in sellers" :value="s.id">{{ s.name }}</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select form-select-sm" v-model="source" @change="load">
+                    <option value="">Todas as origens</option>
+                    <option v-for="s in sources" :value="s">{{ s }}</option>
+                </select>
+            </div>
+        </div>
+
+        <div v-if="loading" class="text-muted small mb-2">Carregando…</div>
+
+        <template v-if="report">
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-md">
+                    <div class="cx-tile">
+                        <div class="cx-tile__label">Em aberto</div>
+                        <div class="cx-tile__value">{{ Crm.brl(report.pipeline.total.value) }}</div>
+                        <div class="cx-tile__sub">{{ report.pipeline.total.count }} oportunidade(s) · pond. {{ Crm.brl(report.pipeline.total.weighted) }}</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md">
+                    <div class="cx-tile" style="border-left: 3px solid var(--cx-green)">
+                        <div class="cx-tile__label">Ganhas no período</div>
+                        <div class="cx-tile__value text-cx-green">{{ Crm.brl(report.period.won_value) }}</div>
+                        <div class="cx-tile__sub">{{ report.period.won }} ganha(s) · {{ report.period.lost }} perdida(s)</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md">
+                    <div class="cx-tile">
+                        <div class="cx-tile__label">Taxa de conversão</div>
+                        <div class="cx-tile__value">{{ pct(report.period.conversion_rate) }}</div>
+                        <div class="cx-tile__sub">ganhas ÷ fechadas</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md">
+                    <div class="cx-tile">
+                        <div class="cx-tile__label">Ticket médio</div>
+                        <div class="cx-tile__value">{{ Crm.brl(report.period.avg_ticket) }}</div>
+                        <div class="cx-tile__sub">das ganhas</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md">
+                    <div class="cx-tile">
+                        <div class="cx-tile__label">Ciclo médio</div>
+                        <div class="cx-tile__value">{{ report.period.avg_cycle_days == null ? '—' : days(report.period.avg_cycle_days) }}</div>
+                        <div class="cx-tile__sub">criação → ganho · {{ report.period.created }} criada(s)</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-lg-6">
+                    <div class="border rounded p-3 h-100">
+                        <h6>Funil atual</h6>
+                        <div v-for="s in report.pipeline.stages" :key="s.stage" class="mb-2">
+                            <div class="d-flex justify-content-between small">
+                                <span><strong>{{ s.stage }}</strong> · {{ s.count }}</span>
+                                <span>{{ Crm.brl(s.value) }} <span class="text-muted">(pond. {{ Crm.brl(s.weighted) }})</span></span>
+                            </div>
+                            <div class="progress" style="height: 10px">
+                                <div class="progress-bar" :style="{ width: barWidth(s.value) + '%', background: Crm.STAGE_COLORS[s.stage] }"></div>
+                            </div>
+                        </div>
+                        <h6 class="mt-4">Previsão de fechamento</h6>
+                        <table class="table table-sm mb-0">
+                            <thead><tr><th>Mês</th><th class="text-end">Qtd.</th><th class="text-end">Valor</th><th class="text-end">Ponderado</th></tr></thead>
+                            <tbody>
+                                <tr v-for="f in report.forecast" :key="f.month">
+                                    <td>{{ monthLabel(f.month) }}</td>
+                                    <td class="text-end">{{ f.count }}</td>
+                                    <td class="text-end">{{ Crm.brl(f.value) }}</td>
+                                    <td class="text-end">{{ Crm.brl(f.weighted) }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="border rounded p-3 mb-3">
+                        <h6>Motivos de perda</h6>
+                        <table class="table table-sm mb-0" v-if="report.lost_reasons.length">
+                            <thead><tr><th>Motivo</th><th class="text-end">Qtd.</th><th class="text-end">Valor perdido</th></tr></thead>
+                            <tbody>
+                                <tr v-for="r in report.lost_reasons" :key="r.reason">
+                                    <td>{{ r.reason }}</td>
+                                    <td class="text-end">{{ r.count }}</td>
+                                    <td class="text-end">{{ Crm.brl(r.value) }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div v-else class="text-muted small">Nenhuma perda no período.</div>
+                    </div>
+                    <div class="border rounded p-3">
+                        <h6>Tempo médio por etapa <small class="text-muted">(fechadas no período)</small></h6>
+                        <table class="table table-sm mb-0">
+                            <tbody>
+                                <tr v-for="t in report.stage_time" :key="t.stage">
+                                    <td>{{ t.stage }}</td>
+                                    <td class="text-end">{{ t.avg_days == null ? '—' : days(t.avg_days) }}</td>
+                                    <td class="text-end text-muted small">{{ t.samples }} passagem(ns)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-lg-6" v-for="t in tables" :key="t.key">
+                    <div class="border rounded p-3 h-100">
+                        <h6>{{ t.title }}</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>{{ t.label }}</th>
+                                        <th class="text-end">Em aberto</th>
+                                        <th class="text-end">Ganhas</th>
+                                        <th class="text-end">Perdidas</th>
+                                        <th class="text-end">Conversão</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="g in report[t.key]" :key="String(g.key)">
+                                        <td>{{ g.name }}</td>
+                                        <td class="text-end">{{ g.open_count }} · {{ Crm.brl(g.open_value) }}</td>
+                                        <td class="text-end">{{ g.won }} · {{ Crm.brl(g.won_value) }}</td>
+                                        <td class="text-end">{{ g.lost }}</td>
+                                        <td class="text-end">{{ pct(g.conversion_rate) }}</td>
+                                    </tr>
+                                    <tr v-if="!report[t.key].length"><td colspan="5" class="text-muted small">Sem dados.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <script src="../assets/js/crm/common.js"></script>
+    <script src="../assets/js/crm/reports.js"></script>
+    <script src="../assets/js/nav.js"></script>
+</body>
+
+</html>

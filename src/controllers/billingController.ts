@@ -19,6 +19,7 @@ import Product from '../models/Product'
 import Receipts from '../models/Receipts'
 import Config from '../models/Config'
 import Supplier from '../models/Supplier'
+import ProtocolInstallment from '../models/ProtocolInstallment'
 
 import puppeteer from 'puppeteer'
 import CloudFlareR2 from '../providers/CloudFlareR2'
@@ -103,6 +104,7 @@ class billingController {
                 {
                     model: BillingProtocol,
                     include: [
+                        ProtocolInstallment,
                         {
                             model: Protocol,
                             include: [
@@ -236,6 +238,7 @@ class billingController {
                 {
                     model: BillingProtocol,
                     include: [
+                        ProtocolInstallment,
                         {
                             model: Protocol,
                             include: [

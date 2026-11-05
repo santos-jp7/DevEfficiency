@@ -44,6 +44,8 @@ class Billing extends Model<InferAttributes<Billing>, InferCreationAttributes<Bi
     // A cobrança é de um cliente (padrão) OU de um fornecedor (comissão de protocolos por comissão).
     declare ClientId: ForeignKey<Client['id']> | null
     declare SupplierId: CreationOptional<ForeignKey<Supplier['id']> | null>
+    // Cobrança de parcela com vencimento definido (condição de pagamento): não recebe protocolos avulsos de outra data.
+    declare fixed_due_date: CreationOptional<boolean>
     declare BankAccountId: ForeignKey<BankAccount['id']>
 
     declare createdAt: CreationOptional<Date>
@@ -87,6 +89,7 @@ Billing.init(
             defaultValue: 'Boleto',
         },
         paid_value: money('paid_value'),
+        fixed_due_date: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
         late_fee_value: money('late_fee_value'),
         late_interest_value: money('late_interest_value'),
         createdAt: DataTypes.DATE,

@@ -12,7 +12,9 @@ import Payable from '../models/Payable'
 import { computeCommission } from '../utils/sellerCommission'
 import { getReleaseDays, isWithinReleaseWindow, nextDueDate } from '../utils/subscriptionRelease'
 import { amountDue, expectedCommission, isCommission } from '../utils/protocolCommission'
-import { findOrCreatePendingBilling, refreshBillingTotal } from '../utils/billingParty'
+import { findOrCreateFixedBilling, findOrCreatePendingBilling, refreshBillingTotal } from '../utils/billingParty'
+import ProtocolInstallment from '../models/ProtocolInstallment'
+import { PaymentTermsError, installmentsForRelease, validateInstallmentsForRelease } from '../utils/paymentTerms'
 import { round2 } from '../utils/pricing'
 
 // Cria o protocolo do próximo ciclo da assinatura. Se o vencimento já está dentro da janela de liberação, o
@@ -34,6 +36,12 @@ async function createRenewalProtocol(
             commission_percent: previous.commission_percent ?? null,
             commission_value: previous.commission_manual ? previous.commission_value ?? null : null,
             commission_manual: !!previous.commission_manual,
+            // Condição de pagamento se repete (vencimentos manuais não: são datas do ciclo anterior).
+            payment_terms: previous.payment_terms ?? null,
+            // Comissão na mão em renovação anual (licença): o fornecedor costuma mudar preço/imposto — revisar antes de cobrar.
+            // Mensal (ex.: 365) repete o valor.
+            commission_review_pending:
+                previous.billing_mode === 'Comissão' && !!previous.commission_manual && protocol_products.some((p) => p.charge_type === 'Anual'),
         },
         { transaction: options.transaction },
     )
@@ -62,6 +70,8 @@ async function createRenewalProtocol(
     }
 
     if (!isWithinReleaseWindow(subscription.dueAt, await getReleaseDays())) return false
+    // Comissão a revisar: fica em aberto até a confirmação do valor (a cobrança ao fornecedor sai depois).
+    if (newProtocol.commission_review_pending) return false
 
     await newProtocol.update({ status: 'Liberado para pagamento' }, { transaction: options.transaction })
     return true
@@ -131,6 +141,19 @@ class protocolHooks {
 
         const total_due = amountDue(protocol, protocol_registers || [], protocol_products || [])
         const total_receipt = receipts?.reduce((sum, v) => sum + v.value, 0) || 0
+
+        if (protocol.status === 'Liberado para pagamento' && protocol.changed('status') && protocol.commission_review_pending)
+            throw new Error('Comissão da renovação a revisar: confirme (ou corrija) o valor da comissão antes de liberar.')
+
+        // Condição de pagamento: parcelas precisam fechar com o valor em aberto antes de liberar.
+        if (protocol.status === 'Liberado para pagamento' && protocol.changed('status') && protocol.id) {
+            try {
+                await validateInstallmentsForRelease(protocol, round2(total_due - total_receipt), options.transaction)
+            } catch (e) {
+                if (e instanceof PaymentTermsError) throw new Error(e.message)
+                throw e
+            }
+        }
 
         if (protocol.status == 'Fechado') {
             if (round2(total_receipt) < round2(total_due))
@@ -230,8 +253,6 @@ class protocolHooks {
 
             if (!party) return
 
-            const billing = await findOrCreatePendingBilling(party, options.transaction)
-
             const protocol_products = await protocol.getProtocol_products({ transaction: options.transaction })
             const protocol_registers = await protocol.getProtocol_registers({ transaction: options.transaction })
             const receipts = await protocol.getReceipts({ transaction: options.transaction })
@@ -240,6 +261,27 @@ class protocolHooks {
                 amountDue(protocol, protocol_registers, protocol_products) -
                     (receipts.reduce((sum, v) => sum + v.value, 0) || 0),
             )
+
+            // Condição de pagamento (ex.: 15/30/60 ou vencimentos manuais): uma cobrança por vencimento.
+            const installments = await installmentsForRelease(protocol, value, options.transaction)
+            if (installments) {
+                for (const installment of installments) {
+                    const billing = await findOrCreateFixedBilling(party, installment.due_date, options.transaction)
+                    await BillingProtocol.create(
+                        {
+                            BillingId: billing.id,
+                            ProtocolId: protocol.id,
+                            ProtocolInstallmentId: installment.id,
+                            value: round2(installment.value - installment.paid_value),
+                        },
+                        { transaction: options.transaction },
+                    )
+                    await refreshBillingTotal(billing, options.transaction)
+                }
+                return
+            }
+
+            const billing = await findOrCreatePendingBilling(party, options.transaction)
 
             await BillingProtocol.create(
                 {
@@ -252,18 +294,27 @@ class protocolHooks {
 
             await refreshBillingTotal(billing, options.transaction)
         } else if (previousStatus === 'Liberado para pagamento' && currentStatus !== 'Liberado para pagamento') {
-            const billingProtocol = await BillingProtocol.findOne({
+            // Tira o protocolo de todas as cobranças ainda pendentes (uma por parcela, quando há condição de pagamento).
+            const billingProtocols = await BillingProtocol.findAll({
                 where: { ProtocolId: protocol.id },
                 include: [{ model: Billing, where: { status: 'pendente' } }],
                 transaction: options.transaction,
             })
 
-            if (billingProtocol) {
+            for (const billingProtocol of billingProtocols) {
                 const billing = await Billing.findByPk(billingProtocol.BillingId, { transaction: options.transaction })
                 await billingProtocol.destroy({ transaction: options.transaction })
+                if (!billing) continue
 
-                if (billing) await refreshBillingTotal(billing, options.transaction)
+                await refreshBillingTotal(billing, options.transaction)
+                // Cobrança de parcela que ficou vazia deixa de existir.
+                if (billing.fixed_due_date && (await billing.getBillingProtocols({ transaction: options.transaction })).length === 0)
+                    await billing.destroy({ transaction: options.transaction })
             }
+
+            // Parcelas calculadas pela condição são refeitas na próxima liberação; as manuais ficam como estão.
+            if (!protocol.installments_manual)
+                await ProtocolInstallment.destroy({ where: { ProtocolId: protocol.id, status: 'pendente', paid_value: 0 }, transaction: options.transaction })
         }
     }
 }

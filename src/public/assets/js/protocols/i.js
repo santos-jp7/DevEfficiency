@@ -143,6 +143,11 @@ const app = new Vue({
                 ? ProtocolCommission.expected(this.protocol, this.discountedTotal)
                 : this.discountedTotal
         },
+        // Valor ainda a cobrar (base dos vencimentos manuais).
+        amountDueOpen() {
+            const received = (this.protocol?.Receipts || []).reduce((s, v) => s + (Number(v.value) || 0), 0)
+            return Math.max(Math.round((this.amountDue - received) * 100) / 100, 0)
+        },
         installmentValue() {
             const n = this.protocol?.total_installments
             if (!n || n <= 1) return 0
@@ -166,6 +171,7 @@ const app = new Vue({
                 discount_value: this.protocol.discount_value || null,
                 SellerId: this.protocol.SellerId || null,
                 ...ProtocolCommission.payload(this.protocol),
+                ...PaymentTerms.payload(this.protocol),
             })
                 .then((res) => {
                     alert('Protocolo atualizado com sucesso!')

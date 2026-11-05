@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Codlinx - CRM · Oportunidade</title>
+    <link href="../assets/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/codlinx.css">
+    <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css">
+
+    <script src="../assets/js/vue.min.js"></script>
+    <script src="../assets/js/jquery-3.6.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2/dist/umd/popper.min.js"></script>
+    <script src="../assets/js/bootstrap.min.js"></script>
+    <script src="../assets/js/axios.min.js"></script>
+    <script src="../assets/js/moment.min.js"></script>
+</head>
+
+<body>
+    <nav class="navbar bg-light">
+        <div class="container">
+            <a class="navbar-brand" href="/dashboard">
+                <img src="../assets/img/logo_cabecalho.png" alt="Codlinx" width="40" height="40">
+            </a>
+        </div>
+    </nav>
+
+    <div class="container p-4" id="app">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3" style="gap:.5rem">
+            <h5 class="mb-0">
+                <a href="./index.html" class="text-decoration-none text-muted"><i class="fa-solid fa-arrow-left"></i></a>
+                {{ isNew ? 'Nova oportunidade' : 'Oportunidade #' + o.id }}
+                <span v-if="!isNew" class="badge ms-2" :style="{ background: Crm.STAGE_COLORS[o.stage] }">{{ o.stage }}</span>
+                <span v-if="o.billing_mode === 'Comissão'" class="badge bg-info text-dark ms-1">Comissão</span>
+            </h5>
+            <div v-if="!isNew && o.stage === 'Perdido' && o.lost_reason" class="small text-danger">
+                Perdida em {{ Crm.date(o.lost_at) }} — {{ o.lost_reason }}<span v-if="o.lost_details">: {{ o.lost_details }}</span>
+            </div>
+            <div v-if="!isNew && o.stage === 'Ganho'" class="small text-success">Ganha em {{ Crm.date(o.won_at) }}</div>
+        </div>
+
+        <!-- Etapas -->
+        <div v-if="!isNew" class="btn-group btn-group-sm flex-wrap mb-3">
+            <button v-for="s in Crm.STAGES" type="button" class="btn"
+                :class="o.stage === s ? 'btn-dark' : 'btn-outline-dark'" :disabled="busy || (converted && s !== 'Ganho')"
+                @click="moveTo(s)">{{ s }}</button>
+        </div>
+        <div v-if="converted" class="alert alert-success py-2 small">
+            Convertida:
+            <a v-if="o.Client" :href="'../clients/i.html?id=' + o.Client.id">Cliente {{ o.Client.name }}</a>
+            <template v-if="o.Service_order"> &middot; <a :href="'../service_orders/i?id=' + o.Service_order.id">OS #{{ o.Service_order.id }}</a></template>
+            <template v-else-if="o.Protocol"> &middot; <a :href="'../protocols/i.html?id=' + o.Protocol.id">Protocolo #{{ o.Protocol.id }}</a></template>
+        </div>
+        <div v-if="!isNew && o.SourceServiceOrder && !converted" class="alert alert-secondary py-2 small">
+            <i class="fa-solid fa-screwdriver-wrench"></i> Veio da
+            <a :href="'../service_orders/i?id=' + o.SourceServiceOrder.id">OS #{{ o.SourceServiceOrder.id }} — {{ o.SourceServiceOrder.subject }}</a>
+            ({{ o.SourceServiceOrder.status }}). Ganhar coloca a OS na fila; perder cancela a OS (reabrir a oportunidade reabre a OS).
+        </div>
+        <div v-else-if="!isNew && o.stage === 'Ganho' && !o.SourceServiceOrderId" class="alert alert-warning py-2 small d-flex justify-content-between align-items-center">
+            <span>Ganha sem gerar OS/protocolo.</span>
+            <button type="button" class="btn btn-sm btn-success" @click="$refs.win.open(o)"><i class="fa-solid fa-trophy"></i> Gerar OS ou protocolo</button>
+        </div>
+        <crm-win-modal ref="win" @done="onWon"></crm-win-modal>
+        <crm-followup-prompt ref="followup"></crm-followup-prompt>
+
+        <div class="row g-4">
+            <div class="col-lg-7">
+                <form @submit.prevent="save" class="border rounded p-3">
+                    <div class="mb-3">
+                        <label class="form-label">Título</label>
+                        <input type="text" class="form-control" v-model="o.title" maxlength="160" placeholder="Ex.: 50 licenças Bitdefender" required>
+                    </div>
+
+                    <div class="mb-2">
+                        <div class="btn-group btn-group-sm">
+                            <button type="button" class="btn" :class="party === 'lead' ? 'btn-dark' : 'btn-outline-dark'" @click="party = 'lead'">Lead</button>
+                            <button type="button" class="btn" :class="party === 'client' ? 'btn-dark' : 'btn-outline-dark'" @click="party = 'client'">Cliente existente</button>
+                        </div>
+                    </div>
+                    <div class="mb-3" v-if="party === 'lead'">
+                        <select class="form-select" v-model="o.LeadId">
+                            <option :value="null">Selecione o lead…</option>
+                            <option v-for="l in leads" :value="l.id">{{ l.company ? l.company + ' — ' : '' }}{{ l.name }}</option>
+                        </select>
+                        <div class="form-text">
+                            <a href="./lead.html?new=1">Cadastrar novo lead</a>
+                            <template v-if="o.LeadId"> · <a :href="'./lead.html?id=' + o.LeadId">abrir lead</a></template>
+                        </div>
+                    </div>
+                    <div class="mb-3" v-else>
+                        <select class="form-select" v-model="o.ClientId">
+                            <option :value="null">Selecione o cliente…</option>
+                            <option v-for="c in clients" :value="c.id">{{ c.name }}</option>
+                        </select>
+                    </div>
+
+                    <div class="row">
+                        <div class="mb-3 col-md-4">
+                            <label class="form-label">Valor estimado (R$)</label>
+                            <input type="number" step="0.01" min="0" class="form-control" v-model.number="o.estimated_value">
+                            <div class="form-text" v-if="o.protocol_value != null">Valor do protocolo: <strong>{{ Crm.brlFull(o.protocol_value) }}</strong> (usado no funil e nos relatórios)</div>
+                        </div>
+                        <div class="mb-3 col-md-3">
+                            <label class="form-label">Probabilidade (%)</label>
+                            <input type="number" min="0" max="100" class="form-control" v-model.number="o.probability">
+                        </div>
+                        <div class="mb-3 col-md-5">
+                            <label class="form-label">Previsão de fechamento</label>
+                            <input type="date" class="form-control" v-model="o.expected_close_date">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="mb-3 col-md-6">
+                            <label class="form-label">Tipo</label>
+                            <select class="form-select" v-model="o.kind">
+                                <option v-for="k in Crm.KINDS" :value="k">{{ k }}</option>
+                            </select>
+                        </div>
+                        <div class="mb-3 col-md-6" v-if="users.length > 1">
+                            <label class="form-label">Responsável</label>
+                            <select class="form-select" v-model="o.UserId">
+                                <option :value="null">Sem responsável</option>
+                                <option v-for="u in users" :value="u.id">{{ u.username }}</option>
+                            </select>
+                        </div>
+                        <div class="mb-3 col-md-6">
+                            <label class="form-label">Vendedor</label>
+                            <select class="form-select" v-model="o.SellerId">
+                                <option :value="null">Sem vendedor</option>
+                                <option v-for="s in sellers" :value="s.id">{{ s.name }}</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <protocol-commission :protocol="o" :net="Number(o.estimated_value) || 0" :show-received="false"></protocol-commission>
+
+                    <div class="mb-3">
+                        <label class="form-label">Observações</label>
+                        <textarea class="form-control" rows="3" v-model="o.notes"></textarea>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <button type="submit" class="btn btn-dark" :disabled="busy">{{ isNew ? 'Criar oportunidade' : 'Salvar' }}</button>
+                        <button v-if="!isNew && !converted" type="button" class="btn btn-outline-danger" @click="remove">Excluir</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="col-lg-5" v-if="!isNew">
+                <div class="border rounded p-3 mb-3">
+                    <h6>Nova atividade</h6>
+                    <form @submit.prevent="addActivity">
+                        <div class="row g-2">
+                            <div class="col-5">
+                                <select class="form-select form-select-sm" v-model="activity.type">
+                                    <option v-for="t in Crm.ACTIVITY_TYPES" :value="t">{{ t }}</option>
+                                </select>
+                            </div>
+                            <div class="col-7">
+                                <input type="datetime-local" class="form-control form-control-sm" v-model="activity.due_at" title="Quando (follow-up)">
+                            </div>
+                            <div class="col-12">
+                                <input type="text" class="form-control form-control-sm" v-model="activity.subject" placeholder="Assunto" maxlength="160" required>
+                            </div>
+                            <div class="col-12">
+                                <textarea class="form-control form-control-sm" rows="2" v-model="activity.description" placeholder="Detalhes (opcional)"></textarea>
+                            </div>
+                            <div class="col-7">
+                                <div class="form-check form-check-inline small mt-1">
+                                    <input class="form-check-input" type="checkbox" id="actDone" v-model="activity.done">
+                                    <label class="form-check-label" for="actDone">Já realizada</label>
+                                </div>
+                            </div>
+                            <div class="col-5 text-end">
+                                <button type="submit" class="btn btn-sm btn-dark" :disabled="busy">Adicionar</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="border rounded p-3">
+                    <h6>Linha do tempo</h6>
+                    <ul class="list-unstyled mb-0 small">
+                        <li v-for="item in timeline" :key="item.key" class="border-bottom py-2">
+                            <template v-if="item.kind === 'stage'">
+                                <i class="fa-solid fa-arrow-right-arrow-left text-muted"></i>
+                                <span v-if="item.from">{{ item.from }} → </span><strong>{{ item.to }}</strong>
+                                <span class="text-muted float-end">{{ Crm.dateTime(item.at) }}</span>
+                            </template>
+                            <template v-else>
+                                <div class="d-flex justify-content-between" style="gap:.5rem">
+                                    <div>
+                                        <i class="fa-solid" :class="Crm.ACTIVITY_ICONS[item.a.type]"></i>
+                                        <span :class="item.a.done_at ? 'text-decoration-line-through text-muted' : 'fw-semibold'">{{ item.a.subject }}</span>
+                                        <div v-if="item.a.due_at" :class="!item.a.done_at && Crm.isOverdue(item.a.due_at) ? 'text-danger' : 'text-muted'">
+                                            {{ item.a.done_at ? 'Feita ' + Crm.dateTime(item.a.done_at) : Crm.dueLabel(item.a.due_at) }}
+                                        </div>
+                                        <div v-if="item.a.description" class="text-muted" style="white-space:pre-line">{{ item.a.description }}</div>
+                                    </div>
+                                    <div class="text-nowrap">
+                                        <button type="button" class="btn btn-sm btn-link p-0 me-2" :title="item.a.done_at ? 'Reabrir' : 'Concluir'" @click="toggleDone(item.a)">
+                                            <i class="fa-solid" :class="item.a.done_at ? 'fa-rotate-left' : 'fa-check'"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-link text-danger p-0" title="Excluir" @click="removeActivity(item.a)"><i class="fa-solid fa-trash"></i></button>
+                                    </div>
+                                </div>
+                            </template>
+                        </li>
+                        <li v-if="!timeline.length" class="text-muted">Nada por aqui ainda.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Motivo da perda -->
+        <div class="modal fade" id="lostModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h6 class="modal-title">Marcar como perdida</h6>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <label class="form-label">Motivo</label>
+                        <select class="form-select mb-2" v-model="lost.reason">
+                            <option value="">Selecione…</option>
+                            <option v-for="r in Crm.LOST_REASONS" :value="r">{{ r }}</option>
+                        </select>
+                        <label class="form-label">Detalhes (opcional)</label>
+                        <input type="text" class="form-control" v-model="lost.details" maxlength="255">
+                        <div v-if="o.SourceServiceOrderId" class="alert alert-warning py-2 small mt-3 mb-0">
+                            A OS #{{ o.SourceServiceOrderId }} e o protocolo dela serão cancelados (se não houver recebimentos).
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-danger" :disabled="!lost.reason" @click="confirmLost">Marcar como perdida</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../assets/js/crm/common.js"></script>
+    <script src="../assets/js/pricing.js"></script>
+    <script src="../assets/js/protocolCommission.js"></script>
+    <script src="../assets/js/standaloneItems.js"></script>
+    <script src="../assets/js/paymentTerms.js"></script>
+    <script src="../assets/js/crm/winModal.js"></script>
+    <script src="../assets/js/crm/followupPrompt.js"></script>
+    <script src="../assets/js/crm/opportunity.js"></script>
+    <script src="../assets/js/nav.js"></script>
+</body>
+
+</html>

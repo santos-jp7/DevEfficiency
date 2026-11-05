@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Codlinx - CRM · Lead</title>
+    <link href="../assets/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/codlinx.css">
+    <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css">
+
+    <script src="../assets/js/vue.min.js"></script>
+    <script src="../assets/js/jquery-3.6.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2/dist/umd/popper.min.js"></script>
+    <script src="../assets/js/bootstrap.min.js"></script>
+    <script src="../assets/js/axios.min.js"></script>
+    <script src="../assets/js/moment.min.js"></script>
+</head>
+
+<body>
+    <nav class="navbar bg-light">
+        <div class="container">
+            <a class="navbar-brand" href="/dashboard">
+                <img src="../assets/img/logo_cabecalho.png" alt="Codlinx" width="40" height="40">
+            </a>
+        </div>
+    </nav>
+
+    <div class="container p-4" id="app">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3" style="gap:.5rem">
+            <h5 class="mb-0">
+                <a href="./leads.html" class="text-decoration-none text-muted"><i class="fa-solid fa-arrow-left"></i></a>
+                {{ isNew ? 'Novo lead' : lead.name }}
+                <span v-if="!isNew" class="badge ms-2" :class="{ 'bg-success': lead.status === 'Convertido', 'bg-secondary': lead.status === 'Descartado', 'bg-primary': lead.status === 'Ativo' }">{{ lead.status }}</span>
+            </h5>
+            <a v-if="!isNew" class="btn btn-dark btn-sm" :href="'./opportunity.html?new=1&LeadId=' + lead.id"><i class="fa-solid fa-plus"></i> Nova oportunidade</a>
+        </div>
+
+        <div v-if="!isNew && (matches.clients.length || matches.leads.length)" class="alert alert-warning py-2 small">
+            <i class="fa-solid fa-clone"></i> Possível duplicado:
+            <span v-for="c in matches.clients" :key="'c' + c.id" class="me-2">
+                cliente <a :href="'../clients/i.html?id=' + c.id">{{ c.name }}</a> (mesmo {{ c.reason }})<template v-if="lead.ClientId !== c.id && lead.status !== 'Convertido'"> — <a href="#" @click.prevent="lead.ClientId = c.id">vincular a este cliente</a></template>
+            </span>
+            <span v-for="l in matches.leads" :key="'l' + l.id" class="me-2">
+                lead <a :href="'./lead.html?id=' + l.id">{{ l.company || l.name }}</a> (mesmo {{ l.reason }}, {{ l.status }})
+            </span>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-7">
+                <form @submit.prevent="save" class="border rounded p-3">
+                    <div class="row">
+                        <div class="mb-3 col-md-6">
+                            <label class="form-label">Nome do contato</label>
+                            <input type="text" class="form-control" v-model="lead.name" required maxlength="128">
+                        </div>
+                        <div class="mb-3 col-md-6">
+                            <label class="form-label">Empresa</label>
+                            <input type="text" class="form-control" v-model="lead.company" maxlength="160">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="mb-3 col-md-6">
+                            <label class="form-label">CNPJ/CPF</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" v-model="lead.document" maxlength="20">
+                                <button type="button" class="btn btn-outline-secondary" @click="lookupCnpj" :disabled="lookup" title="Buscar dados pelo CNPJ">
+                                    <i class="fa-solid" :class="lookup ? 'fa-spinner fa-spin' : 'fa-magnifying-glass'"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mb-3 col-md-6">
+                            <label class="form-label">E-mail</label>
+                            <input type="email" class="form-control" v-model="lead.email" maxlength="128">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="mb-3 col-md-6">
+                            <label class="form-label">Telefone</label>
+                            <input type="text" class="form-control" v-model="lead.phone" maxlength="20">
+                        </div>
+                        <div class="mb-3 col-md-6">
+                            <label class="form-label">WhatsApp</label>
+                            <input type="text" class="form-control" v-model="lead.whatsapp" maxlength="20">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="mb-3 col-md-4">
+                            <label class="form-label">Origem</label>
+                            <select class="form-select" v-model="lead.source">
+                                <option v-for="s in Crm.SOURCES" :value="s">{{ s }}</option>
+                            </select>
+                        </div>
+                        <div class="mb-3 col-md-4">
+                            <label class="form-label">Vendedor</label>
+                            <select class="form-select" v-model="lead.SellerId">
+                                <option :value="null">Sem vendedor</option>
+                                <option v-for="s in sellers" :value="s.id">{{ s.name }}</option>
+                            </select>
+                        </div>
+                        <div class="mb-3 col-md-4" v-if="users.length > 1">
+                            <label class="form-label">Responsável</label>
+                            <select class="form-select" v-model="lead.UserId">
+                                <option :value="null">Sem responsável</option>
+                                <option v-for="u in users" :value="u.id">{{ u.username }}</option>
+                            </select>
+                        </div>
+                        <div class="mb-3 col-md-4">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" v-model="lead.status">
+                                <option v-for="s in Crm.LEAD_STATUSES" :value="s">{{ s }}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Já é cliente?</label>
+                        <select class="form-select" v-model="lead.ClientId">
+                            <option :value="null">Não (ainda é lead)</option>
+                            <option v-for="c in clients" :value="c.id">{{ c.name }}</option>
+                        </select>
+                        <div class="form-text">Vincule quando o lead for de um cliente existente; as oportunidades novas já nascem ligadas a ele.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Observações</label>
+                        <textarea class="form-control" rows="3" v-model="lead.notes"></textarea>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <button type="submit" class="btn btn-dark" :disabled="busy">{{ isNew ? 'Criar lead' : 'Salvar' }}</button>
+                        <button v-if="!isNew" type="button" class="btn btn-outline-danger" @click="remove">Excluir</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="col-lg-5" v-if="!isNew">
+                <div class="border rounded p-3 mb-3">
+                    <h6>Oportunidades</h6>
+                    <ul class="list-unstyled small mb-0">
+                        <li v-for="o in lead.Opportunities || []" class="border-bottom py-2 d-flex justify-content-between">
+                            <a :href="'./opportunity.html?id=' + o.id">{{ o.title }}</a>
+                            <span>
+                                <span class="badge" :style="{ background: Crm.STAGE_COLORS[o.stage] }">{{ o.stage }}</span>
+                                {{ o.estimated_value != null ? Crm.brl(o.estimated_value) : '' }}
+                            </span>
+                        </li>
+                        <li v-if="!(lead.Opportunities || []).length" class="text-muted">Nenhuma oportunidade.</li>
+                    </ul>
+                </div>
+
+                <div class="border rounded p-3">
+                    <h6>Atividades</h6>
+                    <form @submit.prevent="addActivity" class="mb-2">
+                        <div class="row g-2">
+                            <div class="col-5">
+                                <select class="form-select form-select-sm" v-model="activity.type">
+                                    <option v-for="t in Crm.ACTIVITY_TYPES" :value="t">{{ t }}</option>
+                                </select>
+                            </div>
+                            <div class="col-7"><input type="datetime-local" class="form-control form-control-sm" v-model="activity.due_at"></div>
+                            <div class="col-9"><input type="text" class="form-control form-control-sm" v-model="activity.subject" placeholder="Assunto" required maxlength="160"></div>
+                            <div class="col-3 text-end"><button type="submit" class="btn btn-sm btn-dark" :disabled="busy">Adicionar</button></div>
+                        </div>
+                    </form>
+                    <ul class="list-unstyled small mb-0">
+                        <li v-for="a in activities" :key="a.id" class="border-bottom py-2 d-flex justify-content-between" style="gap:.5rem">
+                            <div>
+                                <i class="fa-solid" :class="Crm.ACTIVITY_ICONS[a.type]"></i>
+                                <span :class="a.done_at ? 'text-decoration-line-through text-muted' : 'fw-semibold'">{{ a.subject }}</span>
+                                <span v-if="a.Opportunity" class="text-muted">· {{ a.Opportunity.title }}</span>
+                                <div v-if="a.due_at" :class="!a.done_at && Crm.isOverdue(a.due_at) ? 'text-danger' : 'text-muted'">
+                                    {{ a.done_at ? 'Feita ' + Crm.dateTime(a.done_at) : Crm.dueLabel(a.due_at) }}
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-link p-0" @click="toggleDone(a)"><i class="fa-solid" :class="a.done_at ? 'fa-rotate-left' : 'fa-check'"></i></button>
+                        </li>
+                        <li v-if="!activities.length" class="text-muted">Nenhuma atividade.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../assets/js/crm/common.js"></script>
+    <script src="../assets/js/crm/lead.js"></script>
+    <script src="../assets/js/nav.js"></script>
+</body>
+
+</html>

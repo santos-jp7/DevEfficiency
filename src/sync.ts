@@ -10,6 +10,7 @@ import Protocol_register from './models/Protocol_register'
 import Receipts from './models/Receipts'
 import Product from './models/Product'
 import Protocol_product from './models/Protocol_product'
+import ProtocolInstallment from './models/ProtocolInstallment'
 import Server from './models/Server'
 import Contact from './models/Contact'
 import Address from './models/Address'
@@ -41,6 +42,10 @@ import TicketMessage from './models/TicketMessage'
 import BankStatementImport from './models/BankStatementImport'
 import BankStatementEntry from './models/BankStatementEntry'
 import BankEntryMatch from './models/BankEntryMatch'
+import Lead from './models/Lead'
+import Opportunity from './models/Opportunity'
+import OpportunityStageHistory from './models/OpportunityStageHistory'
+import CrmActivity from './models/CrmActivity'
 
 // O `sync({ alter })` do Sequelize não amplia ENUMs já existentes no MySQL. Quando um valor novo é
 // acrescentado ao model, esta função (idempotente) atualiza a coluna sem mexer em nulidade/default.
@@ -99,6 +104,7 @@ async function syncModels(): Promise<true> {
     await Protocol.sync({ alter: { drop: false } })
     await Protocol_register.sync({ alter: { drop: false } })
     await Protocol_product.sync({ alter: { drop: false } })
+    await ProtocolInstallment.sync({ alter: { drop: false } })
 
     await BankAccount.sync({ alter: { drop: false } })
     await BankTransfer.sync({ alter: { drop: false } })
@@ -125,6 +131,12 @@ async function syncModels(): Promise<true> {
     await ensureEnumValues('email_logs', 'status', ['teste'])
     await Ticket.sync({ alter: { drop: false } })
     await TicketMessage.sync({ alter: { drop: false } })
+
+    // CRM (depende de cliente, vendedor, fornecedor, OS e protocolo).
+    await Lead.sync({ alter: { drop: false } })
+    await Opportunity.sync({ alter: { drop: false } })
+    await OpportunityStageHistory.sync({ alter: { drop: false } })
+    await CrmActivity.sync({ alter: { drop: false } })
 
     await Reimbursement.sync({ alter: { drop: false } })
     await ReimbursementFile.sync({ alter: { drop: false } })

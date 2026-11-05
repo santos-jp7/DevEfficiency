@@ -17,7 +17,7 @@ import { fileHash, parseStatement, round2 } from './statementParser'
 import { accountLedger } from './balanceCheck'
 
 // "Cobrança #12 - Cliente" ou "Cobrança #12 - Comissão Microsoft" (cobrança ao fornecedor).
-function billingLabel(b: any): string {
+export function billingLabel(b: any): string {
     if (b.Supplier) return `Cobrança #${b.id} - Comissão ${b.Supplier.name}`
     return `Cobrança #${b.id}${b.Client ? ` - ${b.Client.name}` : ''}`
 }

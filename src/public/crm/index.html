@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Codlinx - CRM · Funil</title>
+    <link href="../assets/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/codlinx.css">
+    <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css">
+    <style>
+        .crm-board { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 12px; align-items: flex-start; }
+        .crm-col { flex: 0 0 270px; background: #f4f5f7; border-radius: 8px; display: flex; flex-direction: column; max-height: calc(100vh - 230px); }
+        .crm-col-head { padding: 10px 12px; border-top: 4px solid; border-radius: 8px 8px 0 0; background: #fff; }
+        .crm-col-head small { color: #6c757d; }
+        .crm-list { padding: 8px; overflow-y: auto; min-height: 80px; flex: 1; }
+        .crm-card { background: #fff; border: 1px solid #e3e6ea; border-radius: 6px; padding: 8px 10px; margin-bottom: 8px; cursor: grab; }
+        .crm-card:hover { border-color: #adb5bd; }
+        .crm-card .title { font-weight: 600; display: block; color: #212529; text-decoration: none; }
+        .crm-card .party { font-size: .82rem; color: #495057; }
+        .crm-card .meta { font-size: .78rem; color: #6c757d; display: flex; justify-content: space-between; gap: 6px; margin-top: 4px; }
+        .crm-card .followup { font-size: .76rem; margin-top: 4px; }
+        .ghost { opacity: .5; background: #c8ebfb; }
+    </style>
+
+    <script src="../assets/js/vue.min.js"></script>
+    <script src="../assets/js/jquery-3.6.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2/dist/umd/popper.min.js"></script>
+    <script src="../assets/js/bootstrap.min.js"></script>
+    <script src="../assets/js/axios.min.js"></script>
+    <script src="../assets/js/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuedraggable@2.24.3/dist/vuedraggable.umd.min.js"></script>
+</head>
+
+<body>
+    <nav class="navbar bg-light">
+        <div class="container">
+            <a class="navbar-brand" href="/dashboard">
+                <img src="../assets/img/logo_cabecalho.png" alt="Codlinx" width="40" height="40">
+            </a>
+        </div>
+    </nav>
+
+    <div class="container-fluid p-4" id="app">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3" style="gap:.5rem">
+            <h5 class="mb-0">CRM · Funil de vendas</h5>
+            <div class="d-flex flex-wrap" style="gap:.5rem">
+                <a class="btn btn-outline-dark btn-sm" href="./reports.html"><i class="fa-solid fa-chart-line"></i> Relatório</a>
+                <a class="btn btn-outline-dark btn-sm" href="./leads.html"><i class="fa-solid fa-address-book"></i> Leads</a>
+                <a class="btn btn-dark btn-sm" href="./opportunity.html?new=1"><i class="fa-solid fa-plus"></i> Nova oportunidade</a>
+            </div>
+        </div>
+
+        <div class="row g-2 mb-3">
+            <div class="col-md-3">
+                <input type="search" class="form-control form-control-sm" v-model="q" placeholder="Buscar por título, lead, empresa ou cliente">
+            </div>
+            <div class="col-md-2" v-if="users.length > 1">
+                <select class="form-select form-select-sm" v-model="owner">
+                    <option value="">Todos os responsáveis</option>
+                    <option value="mine">Minhas</option>
+                    <option v-for="u in users" :value="String(u.id)">{{ u.username }}</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select form-select-sm" v-model="SellerId">
+                    <option value="">Todos os vendedores</option>
+                    <option v-for="s in sellers" :value="s.id">{{ s.name }}</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select form-select-sm" v-model="source">
+                    <option value="">Todas as origens</option>
+                    <option v-for="s in Crm.SOURCES" :value="s">{{ s }}</option>
+                </select>
+            </div>
+            <div class="col text-md-end small text-muted pt-1">
+                Em aberto: <strong>{{ Crm.brl(totals.open) }}</strong> &middot;
+                Ponderado: <strong>{{ Crm.brl(totals.weighted) }}</strong>
+                <span v-if="totals.overdue" class="text-danger ms-2"><i class="fa-solid fa-bell"></i> {{ totals.overdue }} follow-up(s) atrasado(s)</span>
+                <span v-if="totals.stale" class="text-warning ms-2" :title="'Sem movimento há ' + staleDays + '+ dias'"><i class="fa-solid fa-hourglass-half"></i> {{ totals.stale }} parada(s)</span>
+            </div>
+        </div>
+
+        <div v-if="loading" class="text-muted small mb-2">Carregando…</div>
+
+        <div class="crm-board">
+            <div class="crm-col" v-for="stage in Crm.STAGES" :key="stage">
+                <div class="crm-col-head" :style="{ borderTopColor: Crm.STAGE_COLORS[stage] }">
+                    <div class="d-flex justify-content-between">
+                        <strong>{{ stage }}</strong>
+                        <span class="badge bg-light text-dark">{{ col(stage).count }}</span>
+                    </div>
+                    <small>{{ Crm.brl(col(stage).value) }}<template v-if="Crm.OPEN_STAGES.includes(stage)"> &middot; pond. {{ Crm.brl(col(stage).weighted) }}</template></small>
+                    <div v-if="!Crm.OPEN_STAGES.includes(stage)"><small>últimos {{ closedDays }} dias</small></div>
+                </div>
+                <draggable class="crm-list" :list="col(stage).items" group="opportunities" ghost-class="ghost" :data-stage="stage"
+                    @change="onChange($event, stage)" :move="canMove">
+                    <div class="crm-card" v-for="o in col(stage).items" :key="o.id">
+                        <a class="title" :href="'./opportunity.html?id=' + o.id">{{ o.title }}</a>
+                        <div class="party">{{ Crm.partyName(o) }}</div>
+                        <div class="meta">
+                            <span :title="o.protocol_value != null ? 'Valor do protocolo' : 'Valor estimado'">{{ Crm.hasValue(o) ? Crm.brl(Crm.valueOf(o)) : 'Sem valor' }}<i v-if="o.protocol_value != null" class="fa-solid fa-file-invoice-dollar ms-1 text-muted"></i> &middot; {{ o.probability }}%</span>
+                            <span v-if="o.Seller">{{ o.Seller.name }}</span>
+                        </div>
+                        <div class="meta">
+                            <span>
+                                <span v-if="o.billing_mode === 'Comissão'" class="badge bg-info text-dark">Comissão</span>
+                                <span v-if="o.Client && o.LeadId == null" class="badge bg-secondary">Cliente</span>
+                                <span v-if="o.SourceServiceOrderId" class="badge bg-dark">OS #{{ o.SourceServiceOrderId }}</span>
+                            </span>
+                            <span v-if="o.expected_close_date">Fecha {{ Crm.date(o.expected_close_date) }}</span>
+                        </div>
+                        <div class="followup" v-if="o.next_followup" :class="Crm.isOverdue(o.next_followup.due_at) ? 'text-danger fw-semibold' : 'text-muted'">
+                            <i class="fa-solid" :class="Crm.ACTIVITY_ICONS[o.next_followup.type] || 'fa-bell'"></i>
+                            {{ Crm.dueLabel(o.next_followup.due_at) }} — {{ o.next_followup.subject }}
+                        </div>
+                        <div class="followup text-muted" v-else-if="Crm.OPEN_STAGES.includes(o.stage)"><i class="fa-regular fa-bell-slash"></i> Sem follow-up</div>
+                        <div class="followup text-danger" v-if="o.stage === 'Perdido' && o.lost_reason">Motivo: {{ o.lost_reason }}</div>
+                        <div class="followup text-warning fw-semibold" v-if="o.stale"><i class="fa-solid fa-hourglass-half"></i> Parada há {{ o.idle_days }} dia(s)</div>
+                        <div class="followup text-muted" v-if="users.length > 1 && o.Owner"><i class="fa-regular fa-user"></i> {{ o.Owner.username }}</div>
+                    </div>
+                    <div slot="footer" v-if="col(stage).has_more" class="text-center">
+                        <button type="button" class="btn btn-sm btn-link" :disabled="loadingMore === stage" @click="loadMore(stage)">
+                            {{ loadingMore === stage ? 'Carregando…' : 'Carregar mais (' + (col(stage).count - col(stage).items.length) + ')' }}
+                        </button>
+                    </div>
+                </draggable>
+            </div>
+        </div>
+
+        <crm-win-modal ref="win" @done="onWon" @cancel="load"></crm-win-modal>
+        <crm-followup-prompt ref="followup"></crm-followup-prompt>
+
+        <!-- Motivo da perda -->
+        <div class="modal fade" id="lostModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h6 class="modal-title">Marcar como perdida: {{ pending && pending.o.title }}</h6>
+                        <button type="button" class="btn-close" @click="cancelPending"></button>
+                    </div>
+                    <div class="modal-body">
+                        <label class="form-label">Motivo</label>
+                        <select class="form-select mb-2" v-model="lost.reason">
+                            <option value="">Selecione…</option>
+                            <option v-for="r in Crm.LOST_REASONS" :value="r">{{ r }}</option>
+                        </select>
+                        <label class="form-label">Detalhes (opcional)</label>
+                        <input type="text" class="form-control" v-model="lost.details" maxlength="255">
+                        <div v-if="pending && pending.o.SourceServiceOrderId" class="alert alert-warning py-2 small mt-3 mb-0">
+                            A OS #{{ pending.o.SourceServiceOrderId }} e o protocolo dela serão cancelados (se não houver recebimentos).
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @click="cancelPending">Cancelar</button>
+                        <button type="button" class="btn btn-danger" :disabled="!lost.reason" @click="confirmLost">Marcar como perdida</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../assets/js/crm/common.js"></script>
+    <script src="../assets/js/pricing.js"></script>
+    <script src="../assets/js/protocolCommission.js"></script>
+    <script src="../assets/js/standaloneItems.js"></script>
+    <script src="../assets/js/paymentTerms.js"></script>
+    <script src="../assets/js/crm/winModal.js"></script>
+    <script src="../assets/js/crm/followupPrompt.js"></script>
+    <script src="../assets/js/crm/kanban.js"></script>
+    <script src="../assets/js/nav.js"></script>
+</body>
+
+</html>

@@ -23,6 +23,7 @@
     }
 
     window.ProtocolCommission = {
+        loadSuppliers,
         isCommission: (protocol) => protocol?.billing_mode === 'Comissão',
         // Campos enviados à API. Valor só vai quando informado na mão; vazio = sugerido pela %.
         payload(protocol) {
@@ -46,8 +47,10 @@
             net: { type: Number, default: 0 },
             // Depois de liberado a cobrança já foi gerada: só dá para mudar com o protocolo "Em aberto".
             locked: { type: Boolean, default: false },
+            // Oportunidade do CRM: sem recebimentos, só a previsão.
+            showReceived: { type: Boolean, default: true },
         },
-        data: () => ({ suppliers: [] }),
+        data: () => ({ suppliers: [], reviewValue: null, confirming: false }),
         mounted() {
             loadSuppliers().then((list) => (this.suppliers = list))
         },
@@ -80,6 +83,26 @@
                 this.$set(this.protocol, 'commission_value', value === '' ? null : Number(value))
                 this.$set(this.protocol, 'commission_manual', value !== '')
             },
+            // Renovação anual com comissão na mão: confirma (ou corrige) o valor e libera se já estiver na janela.
+            async confirmReview() {
+                this.confirming = true
+                try {
+                    const token = localStorage.getItem('token')
+                    const type = localStorage.getItem('type')
+                    const value = this.reviewValue === null || this.reviewValue === '' ? undefined : this.reviewValue
+                    const { data } = await axios.post(
+                        `/api/protocols/${this.protocol.id}/confirm-commission`,
+                        { commission_value: value },
+                        { headers: { Authorization: [type, token].join(' ') } },
+                    )
+                    alert(data.released ? 'Comissão confirmada e cobrança ao fornecedor liberada.' : 'Comissão confirmada. A cobrança sai quando o vencimento entrar na janela de liberação.')
+                    window.location.reload()
+                } catch (e) {
+                    alert((e.response && e.response.data && e.response.data.message) || 'Não foi possível confirmar a comissão.')
+                } finally {
+                    this.confirming = false
+                }
+            },
             useSuggested() {
                 this.$set(this.protocol, 'commission_manual', false)
                 this.$set(this.protocol, 'commission_value', this.suggested)
@@ -96,9 +119,18 @@
                 <small class="text-muted" v-if="locked">Altere com o protocolo "Em aberto".</small>
             </div>
 
+            <div v-if="protocol.commission_review_pending" class="alert alert-warning py-2 small">
+                <strong>Comissão da renovação a revisar.</strong> Licença anual com comissão informada na mão: confirme se o valor
+                continua {{ brl(protocol.commission_value) }} ou informe o novo. A cobrança ao fornecedor só sai depois da confirmação.
+                <div class="d-flex gap-2 mt-2 align-items-center">
+                    <input type="number" step="0.01" min="0" class="form-control form-control-sm" style="max-width:160px" :placeholder="String(protocol.commission_value || '')" v-model="reviewValue">
+                    <button type="button" class="btn btn-sm btn-warning" :disabled="confirming" @click="confirmReview">{{ reviewValue ? 'Corrigir e confirmar' : 'Confirmar valor atual' }}</button>
+                </div>
+            </div>
+
             <div v-if="commission">
                 <p class="small text-muted mb-2">
-                    O fornecedor cobra o cliente pelo valor cheio; ao liberar, a cobrança gerada é a da comissão, contra o fornecedor.
+                    O fornecedor cobra o cliente pelo valor cheio; a cobrança gerada é a da comissão, contra o fornecedor.
                 </p>
                 <div class="row g-2">
                     <div class="col-md-5">
@@ -127,7 +159,7 @@
                 <ul class="small mt-2 mb-0">
                     <li>Valor ao cliente (pago ao fornecedor): <strong>{{ brl(net) }}</strong></li>
                     <li>Comissão a receber: <strong>{{ brl(expected) }}</strong></li>
-                    <li>Recebido: {{ brl(received) }} &middot; Pendente: <strong>{{ brl(Math.max(expected - received, 0)) }}</strong></li>
+                    <li v-if="showReceived">Recebido: {{ brl(received) }} &middot; Pendente: <strong>{{ brl(Math.max(expected - received, 0)) }}</strong></li>
                 </ul>
             </div>
         </div>`,

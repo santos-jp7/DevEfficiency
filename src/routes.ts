@@ -46,6 +46,10 @@ import balanceController from './controllers/balanceController'
 import pdfLinkController from './controllers/pdfLinkController'
 import { pdfAccess, pdfScopes } from './middlewares/pdfAccess'
 import ticketsController from './controllers/ticketsController'
+import leadsController from './controllers/crm/leadsController'
+import opportunitiesController from './controllers/crm/opportunitiesController'
+import activitiesController from './controllers/crm/activitiesController'
+import crmReportsController from './controllers/crm/crmReportsController'
 import { previewBillingReminders, runBillingReminders, sendBillingReminder } from './utils/billingReminders'
 import Billing from './models/Billing'
 import mcp from './mcp/server'
@@ -142,6 +146,36 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.post('/tickets/:id/status', { preHandler: [isAuthed] }, ticketsController.status as any)
     instance.post('/tickets/:id/convert', { preHandler: [isAuthed] }, ticketsController.convert as any)
 
+    // CRM
+    instance.get('/crm/leads', { preHandler: [isAuthed] }, leadsController.index as any)
+    instance.get('/crm/users', { preHandler: [isAuthed] }, leadsController.users as any)
+    instance.get('/crm/leads/check', { preHandler: [isAuthed] }, leadsController.check as any)
+    instance.get('/crm/leads/:id/matches', { preHandler: [isAuthed] }, leadsController.matches as any)
+    instance.get('/crm/leads/:id', { preHandler: [isAuthed] }, leadsController.show as any)
+    instance.post('/crm/leads', { preHandler: [isAuthed] }, leadsController.store as any)
+    instance.put('/crm/leads/:id', { preHandler: [isAuthed] }, leadsController.update as any)
+    instance.delete('/crm/leads/:id', { preHandler: [isAuthed] }, leadsController.destroy as any)
+
+    instance.get('/crm/opportunities', { preHandler: [isAuthed] }, opportunitiesController.index as any)
+    instance.get('/crm/board', { preHandler: [isAuthed] }, opportunitiesController.board as any)
+    instance.get('/crm/opportunities/:id', { preHandler: [isAuthed] }, opportunitiesController.show as any)
+    instance.post('/crm/opportunities', { preHandler: [isAuthed] }, opportunitiesController.store as any)
+    instance.put('/crm/opportunities/:id', { preHandler: [isAuthed] }, opportunitiesController.update as any)
+    instance.patch('/crm/opportunities/:id/stage', { preHandler: [isAuthed] }, opportunitiesController.stage as any)
+    instance.post('/crm/opportunities/from-os/:id', { preHandler: [isAuthed] }, opportunitiesController.fromServiceOrder as any)
+    instance.post('/crm/opportunities/:id/win', { preHandler: [isAuthed] }, opportunitiesController.win as any)
+    instance.post('/crm/opportunities/reorder', { preHandler: [isAuthed] }, opportunitiesController.reorder as any)
+    instance.delete('/crm/opportunities/:id', { preHandler: [isAuthed] }, opportunitiesController.destroy as any)
+
+    instance.get('/crm/reports', { preHandler: [isAuthed] }, crmReportsController.index as any)
+    instance.get('/crm/activities', { preHandler: [isAuthed] }, activitiesController.index as any)
+    instance.get('/crm/followups', { preHandler: [isAuthed] }, activitiesController.followups as any)
+    instance.post('/crm/followups/send', { preHandler: [isAuthed] }, activitiesController.sendAlert as any)
+    instance.post('/crm/activities', { preHandler: [isAuthed] }, activitiesController.store as any)
+    instance.put('/crm/activities/:id', { preHandler: [isAuthed] }, activitiesController.update as any)
+    instance.post('/crm/activities/:id/done', { preHandler: [isAuthed] }, activitiesController.done as any)
+    instance.delete('/crm/activities/:id', { preHandler: [isAuthed] }, activitiesController.destroy as any)
+
     instance.get('/clients', { preHandler: [isAuthed] }, clientController.index)
     instance.get('/clients/:id', { preHandler: [isAuthed] }, clientController.show)
     instance.post('/clients', { preHandler: [isAuthed] }, clientController.store)
@@ -199,6 +233,7 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.post('/protocols/standalone', { preHandler: [isAuthed] }, protocolsController.storeStandalone)
     instance.get('/protocols/:id', { preHandler: [isAuthed] }, protocolsController.show)
     instance.put('/protocols/:id', { preHandler: [isAuthed] }, protocolsController.update)
+    instance.post('/protocols/:id/confirm-commission', { preHandler: [isAuthed] }, protocolsController.confirmCommission as any)
 
     instance.get('/protocols/registers', { preHandler: [isAuthed] }, protocolsRegisterController.index)
     instance.get('/protocols/registers/:id', { preHandler: [isAuthed] }, protocolsRegisterController.show)

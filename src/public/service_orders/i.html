@@ -202,6 +202,15 @@
             <button type="button" class="btn btn-dark" @click="handlerNewInvoice">
                 <i class="fa-solid fa-file-invoice-dollar"></i> Invoice (Exterior)
             </button>
+            &bull;
+            <a v-if="crmOpportunity" class="btn btn-outline-dark" :href="'../crm/opportunity.html?id=' + crmOpportunity.id"
+                :title="'Oportunidade #' + crmOpportunity.id + ' — ' + crmOpportunity.stage">
+                <i class="fa-solid fa-handshake"></i> Ver no CRM ({{ crmOpportunity.stage }})
+            </a>
+            <button v-else-if="!['Finalizado', 'Cancelado'].includes(status)" type="button" class="btn btn-outline-dark" :disabled="sendingToCrm" @click="sendToCrm"
+                title="Cria uma oportunidade no funil com cliente, assunto, valor do protocolo e vendedor. Ganhar no CRM põe a OS na fila; perder cancela a OS.">
+                <i class="fa-solid fa-handshake"></i> {{ sendingToCrm ? 'Enviando…' : 'Enviar para o CRM' }}
+            </button>
             <hr />
         </form>
 
@@ -267,7 +276,8 @@
                         </div>
 
 
-                        <div class="row mt-2">
+                        <!-- Parcelamento antigo: só aparece em protocolos que já usam. A condição de pagamento substitui. -->
+                        <div class="row mt-2" v-if="Protocol.total_installments > 1 || Protocol.current_installment">
                             <div class="mb-3 col-md-3">
                                 <label class="form-label">Parcela atual</label>
                                 <input type="number" min="1" class="form-control"
@@ -307,6 +317,7 @@
                         </div>
 
                         <protocol-commission v-if="Protocol.id" :protocol="Protocol" :net="protocolDiscountedTotal" :locked="protocolSavedStatus !== 'Em aberto'"></protocol-commission>
+                        <payment-terms v-if="Protocol.id" :protocol="Protocol" :total="protocolAmountDueOpen" :locked="protocolSavedStatus !== 'Em aberto'"></payment-terms>
 
                         <button type="submit" class="btn btn-dark">Enviar</button>
 
@@ -800,6 +811,7 @@
 
     <script src="../assets/js/pricing.js"></script>
     <script src="../assets/js/protocolCommission.js"></script>
+    <script src="../assets/js/paymentTerms.js"></script>
     <script src="../assets/js/pdf.js"></script>
     <script src="../assets/js/service_orders/i.js"></script>
     <script src="../assets/js/nav.js"></script>

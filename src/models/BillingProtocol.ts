@@ -19,6 +19,9 @@ class BillingProtocol extends Model<InferAttributes<BillingProtocol>, InferCreat
 
     declare BillingId: ForeignKey<Billing['id']>
     declare ProtocolId: ForeignKey<Protocol['id']>
+    // Parcela cobrada (condição de pagamento) e quanto dela entrou na baixa (baixa parcial de repasse de fornecedor).
+    declare ProtocolInstallmentId: CreationOptional<ForeignKey<number> | null>
+    declare received_value: CreationOptional<number | null>
 
     declare Protocol: NonAttribute<Protocol>
 
@@ -41,6 +44,14 @@ BillingProtocol.init(
         value: {
             type: DataTypes.FLOAT,
             allowNull: false,
+        },
+        received_value: {
+            type: DataTypes.DECIMAL(12, 2),
+            allowNull: true,
+            get(this: any) {
+                const v = this.getDataValue('received_value')
+                return v === null || v === undefined ? null : Number(v)
+            },
         },
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,

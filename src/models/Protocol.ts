@@ -24,6 +24,7 @@ import Client from './Client'
 import Seller from './Seller'
 import Payable from './Payable'
 import Supplier from './Supplier'
+import ProtocolInstallment from './ProtocolInstallment'
 
 import protocolHooks from '../hooks/protocolHooks'
 
@@ -45,6 +46,13 @@ class Protocol extends Model<InferAttributes<Protocol>, InferCreationAttributes<
     declare commission_percent: CreationOptional<number | null>
     declare commission_value: CreationOptional<number | null>
     declare commission_manual: CreationOptional<boolean>
+
+    // Condição de pagamento: dias após a liberação (ex.: "15/30/60"); vazio = cobrança única pelas regras de sempre.
+    // installments_manual = vencimentos/valores definidos à mão (ProtocolInstallment) em vez de calculados pela condição.
+    declare payment_terms: CreationOptional<string | null>
+    // Renovação anual com comissão informada na mão: o valor precisa ser revisto antes de liberar a cobrança.
+    declare commission_review_pending: CreationOptional<boolean>
+    declare installments_manual: CreationOptional<boolean>
 
     declare getService_order: HasOneGetAssociationMixin<Service_order>
     declare getSubscription: HasOneGetAssociationMixin<Subscription>
@@ -136,6 +144,20 @@ Protocol.init(
             allowNull: false,
             defaultValue: false,
         },
+        payment_terms: {
+            type: DataTypes.STRING(60),
+            allowNull: true,
+        },
+        installments_manual: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+        },
+        commission_review_pending: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+        },
         closedAt: DataTypes.DATE,
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
@@ -178,6 +200,12 @@ BillingProtocol.belongsTo(Protocol)
 // Protocol.belongsTo(Client) fica em Client.ts (evita dependência circular na carga dos modelos)
 Protocol.belongsTo(Seller)
 Protocol.belongsTo(Supplier, { as: 'CommissionSupplier', foreignKey: 'CommissionSupplierId' })
+
+// Condição de pagamento: parcelas do protocolo e a cobrança de cada parcela.
+Protocol.hasMany(ProtocolInstallment, { onDelete: 'CASCADE' })
+ProtocolInstallment.belongsTo(Protocol)
+ProtocolInstallment.hasMany(BillingProtocol)
+BillingProtocol.belongsTo(ProtocolInstallment)
 
 Protocol.hasMany(Payable)
 Payable.belongsTo(Protocol)

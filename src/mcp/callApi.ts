@@ -1,7 +1,7 @@
 import jsonwebtoken from 'jsonwebtoken'
 import { FastifyInstance } from 'fastify'
 
-export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE'
+export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
 export type ApiResult = {
     ok: boolean

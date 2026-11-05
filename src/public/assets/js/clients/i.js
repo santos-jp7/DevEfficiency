@@ -17,6 +17,8 @@ const client = new Vue({
         Credentials: [],
         Billings: [],
         Subscriptions: [],
+        Opportunities: [],
+        Crm: window.Crm,
         Projects: [],
         Servers: [],
         Service_orders: [],
@@ -552,6 +554,11 @@ const client = new Vue({
 
                 this.$data.Service_orders = (await __api__.get('/api/os?limit=5&ClientId=' + data.id)).data
                 this.$data.Subscriptions = (await __api__.get('/api/subscriptions?ClientId=' + data.id)).data
+                // CRM: oportunidades do cliente (inclui as de quando ainda era lead). Não bloqueia o resto da tela.
+                __api__
+                    .get('/api/crm/opportunities?status=all&ClientId=' + data.id)
+                    .then(({ data: opps }) => (this.$data.Opportunities = opps))
+                    .catch(() => {})
                 this.$data.Protocols = (await __api__.get('/api/protocols?limit=-1&ClientId=' + data.id)).data
                 this.$data.Billings = (await __api__.get('/api/billings?limit=5&ClientId=' + data.id)).data
                 this.$data.slaConfigs = (await __api__.get('/api/clients/' + data.id + '/sla-configs')).data

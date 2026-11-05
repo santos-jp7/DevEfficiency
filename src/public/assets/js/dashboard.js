@@ -4,6 +4,8 @@ const dashboard = new Vue({
     el: '#dashboard',
     data: {
         ticketsAttention: 0,
+        crmFollowups: { total: 0, overdue: 0, items: [] },
+        commissionReviews: [],
         currentOs: {
             id: null,
             subject: null,
@@ -28,6 +30,8 @@ const dashboard = new Vue({
                 pending_value: 0,
                 total_pending: 0,
             },
+            commissions: { count: 0, value: 0, overdue_count: 0, overdue_value: 0 },
+            receivable_total: 0,
             subscriptions: {
                 total_active: 0,
                 mrr: 0,
@@ -71,6 +75,18 @@ const dashboard = new Vue({
                 .then(({ data }) => (this.ticketsAttention = data.needs_attention))
                 .catch(() => {})
 
+            // Renovações anuais com comissão informada na mão aguardando revisão do valor.
+            __api__
+                .get('/api/protocols?commission_review=1&limit=-1')
+                .then(({ data }) => (this.commissionReviews = data.data || []))
+                .catch(() => {})
+
+            // Follow-ups do CRM até o fim de hoje (atrasados primeiro).
+            __api__
+                .get('/api/crm/followups?range=today')
+                .then(({ data }) => (this.crmFollowups = data))
+                .catch(() => {})
+
             try {
                 // OS Metrics - Fetching non-finalized OS
                 const openStatuses = ['Em avaliação', 'Orçamento enviado', 'Na fila', 'Em correções', 'Pendente']
@@ -102,9 +118,20 @@ const dashboard = new Vue({
 
                 // Billings Metrics
                 const { data: billings } = await __api__.get('/api/billings')
-                const pendingBillings = billings.filter((b) => b.status === 'pendente' || b.status === 'faturada')
+                const openBillings = billings.filter((b) => b.status === 'pendente' || b.status === 'faturada')
+                // Clientes x comissões a receber de fornecedores (protocolos por comissão): contas separadas, total junto.
+                const pendingBillings = openBillings.filter((b) => !b.SupplierId)
+                const supplierBillings = openBillings.filter((b) => b.SupplierId)
+                const sumOf = (list) => list.reduce((sum, b) => sum + parseFloat(b.total_value), 0)
                 this.metrics.billings.total_pending = pendingBillings.length
-                this.metrics.billings.pending_value = pendingBillings.reduce((sum, b) => sum + parseFloat(b.total_value), 0)
+                this.metrics.billings.pending_value = sumOf(pendingBillings)
+                this.metrics.commissions.count = supplierBillings.length
+                this.metrics.commissions.value = sumOf(supplierBillings)
+                const todayStart = moment().startOf('day')
+                const overdueCommissions = supplierBillings.filter((b) => b.due_date && moment.utc(b.due_date).isBefore(todayStart))
+                this.metrics.commissions.overdue_count = overdueCommissions.length
+                this.metrics.commissions.overdue_value = sumOf(overdueCommissions)
+                this.metrics.receivable_total = this.metrics.billings.pending_value + this.metrics.commissions.value
 
                 // Overdue billings (pendente + due_date < today)
                 const today = moment().startOf('day')
@@ -241,6 +268,22 @@ const dashboard = new Vue({
                     responsive: true,
                 },
             })
+        },
+        isPast(v) {
+            return !!v && moment(v).isBefore(moment())
+        },
+        followupWhen(v) {
+            const d = moment(v)
+            return d.isSame(moment(), 'day') ? 'Hoje ' + d.format('HH:mm') : d.format('DD/MM HH:mm')
+        },
+        followupWho(a) {
+            const party = a.Client ? a.Client.name : a.Lead ? a.Lead.company || a.Lead.name : ''
+            return [a.Opportunity && a.Opportunity.title, party].filter(Boolean).join(' · ')
+        },
+        followupLink(a) {
+            if (a.OpportunityId) return '/crm/opportunity.html?id=' + a.OpportunityId
+            if (a.LeadId) return '/crm/lead.html?id=' + a.LeadId
+            return '/clients/i.html?id=' + a.ClientId
         },
         billingLabel(billing) {
             if (!billing.BillingProtocols || !billing.BillingProtocols.length) return 'Cobrança #' + billing.id
