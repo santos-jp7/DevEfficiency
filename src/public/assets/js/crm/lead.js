@@ -1,11 +1,11 @@
 let __api__ = null
 
-const emptyLead = () => ({ name: '', company: '', document: '', email: '', phone: '', whatsapp: '', source: 'Indicação', status: 'Ativo', notes: '', ClientId: null, SellerId: null })
+const emptyLead = () => ({ name: '', company: '', document: '', email: '', phone: '', whatsapp: '', source: 'Indicação', status: 'Ativo', notes: '', ClientId: null, SellerId: null, UserId: Crm.currentUserId() })
 const emptyActivity = () => ({ type: 'Ligação', subject: '', due_at: '' })
 
 new Vue({
     el: '#app',
-    data: { Crm: window.Crm, isNew: true, busy: false, lookup: false, lead: emptyLead(), clients: [], sellers: [], activity: emptyActivity(), matches: { clients: [], leads: [] } },
+    data: { Crm: window.Crm, isNew: true, busy: false, lookup: false, lead: emptyLead(), clients: [], sellers: [], users: [], activity: emptyActivity(), matches: { clients: [], leads: [] } },
     computed: {
         activities() {
             return [...(this.lead.CrmActivities || [])].sort((a, b) => {
@@ -24,8 +24,13 @@ new Vue({
             this.isNew = false
         },
         payload() {
-            const { name, company, document, email, phone, whatsapp, source, status, notes, ClientId, SellerId } = this.lead
-            return { name, company, document, email, phone, whatsapp, source, status, notes, ClientId: ClientId || null, SellerId: SellerId || null }
+            const { name, company, document, email, phone, whatsapp, source, status, notes, ClientId, SellerId, UserId } = this.lead
+            return {
+                name, company, document, email, phone, whatsapp, source, status, notes,
+                ClientId: ClientId || null,
+                SellerId: SellerId || null,
+                ...(this.users.length > 1 ? { UserId: UserId || null } : {}),
+            }
         },
         // Possíveis duplicados (mesmo CNPJ/CPF, e-mail ou telefone) entre clientes e outros leads.
         async checkDuplicates() {
@@ -105,6 +110,7 @@ new Vue({
         await Promise.all([
             __api__.get('/api/clients').then(({ data }) => (this.clients = data)).catch(() => {}),
             __api__.get('/api/sellers').then(({ data }) => (this.sellers = (data || []).filter((s) => s.active))).catch(() => {}),
+            __api__.get('/api/crm/users').then(({ data }) => (this.users = data || [])).catch(() => {}),
         ])
         const params = Crm.params()
         if (params.id) {

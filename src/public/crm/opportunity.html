@@ -63,6 +63,7 @@
             <button type="button" class="btn btn-sm btn-success" @click="$refs.win.open(o)"><i class="fa-solid fa-trophy"></i> Gerar OS ou protocolo</button>
         </div>
         <crm-win-modal ref="win" @done="onWon"></crm-win-modal>
+        <crm-followup-prompt ref="followup"></crm-followup-prompt>
 
         <div class="row g-4">
             <div class="col-lg-7">
@@ -115,6 +116,13 @@
                             <label class="form-label">Tipo</label>
                             <select class="form-select" v-model="o.kind">
                                 <option v-for="k in Crm.KINDS" :value="k">{{ k }}</option>
+                            </select>
+                        </div>
+                        <div class="mb-3 col-md-6" v-if="users.length > 1">
+                            <label class="form-label">Responsável</label>
+                            <select class="form-select" v-model="o.UserId">
+                                <option :value="null">Sem responsável</option>
+                                <option v-for="u in users" :value="u.id">{{ u.username }}</option>
                             </select>
                         </div>
                         <div class="mb-3 col-md-6">
@@ -241,6 +249,7 @@
     <script src="../assets/js/standaloneItems.js"></script>
     <script src="../assets/js/paymentTerms.js"></script>
     <script src="../assets/js/crm/winModal.js"></script>
+    <script src="../assets/js/crm/followupPrompt.js"></script>
     <script src="../assets/js/crm/opportunity.js"></script>
     <script src="../assets/js/nav.js"></script>
 </body>

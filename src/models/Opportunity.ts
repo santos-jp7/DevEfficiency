@@ -7,6 +7,7 @@ import Seller from './Seller'
 import Supplier from './Supplier'
 import Service_order from './Service_order'
 import Protocol from './Protocol'
+import User from './User'
 
 export const OPPORTUNITY_STAGES = ['Novo', 'Qualificado', 'Proposta', 'Negociação', 'Ganho', 'Perdido'] as const
 export type OpportunityStage = (typeof OPPORTUNITY_STAGES)[number]
@@ -56,6 +57,9 @@ class Opportunity extends Model<InferAttributes<Opportunity>, InferCreationAttri
     declare LeadId: CreationOptional<ForeignKey<Lead['id']> | null>
     declare ClientId: CreationOptional<ForeignKey<Client['id']> | null>
     declare SellerId: CreationOptional<ForeignKey<Seller['id']> | null>
+    // Responsável e quem criou (usuários do sistema).
+    declare UserId: CreationOptional<ForeignKey<User['id']> | null>
+    declare CreatedById: CreationOptional<ForeignKey<User['id']> | null>
 
     // Cobrança prevista (mesmos campos do protocolo): direta ou comissão de terceiro.
     declare billing_mode: CreationOptional<'Direto' | 'Comissão'>
@@ -109,6 +113,8 @@ Lead.hasMany(Opportunity)
 Opportunity.belongsTo(Client)
 Client.hasMany(Opportunity)
 Opportunity.belongsTo(Seller)
+Opportunity.belongsTo(User, { as: 'Owner', foreignKey: 'UserId' })
+Opportunity.belongsTo(User, { as: 'CreatedBy', foreignKey: 'CreatedById' })
 Opportunity.belongsTo(Supplier, { as: 'CommissionSupplier', foreignKey: 'CommissionSupplierId' })
 Opportunity.belongsTo(Service_order)
 Opportunity.belongsTo(Service_order, { as: 'SourceServiceOrder', foreignKey: 'SourceServiceOrderId' })

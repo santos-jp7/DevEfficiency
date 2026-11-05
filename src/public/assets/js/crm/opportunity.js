@@ -18,6 +18,7 @@ new Vue({
             expected_close_date: '',
             kind: 'Serviço',
             SellerId: null,
+            UserId: Crm.currentUserId(),
             notes: '',
             stage: 'Novo',
             billing_mode: 'Direto',
@@ -31,6 +32,7 @@ new Vue({
         leads: [],
         clients: [],
         sellers: [],
+        users: [],
         activity: emptyActivity(),
         lost: { reason: '', details: '' },
         lostModal: null,
@@ -60,6 +62,7 @@ new Vue({
                 expected_close_date: o.expected_close_date || null,
                 kind: o.kind,
                 SellerId: o.SellerId || null,
+                ...(this.users.length > 1 ? { UserId: o.UserId || null } : {}),
                 notes: o.notes || null,
                 ...ProtocolCommission.payload(o),
             }
@@ -100,7 +103,15 @@ new Vue({
                 return this.changeStage({ stage })
             }
             if (stage === 'Ganho') return this.$refs.win.open(this.o)
-            await this.changeStage({ stage })
+            // Etapa aberta sem follow-up pendente: pede o próximo passo (ou "agora não").
+            let extra = {}
+            const hasPending = (this.o.CrmActivities || []).some((a) => !a.done_at && a.due_at)
+            if (Crm.OPEN_STAGES.includes(stage) && !hasPending) {
+                const answer = await this.$refs.followup.ask(this.o, stage)
+                if (answer === null) return
+                extra = answer
+            }
+            await this.changeStage({ stage, ...extra })
         },
         async changeStage(body) {
             this.busy = true
@@ -168,6 +179,7 @@ new Vue({
             __api__.get('/api/crm/leads?status=Ativo').then(({ data }) => (this.leads = data)).catch(() => {}),
             __api__.get('/api/clients').then(({ data }) => (this.clients = data)).catch(() => {}),
             __api__.get('/api/sellers').then(({ data }) => (this.sellers = (data || []).filter((s) => s.active))).catch(() => {}),
+            __api__.get('/api/crm/users').then(({ data }) => (this.users = data || [])).catch(() => {}),
         ])
 
         if (params.id) {

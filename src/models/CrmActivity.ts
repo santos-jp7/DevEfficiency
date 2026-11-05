@@ -4,6 +4,7 @@ import db from '../db'
 import Client from './Client'
 import Lead from './Lead'
 import Opportunity from './Opportunity'
+import User from './User'
 
 export const ACTIVITY_TYPES = ['Ligação', 'Reunião', 'E-mail', 'WhatsApp', 'Tarefa', 'Nota'] as const
 
@@ -19,6 +20,9 @@ class CrmActivity extends Model<InferAttributes<CrmActivity>, InferCreationAttri
     declare LeadId: CreationOptional<ForeignKey<Lead['id']> | null>
     declare OpportunityId: CreationOptional<ForeignKey<Opportunity['id']> | null>
     declare ClientId: CreationOptional<ForeignKey<Client['id']> | null>
+    // Responsável pela atividade e quem registrou.
+    declare UserId: CreationOptional<ForeignKey<User['id']> | null>
+    declare CreatedById: CreationOptional<ForeignKey<User['id']> | null>
 
     declare createdAt: CreationOptional<Date>
     declare updatedAt: CreationOptional<Date>
@@ -43,6 +47,8 @@ Lead.hasMany(CrmActivity)
 CrmActivity.belongsTo(Opportunity)
 Opportunity.hasMany(CrmActivity, { onDelete: 'CASCADE' })
 CrmActivity.belongsTo(Client)
+CrmActivity.belongsTo(User, { as: 'Owner', foreignKey: 'UserId' })
+CrmActivity.belongsTo(User, { as: 'CreatedBy', foreignKey: 'CreatedById' })
 Client.hasMany(CrmActivity)
 
 export default CrmActivity

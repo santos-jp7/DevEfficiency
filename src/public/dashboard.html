@@ -201,6 +201,7 @@
                         <div class="cx-tile__label">Follow-ups CRM</div>
                         <div class="cx-tile__value" :class="crmFollowups.overdue ? 'text-cx-red' : ''">{{ crmFollowups.total }}</div>
                         <div class="cx-tile__sub">{{ crmFollowups.overdue }} atrasado(s) · até hoje</div>
+                        <div class="cx-tile__sub text-cx-amber" v-if="crmFollowups.stale && crmFollowups.stale.count">{{ crmFollowups.stale.count }} oportunidade(s) parada(s) há {{ crmFollowups.stale.days }}+ dias</div>
                     </div>
                 </a>
             </div>

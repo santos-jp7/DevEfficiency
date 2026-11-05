@@ -520,3 +520,69 @@ export async function protocolValues(opportunities: Opportunity[]): Promise<Map<
 
 // Valor usado em telas e relatórios: do protocolo quando existe, senão o estimado.
 export const realValue = (o: Opportunity, values: Map<number, number>) => values.get(o.id) ?? (Number(o.estimated_value) || 0)
+
+// ---------------------------------------------------------------------------------------------------------------
+// Usuários (preparo multiusuário) e oportunidades paradas.
+
+// Usuário logado (id do token). O MCP usa id 0, tratado como "sem usuário".
+export function currentUserId(req: any): number | null {
+    const id = Number(req?.__user?.user?.id)
+    return Number.isInteger(id) && id > 0 ? id : null
+}
+
+// Para gravar responsável/autor: só ids de usuários que existem (token de usuário removido não quebra o cadastro).
+const knownUsers = new Map<number, boolean>()
+export async function resolveUserId(req: any): Promise<number | null> {
+    const id = currentUserId(req)
+    if (!id) return null
+    if (!knownUsers.has(id)) {
+        const { default: User } = await import('../models/User')
+        knownUsers.set(id, !!(await User.findByPk(id, { attributes: ['id'] })))
+    }
+    return knownUsers.get(id) ? id : null
+}
+
+export async function staleDays(): Promise<number> {
+    const { default: Config } = await import('../models/Config')
+    const n = Number((await Config.findOne({ where: { type: 'crm_stale_days' } }))?.value)
+    return Number.isFinite(n) && n > 0 ? Math.floor(n) : 7
+}
+
+// Último movimento de cada oportunidade: criação, mudança de etapa ou atividade (criada ou concluída).
+export async function lastTouch(opportunities: Opportunity[]): Promise<Map<number, Date>> {
+    const map = new Map<number, Date>()
+    for (const o of opportunities) {
+        const base = [o.createdAt, o.stage_changed_at].filter(Boolean).map((d) => new Date(d as Date))
+        map.set(o.id, new Date(Math.max(...base.map((d) => +d))))
+    }
+    if (!opportunities.length) return map
+
+    const rows: any[] = await CrmActivity.findAll({
+        attributes: ['OpportunityId', [db.fn('MAX', db.col('createdAt')), 'created'], [db.fn('MAX', db.col('done_at')), 'done']],
+        where: { OpportunityId: opportunities.map((o) => o.id) },
+        group: ['OpportunityId'],
+        raw: true,
+    })
+    for (const r of rows) {
+        const dates = [r.created, r.done].filter(Boolean).map((d: any) => new Date(d))
+        const current = map.get(r.OpportunityId)
+        const latest = Math.max(current ? +current : 0, ...dates.map((d) => +d))
+        map.set(r.OpportunityId, new Date(latest))
+    }
+    return map
+}
+
+const DAY_MS = 86400000
+export const idleDaysOf = (touch: Date | undefined) => (touch ? Math.floor((Date.now() - +touch) / DAY_MS) : 0)
+
+// Oportunidades abertas sem movimento há mais de N dias (mais paradas primeiro).
+export async function staleOpportunities(): Promise<{ days: number; items: { opportunity: Opportunity; idle_days: number }[] }> {
+    const days = await staleDays()
+    const open = await Opportunity.findAll({ where: { stage: OPEN_STAGES }, include: [Lead, Client] })
+    const touch = await lastTouch(open)
+    const items = open
+        .map((o) => ({ opportunity: o, idle_days: idleDaysOf(touch.get(o.id)) }))
+        .filter((x) => x.idle_days >= days)
+        .sort((a, b) => b.idle_days - a.idle_days)
+    return { days, items }
+}

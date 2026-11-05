@@ -6,7 +6,8 @@ import CrmActivity, { ACTIVITY_TYPES } from '../../models/CrmActivity'
 import Lead from '../../models/Lead'
 import Opportunity from '../../models/Opportunity'
 import Client from '../../models/Client'
-import { blank } from '../../utils/crm'
+import { blank, currentUserId, resolveUserId, staleOpportunities } from '../../utils/crm'
+import User from '../../models/User'
 import { sendCrmFollowupsAlert } from '../../utils/crmFollowupsAlert'
 
 type Req = FastifyRequest<{ Params: { id: string }; Body: any; Querystring: any }>
@@ -32,6 +33,11 @@ async function activityPatch(body: any, current?: CrmActivity | null): Promise<{
         if (patch[key] && !(await (model as any).findByPk(patch[key]))) return { error: `${key} não encontrado.` }
     }
 
+    if ('UserId' in body) {
+        patch.UserId = blank(body.UserId) ? null : Number(body.UserId)
+        if (patch.UserId && !(await User.findByPk(patch.UserId))) return { error: 'Responsável não encontrado.' }
+    }
+
     // Atividade de uma oportunidade herda lead/cliente para aparecer neles também.
     if (patch.OpportunityId) {
         const opp = await Opportunity.findByPk(patch.OpportunityId)
@@ -46,6 +52,7 @@ async function activityPatch(body: any, current?: CrmActivity | null): Promise<{
 }
 
 const include = [
+    { model: User, as: 'Owner', attributes: ['id', 'username'] },
     { model: Lead, attributes: ['id', 'name', 'company'] },
     { model: Opportunity, attributes: ['id', 'title', 'stage'] },
     { model: Client, attributes: ['id', 'name'] },
@@ -53,19 +60,22 @@ const include = [
 
 class activitiesController {
     static async index(req: Req, res: FastifyReply) {
-        const { LeadId, OpportunityId, ClientId, pending } = (req.query || {}) as any
+        const { LeadId, OpportunityId, ClientId, pending, UserId, mine } = (req.query || {}) as any
         const where: any = {}
         if (LeadId) where.LeadId = LeadId
         if (OpportunityId) where.OpportunityId = OpportunityId
         if (ClientId) where.ClientId = ClientId
         if (pending === 'true') where.done_at = null
+        if (UserId) where.UserId = UserId
+        else if (mine === '1' || mine === 'true') where.UserId = currentUserId(req)
 
         return res.send(await CrmActivity.findAll({ where, include, order: [['createdAt', 'DESC']] }))
     }
 
     // Follow-ups pendentes: range=overdue (vencidos) | today (até o fim de hoje) | week (até 7 dias).
     static async followups(req: Req, res: FastifyReply) {
-        const { range = 'today' } = (req.query || {}) as any
+        const { range = 'today', UserId, mine } = (req.query || {}) as any
+        const owner = UserId ? Number(UserId) : mine === '1' || mine === 'true' ? currentUserId(req) : undefined
         const now = moment()
         const until =
             range === 'overdue' ? now.toDate() : range === 'week' ? moment().add(7, 'days').endOf('day').toDate() : moment().endOf('day').toDate()
@@ -76,15 +86,23 @@ class activitiesController {
                 done_at: null,
                 due_at: { [Op.ne]: null, [Op.lte]: until },
                 [Op.or]: [{ OpportunityId: null }, { '$Opportunity.stage$': { [Op.notIn]: ['Ganho', 'Perdido'] } }],
+                ...(owner !== undefined ? { UserId: owner } : {}),
             } as any,
             include,
             order: [['due_at', 'ASC']],
         })
 
+        // Oportunidades abertas sem movimento além do limite (crm_stale_days).
+        const stale = await staleOpportunities()
+        const staleItems = stale.items
+            .filter((x) => owner === undefined || x.opportunity.UserId === owner)
+            .map((x) => ({ id: x.opportunity.id, title: x.opportunity.title, stage: x.opportunity.stage, idle_days: x.idle_days }))
+
         return res.send({
             overdue: items.filter((a) => a.due_at && a.due_at < now.toDate()).length,
             total: items.length,
             items,
+            stale: { days: stale.days, count: staleItems.length, items: staleItems.slice(0, 20) },
         })
     }
 
@@ -101,7 +119,12 @@ class activitiesController {
     static async store(req: Req, res: FastifyReply) {
         const { patch, error } = await activityPatch({ subject: '', ...(req.body || {}) })
         if (error) return res.status(400).send({ message: error })
-        const activity = await CrmActivity.create(patch)
+        // Responsável padrão: o da oportunidade, senão quem registrou.
+        if (!('UserId' in patch)) {
+            const opp = patch.OpportunityId ? await Opportunity.findByPk(patch.OpportunityId) : null
+            patch.UserId = opp?.UserId ?? (await resolveUserId(req))
+        }
+        const activity = await CrmActivity.create({ ...patch, CreatedById: await resolveUserId(req) })
         return res.status(201).send(await CrmActivity.findByPk(activity.id, { include }))
     }
 

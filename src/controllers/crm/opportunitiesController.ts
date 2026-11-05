@@ -11,7 +11,23 @@ import Seller from '../../models/Seller'
 import Supplier from '../../models/Supplier'
 import Service_order from '../../models/Service_order'
 import Protocol from '../../models/Protocol'
-import { CrmInputError, blank, changeStage, nextFollowups, opportunityFromServiceOrder, protocolValues, syncSourceServiceOrder, winOpportunity } from '../../utils/crm'
+import {
+    CrmInputError,
+    blank,
+    changeStage,
+    currentUserId,
+    idleDaysOf,
+    resolveUserId,
+    lastTouch,
+    nextFollowups,
+    opportunityFromServiceOrder,
+    protocolValues,
+    staleDays,
+    syncSourceServiceOrder,
+    winOpportunity,
+} from '../../utils/crm'
+import User from '../../models/User'
+import { ACTIVITY_TYPES } from '../../models/CrmActivity'
 import { CommissionInputError, parseCommissionInput } from '../../utils/commissionInput'
 
 type Req = FastifyRequest<{ Params: { id: string }; Body: any; Querystring: any }>
@@ -24,6 +40,7 @@ const include = [
     { model: Service_order, attributes: ['id', 'subject', 'status'] },
     { model: Service_order, as: 'SourceServiceOrder', attributes: ['id', 'subject', 'status'] },
     { model: Protocol, attributes: ['id', 'status', 'billing_mode'] },
+    { model: User, as: 'Owner', attributes: ['id', 'username'] },
 ]
 
 // Campos editáveis (etapa muda só por /stage, para gravar histórico e regras de ganho/perda).
@@ -62,6 +79,10 @@ async function opportunityPatch(body: any, current?: Opportunity | null) {
         patch.ClientId = blank(body.ClientId) ? null : Number(body.ClientId)
         if (patch.ClientId && !(await Client.findByPk(patch.ClientId))) throw new CrmInputError('Cliente não encontrado.')
     }
+    if ('UserId' in body) {
+        patch.UserId = blank(body.UserId) ? null : Number(body.UserId)
+        if (patch.UserId && !(await User.findByPk(patch.UserId))) throw new CrmInputError('Responsável não encontrado.')
+    }
 
     Object.assign(patch, await parseCommissionInput(body, current))
 
@@ -80,7 +101,7 @@ function handle(e: any, res: FastifyReply) {
 class opportunitiesController {
     // Kanban/lista. status=open (padrão) | closed | all; filtros: SellerId, source (do lead), LeadId, ClientId, q.
     static async index(req: Req, res: FastifyReply) {
-        const { status = 'open', SellerId, source, LeadId, ClientId, SourceServiceOrderId, q } = (req.query || {}) as any
+        const { status = 'open', SellerId, source, LeadId, ClientId, SourceServiceOrderId, UserId, mine, q } = (req.query || {}) as any
 
         const where: any = {}
         if (status === 'open') where.stage = OPEN_STAGES
@@ -88,6 +109,9 @@ class opportunitiesController {
         if (SellerId) where.SellerId = SellerId
         if (LeadId) where.LeadId = LeadId
         if (SourceServiceOrderId) where.SourceServiceOrderId = SourceServiceOrderId
+        // Responsável: um usuário específico ou "minhas" (do usuário logado).
+        if (UserId) where.UserId = UserId
+        else if (mine === '1' || mine === 'true') where.UserId = currentUserId(req)
         // Do cliente: as dele e as que nasceram de lead desse cliente (histórico de antes da conversão).
         if (ClientId) where[Op.and] = [{ [Op.or]: [{ ClientId }, { '$Lead.ClientId$': ClientId }] }]
         if (q) {
@@ -107,6 +131,8 @@ class opportunitiesController {
 
         const followups = await nextFollowups(opportunities.map((o) => o.id))
         const values = await protocolValues(opportunities)
+        const touch = await lastTouch(opportunities)
+        const limitDays = await staleDays()
 
         return res.send(
             opportunities.map((o) => ({
@@ -114,8 +140,84 @@ class opportunitiesController {
                 next_followup: followups.get(o.id) || null,
                 // Total do protocolo ligado (convertida ou vinda de OS); null = só a estimativa.
                 protocol_value: values.get(o.id) ?? null,
+                // Dias sem movimento (etapa/atividade); parada = aberta além do limite crm_stale_days.
+                idle_days: idleDaysOf(touch.get(o.id)),
+                stale: OPEN_STAGES.includes(o.stage as any) && idleDaysOf(touch.get(o.id)) >= limitDays,
             })),
         )
+    }
+
+    // Funil paginado: totais (quantidade, valor real, ponderado) de cada etapa calculados no servidor e só as N primeiras
+    // de cada coluna. Query: q, SellerId, source, UserId | mine, closedDays (Ganho/Perdido recentes, padrão 30),
+    // limit (por coluna, padrão 50); stage + offset para "carregar mais" de uma coluna.
+    static async board(req: Req, res: FastifyReply) {
+        const { q, SellerId, source, UserId, mine, closedDays = 30, limit = 50, stage: onlyStage, offset = 0 } = (req.query || {}) as any
+        const pageSize = Math.min(Math.max(Number(limit) || 50, 1), 200)
+        const since = new Date(Date.now() - Math.max(Number(closedDays) || 30, 1) * 86400000)
+
+        const base: any = {}
+        if (SellerId) base.SellerId = SellerId
+        if (UserId) base.UserId = UserId
+        else if (mine === '1' || mine === 'true') base.UserId = currentUserId(req)
+        if (source) base['$Lead.source$'] = source
+        if (q) {
+            const like = { [Op.like]: `%${q}%` }
+            base[Op.or] = [{ title: like }, { '$Lead.name$': like }, { '$Lead.company$': like }, { '$Client.name$': like }]
+        }
+        const light = [
+            { model: Lead, attributes: ['id', 'name', 'company', 'source'] },
+            { model: Client, attributes: ['id', 'name'] },
+        ]
+
+        const stages = onlyStage ? [onlyStage] : OPPORTUNITY_STAGES
+        const columns: Record<string, any> = {}
+        const limitDays = await staleDays()
+
+        for (const stage of stages) {
+            const where: any = { ...base, stage }
+            if (stage === 'Ganho') where.won_at = { [Op.gte]: since }
+            if (stage === 'Perdido') where.lost_at = { [Op.gte]: since }
+
+            // Totais: leve (sem includes pesados) sobre a coluna inteira.
+            const all = await Opportunity.findAll({
+                where,
+                include: light,
+                attributes: ['id', 'estimated_value', 'probability', 'ProtocolId', 'SourceServiceOrderId'],
+            })
+            const values = await protocolValues(all)
+            const val = (o: Opportunity) => values.get(o.id) ?? (Number(o.estimated_value) || 0)
+
+            const rows = await Opportunity.findAll({
+                where,
+                include,
+                order: [
+                    ['position', 'ASC'],
+                    ['updatedAt', 'DESC'],
+                ],
+                limit: pageSize,
+                offset: Number(offset) || 0,
+                subQuery: false,
+            })
+            const followups = await nextFollowups(rows.map((o) => o.id))
+            const touch = await lastTouch(rows)
+            const pageValues = await protocolValues(rows)
+
+            columns[stage] = {
+                count: all.length,
+                value: Math.round(all.reduce((s, o) => s + val(o), 0) * 100) / 100,
+                weighted: Math.round(all.reduce((s, o) => s + (val(o) * (Number(o.probability) || 0)) / 100, 0) * 100) / 100,
+                has_more: (Number(offset) || 0) + rows.length < all.length,
+                items: rows.map((o) => ({
+                    ...o.toJSON(),
+                    next_followup: followups.get(o.id) || null,
+                    protocol_value: pageValues.get(o.id) ?? null,
+                    idle_days: idleDaysOf(touch.get(o.id)),
+                    stale: OPEN_STAGES.includes(o.stage as any) && idleDaysOf(touch.get(o.id)) >= limitDays,
+                })),
+            }
+        }
+
+        return res.send({ columns, stale_days: limitDays, closed_days: Number(closedDays) || 30, limit: pageSize })
     }
 
     static async show(req: Req, res: FastifyReply) {
@@ -146,8 +248,11 @@ class opportunitiesController {
 
             const t = await db.transaction()
             try {
+                const userId = await resolveUserId(req)
                 const opportunity = await Opportunity.create(
                     {
+                        UserId: userId,
+                        CreatedById: userId,
                         ...patch,
                         stage,
                         probability: patch.probability ?? STAGE_PROBABILITY[stage as keyof typeof STAGE_PROBABILITY],
@@ -185,14 +290,40 @@ class opportunitiesController {
         const opportunity = await Opportunity.findByPk(req.params.id)
         if (!opportunity) return res.status(404).send({ message: 'Oportunidade não encontrada.' })
 
-        const { stage, position, ...extra } = (req.body || {}) as any
+        const { stage, position, next_followup, ...extra } = (req.body || {}) as any
         if (!OPPORTUNITY_STAGES.includes(stage)) return res.status(400).send({ message: 'Etapa inválida.' })
+
+        // Próximo passo junto com a mudança de etapa (o funil pede um follow-up quando não há nenhum pendente).
+        let followup: any = null
+        if (next_followup && typeof next_followup === 'object') {
+            if (blank(next_followup.subject) || blank(next_followup.due_at))
+                return res.status(400).send({ message: 'Informe assunto e data do próximo follow-up.' })
+            if (next_followup.type && !ACTIVITY_TYPES.includes(next_followup.type)) return res.status(400).send({ message: 'Tipo de atividade inválido.' })
+            followup = {
+                type: next_followup.type || 'Tarefa',
+                subject: String(next_followup.subject).slice(0, 160),
+                description: next_followup.description || null,
+                due_at: new Date(next_followup.due_at),
+            }
+        }
 
         const from = opportunity.stage
         const t = await db.transaction()
         try {
             await changeStage(opportunity, stage, extra, t)
             if (!blank(position)) await opportunity.update({ position: Number(position) }, { transaction: t })
+            if (followup)
+                await CrmActivity.create(
+                    {
+                        ...followup,
+                        OpportunityId: opportunity.id,
+                        LeadId: opportunity.LeadId ?? null,
+                        ClientId: opportunity.ClientId ?? null,
+                        UserId: opportunity.UserId ?? (await resolveUserId(req)),
+                        CreatedById: await resolveUserId(req),
+                    },
+                    { transaction: t },
+                )
             await t.commit()
         } catch (e) {
             await t.rollback()

@@ -40,6 +40,15 @@
             }
             return axios.create({ headers: { Authorization: [type, token].join(' ') } })
         },
+        // Usuário logado (id do token), para o filtro "minhas".
+        currentUserId() {
+            try {
+                const payload = JSON.parse(atob((localStorage.getItem('token') || '').split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))
+                return (payload.user && payload.user.id) || null
+            } catch (e) {
+                return null
+            }
+        },
         params() {
             return Object.fromEntries(new URLSearchParams(window.location.search))
         },

@@ -148,6 +148,7 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
 
     // CRM
     instance.get('/crm/leads', { preHandler: [isAuthed] }, leadsController.index as any)
+    instance.get('/crm/users', { preHandler: [isAuthed] }, leadsController.users as any)
     instance.get('/crm/leads/check', { preHandler: [isAuthed] }, leadsController.check as any)
     instance.get('/crm/leads/:id/matches', { preHandler: [isAuthed] }, leadsController.matches as any)
     instance.get('/crm/leads/:id', { preHandler: [isAuthed] }, leadsController.show as any)
@@ -156,6 +157,7 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.delete('/crm/leads/:id', { preHandler: [isAuthed] }, leadsController.destroy as any)
 
     instance.get('/crm/opportunities', { preHandler: [isAuthed] }, opportunitiesController.index as any)
+    instance.get('/crm/board', { preHandler: [isAuthed] }, opportunitiesController.board as any)
     instance.get('/crm/opportunities/:id', { preHandler: [isAuthed] }, opportunitiesController.show as any)
     instance.post('/crm/opportunities', { preHandler: [isAuthed] }, opportunitiesController.store as any)
     instance.put('/crm/opportunities/:id', { preHandler: [isAuthed] }, opportunitiesController.update as any)

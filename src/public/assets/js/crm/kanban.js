@@ -1,71 +1,90 @@
 let __api__ = null
 
+const emptyColumn = () => ({ items: [], count: 0, value: 0, weighted: 0, has_more: false })
+
 new Vue({
     el: '#app',
     components: { draggable: window.vuedraggable },
     data: {
         Crm: window.Crm,
         loading: false,
+        loadingMore: '',
         closedDays: 30,
-        columns: Object.fromEntries(window.Crm.STAGES.map((s) => [s, []])),
+        staleDays: 7,
+        // Funil montado no servidor: cada coluna traz totais e as primeiras oportunidades ("carregar mais" busca o resto).
+        columns: Object.fromEntries(window.Crm.STAGES.map((s) => [s, emptyColumn()])),
         sellers: [],
+        users: [],
         q: '',
         SellerId: '',
         source: '',
+        owner: '',
         lost: { reason: '', details: '' },
         pending: null, // { o, from, to } enquanto o modal de perda está aberto
         lostModal: null,
+        searchTimer: null,
     },
     computed: {
         totals() {
             let open = 0
             let weighted = 0
             let overdue = 0
-            for (const s of Crm.OPEN_STAGES)
-                for (const o of this.visible(s)) {
-                    open += Crm.valueOf(o)
-                    weighted += (Crm.valueOf(o) * (Number(o.probability) || 0)) / 100
+            let stale = 0
+            for (const s of Crm.OPEN_STAGES) {
+                open += this.col(s).value
+                weighted += this.col(s).weighted
+                for (const o of this.col(s).items) {
                     if (o.next_followup && Crm.isOverdue(o.next_followup.due_at)) overdue++
+                    if (o.stale) stale++
                 }
-            return { open, weighted, overdue }
+            }
+            return { open, weighted, overdue, stale }
+        },
+    },
+    watch: {
+        SellerId: 'load',
+        source: 'load',
+        owner: 'load',
+        q() {
+            clearTimeout(this.searchTimer)
+            this.searchTimer = setTimeout(() => this.load(), 350)
         },
     },
     methods: {
-        matches(o) {
-            if (this.SellerId && String(o.SellerId) !== String(this.SellerId)) return false
-            if (this.source && o.Lead?.source !== this.source) return false
-            if (this.q) {
-                const q = this.q.toLowerCase()
-                const hay = [o.title, o.Lead?.name, o.Lead?.company, o.Client?.name].filter(Boolean).join(' ').toLowerCase()
-                if (!hay.includes(q)) return false
-            }
-            return true
+        col(stage) {
+            return this.columns[stage] || emptyColumn()
         },
-        visible(stage) {
-            return this.columns[stage].filter((o) => this.matches(o))
-        },
-        sum(stage) {
-            return this.visible(stage).reduce((s, o) => s + Crm.valueOf(o), 0)
-        },
-        weighted(stage) {
-            return this.visible(stage).reduce((s, o) => s + (Crm.valueOf(o) * (Number(o.probability) || 0)) / 100, 0)
+        filters() {
+            const params = { closedDays: this.closedDays }
+            if (this.q) params.q = this.q
+            if (this.SellerId) params.SellerId = this.SellerId
+            if (this.source) params.source = this.source
+            if (this.owner === 'mine') params.mine = 1
+            else if (this.owner) params.UserId = this.owner
+            return params
         },
         async load() {
             this.loading = true
             try {
-                const { data } = await __api__.get('/api/crm/opportunities?status=all')
-                const since = moment().subtract(this.closedDays, 'days')
-                const cols = Object.fromEntries(Crm.STAGES.map((s) => [s, []]))
-                for (const o of data) {
-                    const closedAt = o.won_at || o.lost_at || o.updatedAt
-                    if (!Crm.OPEN_STAGES.includes(o.stage) && moment(closedAt).isBefore(since)) continue
-                    if (cols[o.stage]) cols[o.stage].push(o)
-                }
-                this.columns = cols
+                const { data } = await __api__.get('/api/crm/board', { params: this.filters() })
+                this.columns = Object.fromEntries(Crm.STAGES.map((s) => [s, data.columns[s] || emptyColumn()]))
+                this.staleDays = data.stale_days
             } catch (e) {
                 alert(Crm.errorMessage(e, 'Não foi possível carregar o funil.'))
             } finally {
                 this.loading = false
+            }
+        },
+        async loadMore(stage) {
+            this.loadingMore = stage
+            try {
+                const column = this.col(stage)
+                const { data } = await __api__.get('/api/crm/board', { params: { ...this.filters(), stage, offset: column.items.length } })
+                const more = data.columns[stage]
+                column.items.push(...more.items.filter((o) => !column.items.some((x) => x.id === o.id)))
+                column.has_more = more.has_more
+            } finally {
+                this.loadingMore = ''
             }
         },
         // Oportunidade convertida (OS/protocolo gerado) não sai de Ganho.
@@ -85,12 +104,19 @@ new Vue({
                     this.lostModal.show()
                     return
                 }
-                // Ganho abre a conversão (cliente + OS/protocolo); oportunidade já convertida só reordena.
                 if (stage === 'Ganho' && o.SourceServiceOrderId && !o.ServiceOrderId) {
                     // Veio de uma OS: ganhar é seguir com a própria OS (vai para a fila).
                     if (!confirm(`Ganhar "${o.title}"? A OS #${o.SourceServiceOrderId} vai para "Na fila".`)) return this.load()
                 } else if (stage === 'Ganho' && !(o.ServiceOrderId || o.ProtocolId)) return this.$refs.win.open(o)
-                await this.saveStage(o, stage, { position: event.added.newIndex })
+
+                // Etapa aberta sem follow-up pendente: pede o próximo passo (ou "agora não").
+                let extra = {}
+                if (Crm.OPEN_STAGES.includes(stage) && !o.next_followup) {
+                    const answer = await this.$refs.followup.ask(o, stage)
+                    if (answer === null) return this.load()
+                    extra = answer
+                }
+                await this.saveStage(o, stage, { position: event.added.newIndex, ...extra })
             } else if (event.moved) {
                 await this.saveOrder(stage)
             }
@@ -98,27 +124,20 @@ new Vue({
         async saveStage(o, stage, extra = {}) {
             try {
                 const { data } = await __api__.patch(`/api/crm/opportunities/${o.id}/stage`, { stage, ...extra })
-                Object.assign(o, data)
                 if (data.warning) alert(data.warning)
                 await this.saveOrder(stage)
             } catch (e) {
                 alert(Crm.errorMessage(e, 'Não foi possível mover a oportunidade.'))
-                this.load()
             }
+            // Recarrega para os totais e contagens de cada coluna (calculados no servidor).
+            await this.load()
         },
         async saveOrder(stage) {
-            const ids = this.columns[stage].map((o) => o.id)
+            const ids = this.col(stage).items.map((o) => o.id)
             await __api__.post('/api/crm/opportunities/reorder', { ids }).catch(() => {})
-        },
-        async confirmLost() {
-            const { o } = this.pending
-            this.lostModal.hide()
-            await this.saveStage(o, 'Perdido', { lost_reason: this.lost.reason, lost_details: this.lost.details })
-            this.pending = null
         },
         async onWon(result) {
             await this.load()
-            await this.saveOrder('Ganho')
             const links = [
                 result.created_client ? `Cliente #${result.ClientId} criado.` : '',
                 result.ServiceOrderId ? `OS #${result.ServiceOrderId} aberta.` : '',
@@ -133,6 +152,12 @@ new Vue({
                 : null
             if (target && confirm(`Oportunidade ganha! ${links.join(' ')}\n\nAbrir agora?`)) location.href = target
         },
+        async confirmLost() {
+            const { o } = this.pending
+            this.lostModal.hide()
+            await this.saveStage(o, 'Perdido', { lost_reason: this.lost.reason, lost_details: this.lost.details })
+            this.pending = null
+        },
         cancelPending() {
             this.lostModal.hide()
             this.pending = null
@@ -144,6 +169,7 @@ new Vue({
         if (!__api__) return
         this.lostModal = new bootstrap.Modal(document.getElementById('lostModal'), { backdrop: 'static' })
         __api__.get('/api/sellers').then(({ data }) => (this.sellers = (data || []).filter((s) => s.active))).catch(() => {})
+        __api__.get('/api/crm/users').then(({ data }) => (this.users = data || [])).catch(() => {})
         this.load()
     },
 })

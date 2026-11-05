@@ -99,6 +99,13 @@
                                 <option v-for="s in sellers" :value="s.id">{{ s.name }}</option>
                             </select>
                         </div>
+                        <div class="mb-3 col-md-4" v-if="users.length > 1">
+                            <label class="form-label">Responsável</label>
+                            <select class="form-select" v-model="lead.UserId">
+                                <option :value="null">Sem responsável</option>
+                                <option v-for="u in users" :value="u.id">{{ u.username }}</option>
+                            </select>
+                        </div>
                         <div class="mb-3 col-md-4">
                             <label class="form-label">Status</label>
                             <select class="form-select" v-model="lead.status">

@@ -46,6 +46,8 @@ async function seedConfigs(): Promise<void> {
         // CRM: aviso diário de follow-ups atrasados e do dia (vazio = mesmo e-mail do aviso de contas a pagar).
         { type: 'crm_followups_enabled', value: 'true', upload: false },
         { type: 'crm_followups_email', value: '', upload: false },
+        // Oportunidade aberta sem nenhum movimento (etapa ou atividade) há N dias é sinalizada como parada.
+        { type: 'crm_stale_days', value: '7', upload: false },
     ]
 
     for (const configData of defaultConfigs) {

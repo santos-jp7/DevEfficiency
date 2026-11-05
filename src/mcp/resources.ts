@@ -190,7 +190,7 @@ export const resources: Resource[] = [
             'CRM: oportunidades (negócios) de um lead (LeadId) ou cliente (ClientId). Para mudar a etapa use crm_opportunity_stage; para ganhar e gerar cliente/OS/protocolo use crm_opportunity_win',
         actions: CRUD,
         model: Opportunity,
-        queryHelp: 'status (open|closed|all, padrão open), SellerId, source, LeadId, ClientId, q',
+        queryHelp: 'status (open|closed|all, padrão open), SellerId, source, LeadId, ClientId, SourceServiceOrderId, UserId, mine (1 = do usuário logado), q. Cada item traz protocol_value (valor real), idle_days e stale (parada)',
     },
     {
         name: 'crm_activities',

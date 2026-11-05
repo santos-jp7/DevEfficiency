@@ -54,8 +54,15 @@
         </div>
 
         <div class="row g-2 mb-3">
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <input type="search" class="form-control form-control-sm" v-model="q" placeholder="Buscar por título, lead, empresa ou cliente">
+            </div>
+            <div class="col-md-2" v-if="users.length > 1">
+                <select class="form-select form-select-sm" v-model="owner">
+                    <option value="">Todos os responsáveis</option>
+                    <option value="mine">Minhas</option>
+                    <option v-for="u in users" :value="String(u.id)">{{ u.username }}</option>
+                </select>
             </div>
             <div class="col-md-2">
                 <select class="form-select form-select-sm" v-model="SellerId">
@@ -69,10 +76,11 @@
                     <option v-for="s in Crm.SOURCES" :value="s">{{ s }}</option>
                 </select>
             </div>
-            <div class="col-md-4 text-md-end small text-muted pt-1">
+            <div class="col text-md-end small text-muted pt-1">
                 Em aberto: <strong>{{ Crm.brl(totals.open) }}</strong> &middot;
                 Ponderado: <strong>{{ Crm.brl(totals.weighted) }}</strong>
                 <span v-if="totals.overdue" class="text-danger ms-2"><i class="fa-solid fa-bell"></i> {{ totals.overdue }} follow-up(s) atrasado(s)</span>
+                <span v-if="totals.stale" class="text-warning ms-2" :title="'Sem movimento há ' + staleDays + '+ dias'"><i class="fa-solid fa-hourglass-half"></i> {{ totals.stale }} parada(s)</span>
             </div>
         </div>
 
@@ -83,14 +91,14 @@
                 <div class="crm-col-head" :style="{ borderTopColor: Crm.STAGE_COLORS[stage] }">
                     <div class="d-flex justify-content-between">
                         <strong>{{ stage }}</strong>
-                        <span class="badge bg-light text-dark">{{ visible(stage).length }}</span>
+                        <span class="badge bg-light text-dark">{{ col(stage).count }}</span>
                     </div>
-                    <small>{{ Crm.brl(sum(stage)) }}<template v-if="Crm.OPEN_STAGES.includes(stage)"> &middot; pond. {{ Crm.brl(weighted(stage)) }}</template></small>
+                    <small>{{ Crm.brl(col(stage).value) }}<template v-if="Crm.OPEN_STAGES.includes(stage)"> &middot; pond. {{ Crm.brl(col(stage).weighted) }}</template></small>
                     <div v-if="!Crm.OPEN_STAGES.includes(stage)"><small>últimos {{ closedDays }} dias</small></div>
                 </div>
-                <draggable class="crm-list" :list="columns[stage]" group="opportunities" ghost-class="ghost" :data-stage="stage"
+                <draggable class="crm-list" :list="col(stage).items" group="opportunities" ghost-class="ghost" :data-stage="stage"
                     @change="onChange($event, stage)" :move="canMove">
-                    <div class="crm-card" v-for="o in columns[stage]" :key="o.id" v-show="matches(o)">
+                    <div class="crm-card" v-for="o in col(stage).items" :key="o.id">
                         <a class="title" :href="'./opportunity.html?id=' + o.id">{{ o.title }}</a>
                         <div class="party">{{ Crm.partyName(o) }}</div>
                         <div class="meta">
@@ -111,12 +119,20 @@
                         </div>
                         <div class="followup text-muted" v-else-if="Crm.OPEN_STAGES.includes(o.stage)"><i class="fa-regular fa-bell-slash"></i> Sem follow-up</div>
                         <div class="followup text-danger" v-if="o.stage === 'Perdido' && o.lost_reason">Motivo: {{ o.lost_reason }}</div>
+                        <div class="followup text-warning fw-semibold" v-if="o.stale"><i class="fa-solid fa-hourglass-half"></i> Parada há {{ o.idle_days }} dia(s)</div>
+                        <div class="followup text-muted" v-if="users.length > 1 && o.Owner"><i class="fa-regular fa-user"></i> {{ o.Owner.username }}</div>
+                    </div>
+                    <div slot="footer" v-if="col(stage).has_more" class="text-center">
+                        <button type="button" class="btn btn-sm btn-link" :disabled="loadingMore === stage" @click="loadMore(stage)">
+                            {{ loadingMore === stage ? 'Carregando…' : 'Carregar mais (' + (col(stage).count - col(stage).items.length) + ')' }}
+                        </button>
                     </div>
                 </draggable>
             </div>
         </div>
 
         <crm-win-modal ref="win" @done="onWon" @cancel="load"></crm-win-modal>
+        <crm-followup-prompt ref="followup"></crm-followup-prompt>
 
         <!-- Motivo da perda -->
         <div class="modal fade" id="lostModal" tabindex="-1">
@@ -153,6 +169,7 @@
     <script src="../assets/js/standaloneItems.js"></script>
     <script src="../assets/js/paymentTerms.js"></script>
     <script src="../assets/js/crm/winModal.js"></script>
+    <script src="../assets/js/crm/followupPrompt.js"></script>
     <script src="../assets/js/crm/kanban.js"></script>
     <script src="../assets/js/nav.js"></script>
 </body>
