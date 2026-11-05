@@ -1,5 +1,5 @@
 import moment from 'moment'
-import { Transaction } from 'sequelize'
+import { Op, Transaction } from 'sequelize'
 
 import Billing from '../models/Billing'
 import Client from '../models/Client'
@@ -32,8 +32,8 @@ async function nextDueDateFor(party: BillingParty, transaction?: Transaction | n
 // Cobrança pendente da parte (cliente ou fornecedor); cria uma nova com o vencimento padrão da parte se não houver.
 export async function findOrCreatePendingBilling(party: BillingParty, transaction?: Transaction | null): Promise<Billing> {
     const where = party.SupplierId
-        ? { SupplierId: party.SupplierId, status: 'pendente' }
-        : { ClientId: party.ClientId, SupplierId: null, status: 'pendente' }
+        ? { SupplierId: party.SupplierId, status: 'pendente', fixed_due_date: false }
+        : { ClientId: party.ClientId, SupplierId: null, status: 'pendente', fixed_due_date: false }
 
     const existing = await Billing.findOne({ where: where as any, transaction })
     if (existing) return existing
@@ -49,6 +49,31 @@ export async function createPendingBilling(party: BillingParty, transaction?: Tr
             SupplierId: party.SupplierId || null,
             status: 'pendente',
             due_date: await nextDueDateFor(party, transaction),
+        },
+        { transaction },
+    )
+}
+
+// Cobrança de parcela: uma por parte e vencimento (parcelas de protocolos diferentes no mesmo dia vão juntas).
+export async function findOrCreateFixedBilling(party: BillingParty, dueDate: string, transaction?: Transaction | null): Promise<Billing> {
+    const day = moment(dueDate, 'YYYY-MM-DD')
+    const where: any = {
+        status: 'pendente',
+        fixed_due_date: true,
+        due_date: { [Op.between]: [day.clone().startOf('day').toDate(), day.clone().endOf('day').toDate()] },
+        ...(party.SupplierId ? { SupplierId: party.SupplierId } : { ClientId: party.ClientId, SupplierId: null }),
+    }
+    const existing = await Billing.findOne({ where, transaction })
+    if (existing) return existing
+
+    return Billing.create(
+        {
+            ClientId: party.SupplierId ? null : (party.ClientId as number),
+            SupplierId: party.SupplierId || null,
+            status: 'pendente',
+            fixed_due_date: true,
+            // Meio-dia: evita que o fuso desloque a data do vencimento.
+            due_date: day.clone().hour(12).toDate(),
         },
         { transaction },
     )

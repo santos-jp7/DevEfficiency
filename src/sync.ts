@@ -10,6 +10,7 @@ import Protocol_register from './models/Protocol_register'
 import Receipts from './models/Receipts'
 import Product from './models/Product'
 import Protocol_product from './models/Protocol_product'
+import ProtocolInstallment from './models/ProtocolInstallment'
 import Server from './models/Server'
 import Contact from './models/Contact'
 import Address from './models/Address'
@@ -103,6 +104,7 @@ async function syncModels(): Promise<true> {
     await Protocol.sync({ alter: { drop: false } })
     await Protocol_register.sync({ alter: { drop: false } })
     await Protocol_product.sync({ alter: { drop: false } })
+    await ProtocolInstallment.sync({ alter: { drop: false } })
 
     await BankAccount.sync({ alter: { drop: false } })
     await BankTransfer.sync({ alter: { drop: false } })

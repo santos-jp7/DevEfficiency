@@ -15,6 +15,9 @@
         commission_percent: null,
         commission_value: null,
         commission_manual: false,
+        payment_terms: '',
+        installments_manual: false,
+        _installments: [],
         registers: [window.StandaloneItems.emptyRegister()],
         products: [],
     })
@@ -69,6 +72,7 @@
 
                     <div class="mt-3">
                         <protocol-commission :protocol="form" :net="Math.max(subtotal - discount, 0)"></protocol-commission>
+                        <payment-terms :protocol="form" :total="toBill"></payment-terms>
                     </div>
 
                     <div v-if="error" class="alert alert-danger py-2 mt-3 mb-0">{{ error }}</div>
@@ -109,6 +113,11 @@
                 },
                 discount() {
                     return Number(this.form.discount_value) || 0
+                },
+                // Valor a cobrar: o total ao cliente (direta) ou a comissão (comissão de terceiro).
+                toBill() {
+                    const net = Math.max(this.subtotal - this.discount, 0)
+                    return window.ProtocolCommission.isCommission(this.form) ? window.ProtocolCommission.expected(this.form, net) : net
                 },
             },
             methods: {
@@ -151,6 +160,7 @@
                             registers,
                             products,
                             ...window.ProtocolCommission.payload(this.form),
+                            ...window.PaymentTerms.payload(this.form),
                         })
 
                         bootstrap.Modal.getInstance(document.getElementById(MODAL_ID)).hide()

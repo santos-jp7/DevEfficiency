@@ -23,6 +23,8 @@ import Supplier from '../models/Supplier'
 import { isCommission, summarizeCommission } from '../utils/protocolCommission'
 import { CommissionInputError, parseCommissionInput } from '../utils/commissionInput'
 import { StandaloneError, StandaloneInput, createStandaloneProtocol } from '../utils/standaloneProtocol'
+import ProtocolInstallment from '../models/ProtocolInstallment'
+import { PaymentTermsError, installmentsInputChanged, saveInstallmentsInput } from '../utils/paymentTerms'
 import { getClientByProtocol, summarizeProtocol, sumSummaries, withPricing, pricingView } from '../utils/pricing'
 
 // Campos de comissão vindos do corpo; depois de liberado, a cobrança já foi gerada com o valor/parte atuais.
@@ -125,7 +127,9 @@ class protocolsController {
                 Receipts,
                 Seller,
                 { model: Supplier, as: 'CommissionSupplier' },
+                ProtocolInstallment,
             ],
+            order: [[ProtocolInstallment, 'due_date', 'ASC']],
         })
 
         if (!protocol) return res.send(protocol)
@@ -204,6 +208,22 @@ class protocolsController {
             throw e
         }
 
+        // Condição de pagamento/vencimentos: só com o protocolo em aberto (depois de liberado as cobranças já existem).
+        const termsInput: any = {}
+        for (const k of ['payment_terms', 'installments']) if (k in (req.body as any)) termsInput[k] = (req.body as any)[k]
+        if (Object.keys(termsInput).length) {
+            try {
+                if (await installmentsInputChanged(protocol, termsInput)) {
+                    if (protocol.status !== 'Em aberto')
+                        return res.status(400).send({ message: 'A condição de pagamento só pode ser alterada com o protocolo "Em aberto".' })
+                    await saveInstallmentsInput(protocol, termsInput)
+                }
+            } catch (e) {
+                if (e instanceof PaymentTermsError) return res.status(400).send({ message: e.message })
+                throw e
+            }
+        }
+
         await protocol.update({
             status,
             notes,
@@ -216,7 +236,7 @@ class protocolsController {
 
         // When releasing for payment, create a new billing if current billing is already faturada
         // (protocolo por comissão: a cobrança é do fornecedor e já é gerada pelo hook).
-        if (status === 'Liberado para pagamento' && !isCommission(protocol)) {
+        if (status === 'Liberado para pagamento' && !isCommission(protocol) && !protocol.installments_manual && !protocol.payment_terms) {
             const existingBPs = await BillingProtocol.findAll({
                 where: { ProtocolId: id },
                 include: [Billing],

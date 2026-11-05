@@ -16,6 +16,8 @@ class Supplier extends Model<InferAttributes<Supplier>, InferCreationAttributes<
     // Protocolos por comissão: % sugerida e prazo (dias) para vencimento da cobrança ao fornecedor.
     declare default_commission_percent: CreationOptional<number | null>
     declare commission_payment_days: CreationOptional<number>
+    // Condição padrão dos repasses do fornecedor (ex.: "15/30/60"), usada quando o protocolo não define a sua.
+    declare default_payment_terms: CreationOptional<string | null>
 
     declare createdAt: CreationOptional<Date>
     declare updatedAt: CreationOptional<Date>
@@ -57,6 +59,10 @@ Supplier.init(
             type: DataTypes.INTEGER,
             allowNull: false,
             defaultValue: 30,
+        },
+        default_payment_terms: {
+            type: DataTypes.STRING(60),
+            allowNull: true,
         },
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,

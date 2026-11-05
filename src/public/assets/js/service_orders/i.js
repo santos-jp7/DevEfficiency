@@ -126,6 +126,10 @@ const service_order = new Vue({
                 ? ProtocolCommission.expected(this.Protocol, this.protocolDiscountedTotal)
                 : this.protocolDiscountedTotal
         },
+        protocolAmountDueOpen() {
+            const received = (this.Protocol?.Receipts || []).reduce((s, v) => s + (Number(v.value) || 0), 0)
+            return Math.max(Math.round((this.protocolAmountDue - received) * 100) / 100, 0)
+        },
         protocolInstallmentValue() {
             const n = this.Protocol?.total_installments
             if (!n || n <= 1) return 0
@@ -230,6 +234,7 @@ const service_order = new Vue({
                     total_installments: this.$data.Protocol.total_installments || null,
                     discount_value: this.$data.Protocol.discount_value || null,
                     ...ProtocolCommission.payload(this.$data.Protocol),
+                    ...PaymentTerms.payload(this.$data.Protocol),
                 })
                 .then(() => {
                     window.location.reload()

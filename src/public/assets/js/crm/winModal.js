@@ -18,6 +18,9 @@
         commission_percent: o?.commission_percent ?? null,
         commission_value: o?.commission_value ?? null,
         commission_manual: !!o?.commission_manual,
+        payment_terms: '',
+        installments_manual: false,
+        _installments: [],
         Receipts: [],
     })
 
@@ -41,6 +44,9 @@
             clientProjects() {
                 const id = this.o?.ClientId
                 return id ? this.projects.filter((p) => p.ClientId === id) : []
+            },
+            toBill() {
+                return window.ProtocolCommission.isCommission(this.form) ? window.ProtocolCommission.expected(this.form, this.net) : this.net
             },
             leadLabel() {
                 const l = this.o?.Lead
@@ -90,7 +96,7 @@
                     const { registers, products, error } = window.StandaloneItems.payload(f)
                     if (error) return (this.error = error)
                     if (!registers.length && !products.length) return (this.error = 'Lance ao menos um registro ou produto.')
-                    Object.assign(body, { registers, products, discount_value: f.discount_value || 0, notes: f.notes || undefined })
+                    Object.assign(body, { registers, products, discount_value: f.discount_value || 0, notes: f.notes || undefined, ...window.PaymentTerms.payload(f) })
                 }
                 if (f.mode !== 'none' && f.billing_mode === 'Comissão' && !f.CommissionSupplierId)
                     return (this.error = 'Selecione o fornecedor que paga a comissão.')
@@ -184,6 +190,7 @@
 
                         <div class="mt-3" v-if="form.mode !== 'none'">
                             <protocol-commission :protocol="form" :net="form.mode === 'protocol' ? net : Number(o.estimated_value) || 0" :show-received="false"></protocol-commission>
+                            <payment-terms v-if="form.mode === 'protocol'" :protocol="form" :total="toBill"></payment-terms>
                         </div>
 
                         <div v-if="error" class="alert alert-danger py-2 mt-3 mb-0">{{ error }}</div>

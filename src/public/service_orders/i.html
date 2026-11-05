@@ -276,7 +276,8 @@
                         </div>
 
 
-                        <div class="row mt-2">
+                        <!-- Parcelamento antigo: só aparece em protocolos que já usam. A condição de pagamento substitui. -->
+                        <div class="row mt-2" v-if="Protocol.total_installments > 1 || Protocol.current_installment">
                             <div class="mb-3 col-md-3">
                                 <label class="form-label">Parcela atual</label>
                                 <input type="number" min="1" class="form-control"
@@ -316,6 +317,7 @@
                         </div>
 
                         <protocol-commission v-if="Protocol.id" :protocol="Protocol" :net="protocolDiscountedTotal" :locked="protocolSavedStatus !== 'Em aberto'"></protocol-commission>
+                        <payment-terms v-if="Protocol.id" :protocol="Protocol" :total="protocolAmountDueOpen" :locked="protocolSavedStatus !== 'Em aberto'"></payment-terms>
 
                         <button type="submit" class="btn btn-dark">Enviar</button>
 
@@ -809,6 +811,7 @@
 
     <script src="../assets/js/pricing.js"></script>
     <script src="../assets/js/protocolCommission.js"></script>
+    <script src="../assets/js/paymentTerms.js"></script>
     <script src="../assets/js/pdf.js"></script>
     <script src="../assets/js/service_orders/i.js"></script>
     <script src="../assets/js/nav.js"></script>

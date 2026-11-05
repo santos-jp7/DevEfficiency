@@ -91,6 +91,7 @@ const service_order = new Vue({
                 .put('/api/protocols/' + this.$data.payloads.protocol.id, {
                     status: this.$data.payloads.protocol.status,
                     ...ProtocolCommission.payload(this.$data.payloads.protocol),
+                    ...PaymentTerms.payload(this.$data.payloads.protocol),
                 })
                 .then(() => {
                     window.location.reload()

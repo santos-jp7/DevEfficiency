@@ -235,6 +235,9 @@
                 </div>
 
                 <% const cm = (typeof commissions !== 'undefined' && commissions) ? commissions.get(p.id) : null; %>
+                <% if (item.ProtocolInstallment) { %>
+                    <small>Parcela <%= item.ProtocolInstallment.number %> &bull; vencimento <%= String(item.ProtocolInstallment.due_date).split('-').reverse().join('/') %></small>
+                <% } %>
                 <% if (cm) { %>
                     <small>Cliente: <%= p.Client?.name || '—' %> &bull; Valor pago ao fornecedor: <%= pv.brl(cm.client_total) %><% if (cm.percent && !cm.manual) { %> &bull; Comissão <%= pv.percent(cm.percent) %><% } %></small>
                 <% } %>

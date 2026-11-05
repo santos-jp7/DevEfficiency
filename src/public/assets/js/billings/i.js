@@ -10,10 +10,19 @@ const app = new Vue({
         sendingEmail: false,
         sendingReminder: false,
         receivedValue: null,
+        supplierLines: [],
+        supplierTotal: 0,
 
         bankAccounts: [],
     },
     computed: {
+        supplierAllocated() {
+            return Math.round(this.supplierLines.reduce((s, l) => s + (Number(l.value) || 0), 0) * 100) / 100
+        },
+        supplierOverError() {
+            const over = this.supplierLines.find((l) => (Number(l.value) || 0) > l.expected + 0.009 && !l.settle)
+            return over ? `Protocolo #${over.ProtocolId}: valor acima do previsto — marque "valor final" para aceitar.` : ''
+        },
         boletoFile() {
             if (!this.billing.BillingFiles) return null
             return [...this.billing.BillingFiles]
@@ -185,6 +194,25 @@ const app = new Vue({
                 return
             }
 
+            // Cobrança de fornecedor: valor por comissão (repasse parcial, parcelado ou diferente do previsto).
+            if (this.billing.SupplierId) {
+                this.supplierLines = (this.billing.BillingProtocols || [])
+                    .slice()
+                    .sort((a, b) => a.ProtocolId - b.ProtocolId || a.id - b.id)
+                    .map((bp) => ({
+                        BillingProtocolId: bp.id,
+                        ProtocolId: bp.ProtocolId,
+                        installment: bp.ProtocolInstallment ? bp.ProtocolInstallment.number : null,
+                        label: bp.Protocol && bp.Protocol.notes ? bp.Protocol.notes : '',
+                        expected: Number(bp.value) || 0,
+                        value: Number(bp.value) || 0,
+                        settle: false,
+                    }))
+                this.supplierTotal = Number(this.billing.total_value) || 0
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('supplierReceiptModal')).show()
+                return
+            }
+
             // Em atraso: o valor recebido precisa ser confirmado (e pode ser alterado) antes de finalizar.
             if (this.billing.late_charges && this.billing.late_charges.overdue) {
                 this.receivedValue = this.billing.late_charges.total_with_charges
@@ -201,17 +229,37 @@ const app = new Vue({
 
             this.postReceipt()
         },
+        // Sugestão: preenche do protocolo mais antigo para o mais novo até acabar o valor recebido.
+        distributeSupplierTotal() {
+            let left = Math.round((Number(this.supplierTotal) || 0) * 100) / 100
+            for (const line of this.supplierLines) {
+                const v = Math.min(line.expected, left)
+                line.value = Math.round(v * 100) / 100
+                left = Math.round((left - v) * 100) / 100
+            }
+            // Sobrou (fornecedor pagou a mais): vai para a última linha, que precisa ser marcada como valor final.
+            if (left > 0 && this.supplierLines.length) {
+                const last = this.supplierLines[this.supplierLines.length - 1]
+                last.value = Math.round((last.value + left) * 100) / 100
+                last.settle = true
+            }
+        },
+        confirmSupplierReceipt() {
+            bootstrap.Modal.getInstance(document.getElementById('supplierReceiptModal')).hide()
+            this.postReceipt(undefined, this.supplierLines.map((l) => ({ BillingProtocolId: l.BillingProtocolId, value: Number(l.value) || 0, settle: !!l.settle })))
+        },
         confirmReceipt() {
             bootstrap.Modal.getInstance(document.getElementById('receiptModal')).hide()
             this.postReceipt(this.receivedValue)
         },
-        postReceipt(receivedValue) {
+        postReceipt(receivedValue, allocations) {
             __api__
                 .post(`/api/billing-receipt`, {
                     method: this.billing.method,
                     BankAccountId: this.billing.BankAccountId,
                     id: this.billing.id,
                     ...(receivedValue !== undefined ? { received_value: receivedValue } : {}),
+                    ...(allocations ? { allocations } : {}),
                 })
                 .then((res) => {
                     alert('Cobrança recebida com sucesso!')

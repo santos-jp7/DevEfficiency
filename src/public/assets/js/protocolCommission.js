@@ -23,6 +23,7 @@
     }
 
     window.ProtocolCommission = {
+        loadSuppliers,
         isCommission: (protocol) => protocol?.billing_mode === 'Comissão',
         // Campos enviados à API. Valor só vai quando informado na mão; vazio = sugerido pela %.
         payload(protocol) {

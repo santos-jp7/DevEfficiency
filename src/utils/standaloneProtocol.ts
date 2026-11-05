@@ -11,6 +11,8 @@ import Seller from '../models/Seller'
 import { PricingError, buildRegisterData } from '../controllers/protocolsRegisterController'
 import { MAX_QUANTITY } from '../controllers/protocolsProductController'
 import { CommissionInputError, parseCommissionInput } from './commissionInput'
+import { PaymentTermsError, installmentsTotal, normalizeManual, normalizeTerms, saveInstallmentsInput } from './paymentTerms'
+import { amountDue } from './protocolCommission'
 
 // Erro de validação/criação do lançamento avulso. status 500 = protocolo criado mas não liberado (ProtocolId preenchido).
 export class StandaloneError extends Error {
@@ -30,6 +32,9 @@ export type StandaloneInput = {
     CommissionSupplierId?: number | string | null
     commission_percent?: number | string | null
     commission_value?: number | string | null
+    // Condição de pagamento (ex.: "15/30/60") e/ou vencimentos manuais [{ due_date, value }].
+    payment_terms?: string | null
+    installments?: { due_date: string; value: number | string }[] | null
 }
 
 // Valida tudo o que dá para validar sem gravar. requireClient=false quando o cliente ainda vai ser criado (CRM).
@@ -72,6 +77,14 @@ export async function validateStandalone(input: StandaloneInput, options: { requ
     }
 
     if (Number(input.discount_value) < 0) throw new StandaloneError('Desconto inválido para o total lançado.')
+
+    try {
+        normalizeTerms(input.payment_terms)
+        if (Array.isArray(input.installments) && input.installments.length) normalizeManual(input.installments)
+    } catch (e) {
+        if (e instanceof PaymentTermsError) throw new StandaloneError(e.message)
+        throw e
+    }
 
     return { client, commission, registerList, productList }
 }
@@ -116,6 +129,19 @@ export async function createStandaloneProtocol(input: StandaloneInput): Promise<
         if (discount < 0 || discount > gross) throw new PricingError('Desconto inválido para o total lançado.')
 
         if (discount > 0) await protocol.update({ discount_value: discount }, { transaction: t })
+
+        // Condição de pagamento antes de liberar; vencimentos manuais precisam fechar com o total lançado.
+        if (input.payment_terms || (Array.isArray(input.installments) && input.installments.length)) {
+            await saveInstallmentsInput(protocol, { payment_terms: input.payment_terms ?? null, installments: input.installments ?? null }, t)
+            if (protocol.installments_manual) {
+                const planned = installmentsTotal(normalizeManual(input.installments as any[]))
+                const registers = await Protocol_register.findAll({ where: { ProtocolId: protocol.id }, transaction: t })
+                const products = await Protocol_product.findAll({ where: { ProtocolId: protocol.id }, transaction: t })
+                const due = amountDue(protocol, registers, products)
+                if (Math.abs(planned - due) > 0.01)
+                    throw new PricingError(`Os vencimentos somam ${planned.toFixed(2)}, mas o valor a cobrar é ${due.toFixed(2)}.`)
+            }
+        }
 
         await t.commit()
     } catch (e) {

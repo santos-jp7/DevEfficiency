@@ -14,6 +14,7 @@ import { createServiceOrder } from './serviceOrderFactory'
 import { StandaloneError, createStandaloneProtocol, validateStandalone } from './standaloneProtocol'
 import { CommissionInputError, parseCommissionInput } from './commissionInput'
 import { summarizeProtocol } from './pricing'
+import { saveInstallmentsInput } from './paymentTerms'
 
 export class CrmInputError extends Error {}
 
@@ -92,6 +93,9 @@ export type WinInput = {
     products?: any[]
     discount_value?: number | string | null
     notes?: string | null
+    // Condição de pagamento do protocolo gerado (OS ou avulso): "15/30/60" e/ou vencimentos manuais.
+    payment_terms?: string | null
+    installments?: { due_date: string; value: number | string }[] | null
     // Cobrança (padrão: a da oportunidade)
     billing_mode?: string
     CommissionSupplierId?: number | string | null
@@ -216,6 +220,8 @@ export async function winOpportunity(opportunity: Opportunity, input: WinInput):
         discount_value: input.discount_value,
         registers: input.registers,
         products: input.products,
+        payment_terms: input.payment_terms ?? null,
+        installments: input.installments ?? null,
         ...commission,
     }
 
@@ -264,6 +270,7 @@ export async function winOpportunity(opportunity: Opportunity, input: WinInput):
             const protocol = await Protocol.findOne({ where: { ServiceOrderId: os.id } })
             if (protocol) {
                 await protocol.update({ SellerId, ...((await parseCommissionInput(commission)) as any) })
+                if (input.payment_terms) await saveInstallmentsInput(protocol, { payment_terms: input.payment_terms })
                 ProtocolId = protocol.id
             }
         } else if (mode === 'protocol') {
