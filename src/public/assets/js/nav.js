@@ -5,10 +5,10 @@
             label: 'Operações',
             icon: 'fa-solid fa-clipboard-list',
             items: [
-                { label: 'Chamados', href: '/tickets' },
-                { label: 'Ordens de Serviço', href: '/service_orders' },
-                { label: 'Assinaturas', href: '/subscriptions' },
-                { label: 'Protocolos', href: '/protocols' },
+                { label: 'Chamados', href: '/tickets/' },
+                { label: 'Ordens de Serviço', href: '/service_orders/' },
+                { label: 'Assinaturas', href: '/subscriptions/' },
+                { label: 'Protocolos', href: '/protocols/' },
             ],
         },
         {
@@ -16,7 +16,7 @@
             label: 'CRM',
             icon: 'fa-solid fa-handshake',
             items: [
-                { label: 'Funil de vendas', href: '/crm' },
+                { label: 'Funil de vendas', href: '/crm/' },
                 { label: 'Leads', href: '/crm/leads.html' },
                 { label: 'Relatório de vendas', href: '/crm/reports.html' },
             ],
@@ -26,9 +26,9 @@
             label: 'Clientes',
             icon: 'fa-solid fa-users',
             items: [
-                { label: 'Clientes', href: '/clients' },
-                { label: 'Projetos', href: '/projects' },
-                { label: 'Cobranças', href: '/billings' },
+                { label: 'Clientes', href: '/clients/' },
+                { label: 'Projetos', href: '/projects/' },
+                { label: 'Cobranças', href: '/billings/' },
             ],
         },
         {
@@ -36,12 +36,12 @@
             label: 'Financeiro',
             icon: 'fa-solid fa-landmark',
             items: [
-                { label: 'Contas a Pagar', href: '/payables' },
-                { label: 'Contas Bancárias', href: '/bank-accounts' },
-                { label: 'Conciliação Bancária', href: '/reconciliation' },
-                { label: 'Vendedores', href: '/sellers' },
-                { label: 'Transferências', href: '/bank-transfers' },
-                { label: 'Centros de Custo', href: '/cost-centers' },
+                { label: 'Contas a Pagar', href: '/payables/' },
+                { label: 'Contas Bancárias', href: '/bank-accounts/' },
+                { label: 'Conciliação Bancária', href: '/reconciliation/' },
+                { label: 'Vendedores', href: '/sellers/' },
+                { label: 'Transferências', href: '/bank-transfers/' },
+                { label: 'Centros de Custo', href: '/cost-centers/' },
             ],
         },
         {
@@ -49,12 +49,12 @@
             label: 'Relatórios',
             icon: 'fa-solid fa-chart-line',
             items: [
-                { label: 'Fluxo de Caixa', href: '/financial-history' },
-                { label: 'DRE', href: '/dre-report' },
-                { label: 'Despesas', href: '/expense-report' },
-                { label: 'Inadimplência', href: '/commercial-reports?tab=inadimplencia' },
-                { label: 'Vendas e Comissões', href: '/commercial-reports?tab=vendas' },
-                { label: 'Recorrência (MRR)', href: '/commercial-reports?tab=recorrencia' },
+                { label: 'Fluxo de Caixa', href: '/financial-history/' },
+                { label: 'DRE', href: '/dre-report/' },
+                { label: 'Despesas', href: '/expense-report/' },
+                { label: 'Inadimplência', href: '/commercial-reports/?tab=inadimplencia' },
+                { label: 'Vendas e Comissões', href: '/commercial-reports/?tab=vendas' },
+                { label: 'Recorrência (MRR)', href: '/commercial-reports/?tab=recorrencia' },
             ],
         },
         {
@@ -62,22 +62,36 @@
             label: 'Config',
             icon: 'fa-solid fa-gear',
             items: [
-                { label: 'Produtos', href: '/products' },
-                { label: 'Fornecedores', href: '/suppliers' },
-                { label: 'Servidores', href: '/servers' },
-                { label: 'Configurações', href: '/config' },
+                { label: 'Produtos', href: '/products/' },
+                { label: 'Fornecedores', href: '/suppliers/' },
+                { label: 'Servidores', href: '/servers/' },
+                { label: 'Configurações', href: '/config/' },
             ],
         },
     ]
 
     var path = window.location.pathname
 
-    function sectionActive(s) {
-        return s.items.some(function (i) { return path.startsWith(i.href) })
+    // Seção/item ativos pela pasta da página (ignora query e a barra final): /crm/lead.html → /crm/.
+    function base(href) {
+        return href.split('?')[0].replace(/\/$/, '')
     }
 
+    // Páginas com item próprio no menu (ex.: /crm/leads.html) não acendem o item da pasta (/crm/).
+    var EXPLICIT = []
+    SECTIONS.forEach(function (s) {
+        s.items.forEach(function (i) { if (base(i.href).indexOf('.html') !== -1) EXPLICIT.push(base(i.href)) })
+    })
+
     function itemActive(href) {
-        return path.startsWith(href)
+        var b = base(href)
+        if (b.indexOf('.html') !== -1) return path === b
+        if (EXPLICIT.indexOf(path) !== -1) return false
+        return path === b || path.indexOf(b + '/') === 0
+    }
+
+    function sectionActive(s) {
+        return s.items.some(function (i) { return itemActive(i.href) })
     }
 
     // ── Desktop nav ───────────────────────────────────────────────
@@ -107,6 +121,7 @@
         var TABS = [
             { label: 'Início', icon: 'fa-solid fa-house', href: '/dashboard', direct: true },
             { label: 'Operações', icon: 'fa-solid fa-clipboard-list', section: 'operacoes' },
+            { label: 'CRM', icon: 'fa-solid fa-handshake', section: 'crm' },
             { label: 'Clientes', icon: 'fa-solid fa-users', section: 'clientes' },
             { label: 'Financeiro', icon: 'fa-solid fa-landmark', section: 'financeiro' },
             { label: 'Mais', icon: 'fa-solid fa-ellipsis', section: 'mais' },
@@ -126,7 +141,7 @@
                 ? path === tab.href || path === '/dashboard.html'
                 : (function () {
                       var s = allSections.find(function (x) { return x.id === tab.section })
-                      return s ? s.items.some(function (i) { return path.startsWith(i.href) }) : false
+                      return s ? s.items.some(function (i) { return itemActive(i.href) }) : false
                   })()
             if (tab.direct) {
                 bottomBar += '<a href="' + tab.href + '" class="cx-bottom-nav__item' +
@@ -143,7 +158,7 @@
 
         // Drawers
         var drawers = ''
-        ;['operacoes', 'clientes', 'financeiro', 'mais'].forEach(function (id) {
+        ;['operacoes', 'crm', 'clientes', 'financeiro', 'mais'].forEach(function (id) {
             var s = allSections.find(function (x) { return x.id === id })
             if (!s) return
             drawers += '<div id="cx-drawer-' + id + '" class="cx-drawer" style="display:none">' +
@@ -166,34 +181,39 @@
     }
 
     // ── Inject ────────────────────────────────────────────────────
-    function inject() {
-        // Find and replace the existing nav block
-        var oldNav = null
+    // Cabeçalho igual em todas as telas: barra do logo + faixa do menu, ambas na mesma largura (.container),
+    // logo abaixo da barra do topo. Menus antigos escritos à mão nas páginas são removidos (com a linha <hr> que
+    // vinha depois deles), para nenhuma tela ficar com o menu em outro lugar.
+    function removeLegacyNav() {
         var candidates = document.querySelectorAll('[data-bs-toggle="dropdown"]')
         for (var i = 0; i < candidates.length; i++) {
-            if (candidates[i].textContent.indexOf('Gestão') !== -1 ||
-                candidates[i].textContent.indexOf('Operações') !== -1) {
-                oldNav = candidates[i].closest('.col') || candidates[i].closest('.d-flex')
-                if (oldNav && oldNav.parentNode) break
-            }
+            var text = candidates[i].textContent
+            if (text.indexOf('Gestão') === -1 && text.indexOf('Operações') === -1) continue
+            if (candidates[i].closest('#cx-nav-placeholder')) continue
+            var block = candidates[i].closest('.col') || candidates[i].closest('.d-flex')
+            if (!block || !block.parentNode) continue
+            var next = block.nextElementSibling
+            if (next && next.tagName === 'HR') next.parentNode.removeChild(next)
+            block.parentNode.removeChild(block)
+        }
+    }
+
+    function inject() {
+        removeLegacyNav()
+
+        var navbar = document.querySelector('nav.navbar')
+        if (navbar) {
+            var inner = navbar.querySelector('.container, .container-fluid')
+            if (inner) inner.className = 'container'
         }
 
         var placeholder = document.createElement('div')
         placeholder.id = 'cx-nav-placeholder'
+        placeholder.className = 'cx-nav-row'
+        placeholder.innerHTML = '<div class="container">' + buildDesktop() + '</div>'
 
-        if (oldNav) {
-            oldNav.parentNode.replaceChild(placeholder, oldNav)
-        } else {
-            // Fallback: insert after navbar
-            var navbar = document.querySelector('.navbar')
-            if (navbar && navbar.nextSibling) {
-                navbar.parentNode.insertBefore(placeholder, navbar.nextSibling)
-            } else {
-                document.body.prepend(placeholder)
-            }
-        }
-
-        placeholder.innerHTML = buildDesktop()
+        if (navbar && navbar.parentNode) navbar.parentNode.insertBefore(placeholder, navbar.nextSibling)
+        else document.body.prepend(placeholder)
 
         // Mobile: append to body
         var mobileWrap = document.createElement('div')
@@ -204,7 +224,7 @@
 
     // ── Global helpers ────────────────────────────────────────────
     window.cxNavToggle = function (id) {
-        ;['operacoes', 'clientes', 'financeiro', 'mais'].forEach(function (sid) {
+        ;['operacoes', 'crm', 'clientes', 'financeiro', 'mais'].forEach(function (sid) {
             var el = document.getElementById('cx-drawer-' + sid)
             if (el) {
                 if (sid === id) {
@@ -217,7 +237,7 @@
     }
 
     window.cxNavClose = function () {
-        ;['operacoes', 'clientes', 'financeiro', 'mais'].forEach(function (id) {
+        ;['operacoes', 'crm', 'clientes', 'financeiro', 'mais'].forEach(function (id) {
             var el = document.getElementById('cx-drawer-' + id)
             if (el) el.style.display = 'none'
         })

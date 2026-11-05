@@ -30,11 +30,11 @@
     <div class="container p-4" id="app">
         <div class="d-flex flex-wrap justify-content-between align-items-center mb-3" style="gap:.5rem">
             <h5 class="mb-0">
-                <a href="./leads.html" class="text-decoration-none text-muted"><i class="fa-solid fa-arrow-left"></i></a>
+                <a href="/crm/leads.html" class="text-decoration-none text-muted"><i class="fa-solid fa-arrow-left"></i></a>
                 {{ isNew ? 'Novo lead' : lead.name }}
                 <span v-if="!isNew" class="badge ms-2" :class="{ 'bg-success': lead.status === 'Convertido', 'bg-secondary': lead.status === 'Descartado', 'bg-primary': lead.status === 'Ativo' }">{{ lead.status }}</span>
             </h5>
-            <a v-if="!isNew" class="btn btn-dark btn-sm" :href="'./opportunity.html?new=1&LeadId=' + lead.id"><i class="fa-solid fa-plus"></i> Nova oportunidade</a>
+            <a v-if="!isNew" class="btn btn-dark btn-sm" :href="'/crm/opportunity.html?new=1&LeadId=' + lead.id"><i class="fa-solid fa-plus"></i> Nova oportunidade</a>
         </div>
 
         <div v-if="!isNew && (matches.clients.length || matches.leads.length)" class="alert alert-warning py-2 small">
@@ -43,7 +43,7 @@
                 cliente <a :href="'../clients/i.html?id=' + c.id">{{ c.name }}</a> (mesmo {{ c.reason }})<template v-if="lead.ClientId !== c.id && lead.status !== 'Convertido'"> — <a href="#" @click.prevent="lead.ClientId = c.id">vincular a este cliente</a></template>
             </span>
             <span v-for="l in matches.leads" :key="'l' + l.id" class="me-2">
-                lead <a :href="'./lead.html?id=' + l.id">{{ l.company || l.name }}</a> (mesmo {{ l.reason }}, {{ l.status }})
+                lead <a :href="'/crm/lead.html?id=' + l.id">{{ l.company || l.name }}</a> (mesmo {{ l.reason }}, {{ l.status }})
             </span>
         </div>
 
@@ -137,7 +137,7 @@
                     <h6>Oportunidades</h6>
                     <ul class="list-unstyled small mb-0">
                         <li v-for="o in lead.Opportunities || []" class="border-bottom py-2 d-flex justify-content-between">
-                            <a :href="'./opportunity.html?id=' + o.id">{{ o.title }}</a>
+                            <a :href="'/crm/opportunity.html?id=' + o.id">{{ o.title }}</a>
                             <span>
                                 <span class="badge" :style="{ background: Crm.STAGE_COLORS[o.stage] }">{{ o.stage }}</span>
                                 {{ o.estimated_value != null ? Crm.brl(o.estimated_value) : '' }}

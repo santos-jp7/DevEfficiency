@@ -31,9 +31,9 @@
         <div class="d-flex flex-wrap justify-content-between align-items-center mb-3" style="gap:.5rem">
             <h5 class="mb-0">CRM · Leads</h5>
             <div class="d-flex" style="gap:.5rem">
-                <a class="btn btn-outline-dark btn-sm" href="./reports.html"><i class="fa-solid fa-chart-line"></i> Relatório</a>
-                <a class="btn btn-outline-dark btn-sm" href="./index.html"><i class="fa-solid fa-table-columns"></i> Funil</a>
-                <a class="btn btn-dark btn-sm" href="./lead.html?new=1"><i class="fa-solid fa-plus"></i> Novo lead</a>
+                <a class="btn btn-outline-dark btn-sm" href="/crm/reports.html"><i class="fa-solid fa-chart-line"></i> Relatório</a>
+                <a class="btn btn-outline-dark btn-sm" href="/crm/"><i class="fa-solid fa-table-columns"></i> Funil</a>
+                <a class="btn btn-dark btn-sm" href="/crm/lead.html?new=1"><i class="fa-solid fa-plus"></i> Novo lead</a>
             </div>
         </div>
 
@@ -80,7 +80,7 @@
                             <span class="badge" :class="{ 'bg-success': l.status === 'Convertido', 'bg-secondary': l.status === 'Descartado', 'bg-primary': l.status === 'Ativo' }">{{ l.status }}</span>
                             <div class="small" v-if="l.Client"><a :href="'../clients/i.html?id=' + l.Client.id">{{ l.Client.name }}</a></div>
                         </td>
-                        <td><a :href="'./lead.html?id=' + l.id"><i class="fa-solid fa-arrow-right"></i></a></td>
+                        <td><a :href="'/crm/lead.html?id=' + l.id"><i class="fa-solid fa-arrow-right"></i></a></td>
                     </tr>
                     <tr v-if="!filtered.length">
                         <td colspan="7" class="text-center text-muted py-4">Nenhum lead encontrado.</td>

@@ -29,6 +29,8 @@ app.register(helmet, {
 app.register(fileStatic, {
     root: path.join(__dirname, 'public'),
     extensions: ['html'],
+    // /crm → /crm/: sem a barra, links relativos das páginas (./leads.html) seriam resolvidos a partir da raiz.
+    redirect: true,
 })
 
 app.register(multipart, { limits: { fileSize: 20 * 1024 * 1024 } }) // 20MB

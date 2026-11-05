@@ -79,7 +79,7 @@ new Vue({
             try {
                 if (this.isNew) {
                     const { data } = await __api__.post('/api/crm/opportunities', this.payload())
-                    location.href = './opportunity.html?id=' + data.id
+                    location.href = '/crm/opportunity.html?id=' + data.id
                     return
                 }
                 await __api__.put('/api/crm/opportunities/' + this.o.id, this.payload())
@@ -138,7 +138,7 @@ new Vue({
             if (!confirm('Excluir esta oportunidade?')) return
             try {
                 await __api__.delete('/api/crm/opportunities/' + this.o.id)
-                location.href = './index.html'
+                location.href = '/crm/'
             } catch (e) {
                 alert(Crm.errorMessage(e, 'Não foi possível excluir.'))
             }

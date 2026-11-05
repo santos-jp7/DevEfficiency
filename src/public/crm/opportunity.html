@@ -30,7 +30,7 @@
     <div class="container p-4" id="app">
         <div class="d-flex flex-wrap justify-content-between align-items-center mb-3" style="gap:.5rem">
             <h5 class="mb-0">
-                <a href="./index.html" class="text-decoration-none text-muted"><i class="fa-solid fa-arrow-left"></i></a>
+                <a href="/crm/" class="text-decoration-none text-muted"><i class="fa-solid fa-arrow-left"></i></a>
                 {{ isNew ? 'Nova oportunidade' : 'Oportunidade #' + o.id }}
                 <span v-if="!isNew" class="badge ms-2" :style="{ background: Crm.STAGE_COLORS[o.stage] }">{{ o.stage }}</span>
                 <span v-if="o.billing_mode === 'Comissão'" class="badge bg-info text-dark ms-1">Comissão</span>
@@ -85,8 +85,8 @@
                             <option v-for="l in leads" :value="l.id">{{ l.company ? l.company + ' — ' : '' }}{{ l.name }}</option>
                         </select>
                         <div class="form-text">
-                            <a href="./lead.html?new=1">Cadastrar novo lead</a>
-                            <template v-if="o.LeadId"> · <a :href="'./lead.html?id=' + o.LeadId">abrir lead</a></template>
+                            <a href="/crm/lead.html?new=1">Cadastrar novo lead</a>
+                            <template v-if="o.LeadId"> · <a :href="'/crm/lead.html?id=' + o.LeadId">abrir lead</a></template>
                         </div>
                     </div>
                     <div class="mb-3" v-else>
