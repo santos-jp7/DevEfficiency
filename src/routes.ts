@@ -53,6 +53,7 @@ import crmReportsController from './controllers/crm/crmReportsController'
 import { previewBillingReminders, runBillingReminders, sendBillingReminder } from './utils/billingReminders'
 import Billing from './models/Billing'
 import mcp from './mcp/server'
+import nfseController from './controllers/nfseController'
 
 const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.get('/', helloController.handler)
@@ -304,6 +305,18 @@ const routes: FastifyPluginCallback = (instance, opts, next) => {
     instance.post('/billing-reminders/run', { preHandler: [isAuthed] }, async (req, res) => res.send(await runBillingReminders({ force: true })))
 
     instance.post('/billing-receipt', { preHandler: [isAuthed] }, billingReceipt)
+
+    // NFS-e (Emissor Nacional): configuração, certificado A1, emissão a partir da cobrança e consulta.
+    instance.get('/nfse/settings', { preHandler: [isAuthed] }, nfseController.settings as any)
+    instance.put('/nfse/settings', { preHandler: [isAuthed] }, nfseController.saveSettings as any)
+    instance.post('/nfse/certificate', { preHandler: [isAuthed] }, nfseController.uploadCertificate as any)
+    instance.get('/nfse', { preHandler: [isAuthed] }, nfseController.index as any)
+    instance.get('/nfse/:id', { preHandler: [isAuthed] }, nfseController.show as any)
+    instance.post('/nfse/:id/sync', { preHandler: [isAuthed] }, nfseController.sync as any)
+    instance.get('/nfse/:id/xml', { preHandler: [isAuthed] }, nfseController.xml as any)
+    instance.get('/nfse/:id/pdf', { preHandler: [isAuthed] }, nfseController.pdf as any)
+    instance.get('/billings/:id/nfse/draft', { preHandler: [isAuthed] }, nfseController.draft as any)
+    instance.post('/billings/:id/nfse', { preHandler: [isAuthed] }, nfseController.emit as any)
 
     instance.put('/billing-protocols/:id', { preHandler: [isAuthed] }, billingProtocolController.update)
 

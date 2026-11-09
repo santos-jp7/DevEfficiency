@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8" />
+    <title>DANFSe <%= nfse.numero %></title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: Arial, Helvetica, sans-serif; font-size: 10px; color: #111; margin: 24px; }
+        h1 { font-size: 15px; margin: 0; }
+        .box { border: 1px solid #333; padding: 6px 8px; margin-bottom: 6px; }
+        .title { font-weight: bold; font-size: 10px; text-transform: uppercase; background: #eee; margin: -6px -8px 6px; padding: 3px 8px; border-bottom: 1px solid #333; }
+        .row { display: flex; gap: 12px; }
+        .row > div { flex: 1; }
+        .label { color: #555; font-size: 8px; text-transform: uppercase; }
+        .value { font-size: 10px; margin-bottom: 4px; word-break: break-word; }
+        .header { display: flex; justify-content: space-between; align-items: center; }
+        .chave { font-family: 'Courier New', monospace; font-size: 11px; letter-spacing: 0.5px; }
+        .desc { white-space: pre-wrap; font-size: 10px; }
+        .total { font-size: 13px; font-weight: bold; }
+        .watermark { color: #b00; font-weight: bold; font-size: 12px; text-align: center; border: 2px solid #b00; padding: 4px; margin-bottom: 6px; }
+        .muted { color: #555; font-size: 8px; }
+    </style>
+</head>
+<body>
+    <% if (homologacao) { %>
+    <div class="watermark">AMBIENTE DE TESTES (PRODUÇÃO RESTRITA) — SEM VALOR FISCAL</div>
+    <% } %>
+
+    <div class="box header">
+        <div>
+            <h1>DANFSe — Documento Auxiliar da NFS-e</h1>
+            <div class="muted">Nota Fiscal de Serviço eletrônica · Padrão Nacional</div>
+        </div>
+        <div style="text-align:right">
+            <div class="label">Número da NFS-e</div>
+            <div class="total"><%= nfse.numero %></div>
+            <div class="label">Emissão / Processamento</div>
+            <div class="value"><%= formatDateTime(nfse.dhProc) %></div>
+        </div>
+    </div>
+
+    <div class="box">
+        <div class="label">Chave de acesso</div>
+        <div class="chave"><%= chaveFormatada %></div>
+        <div class="row" style="margin-top:4px">
+            <div><div class="label">Competência</div><div class="value"><%= formatDateTime(nfse.dps.competencia) %></div></div>
+            <div><div class="label">Série / Nº DPS</div><div class="value"><%= nfse.dps.serie %> / <%= nfse.dps.numero %></div></div>
+            <div><div class="label">Município emissor</div><div class="value"><%= nfse.localEmissao || '—' %></div></div>
+        </div>
+        <div class="muted">Consulte a autenticidade em https://www.nfse.gov.br/consultapublica</div>
+    </div>
+
+    <% const e = nfse.emitente || {}; const ee = e.endereco || {}; %>
+    <div class="box">
+        <div class="title">Prestador do serviço</div>
+        <div class="row">
+            <div style="flex:2"><div class="label">Nome / Razão social</div><div class="value"><%= e.nome %><%= e.fantasia ? ' (' + e.fantasia + ')' : '' %></div></div>
+            <div><div class="label">CNPJ / CPF</div><div class="value"><%= formatDoc(e.documento) %></div></div>
+            <div><div class="label">Inscrição municipal</div><div class="value"><%= e.im || '—' %></div></div>
+        </div>
+        <div class="row">
+            <div style="flex:2"><div class="label">Endereço</div><div class="value"><%= [ee.logradouro, ee.numero, ee.complemento, ee.bairro].filter(Boolean).join(', ') %><%= ee.uf ? ' — ' + ee.uf : '' %><%= ee.cep ? ' — CEP ' + ee.cep : '' %></div></div>
+            <div><div class="label">E-mail / Telefone</div><div class="value"><%= [e.email, e.fone].filter(Boolean).join(' · ') || '—' %></div></div>
+            <div><div class="label">Simples Nacional</div><div class="value"><%= nfse.dps.opSimpNac === '3' ? 'Optante ME/EPP' : nfse.dps.opSimpNac === '2' ? 'MEI' : 'Não optante' %></div></div>
+        </div>
+    </div>
+
+    <% const t = nfse.dps.tomador || {}; const te = t.endereco || {}; %>
+    <div class="box">
+        <div class="title">Tomador do serviço</div>
+        <div class="row">
+            <div style="flex:2"><div class="label">Nome / Razão social</div><div class="value"><%= t.nome %></div></div>
+            <div><div class="label">CNPJ / CPF</div><div class="value"><%= formatDoc(t.documento) %></div></div>
+            <div><div class="label">Inscrição municipal</div><div class="value"><%= t.im || '—' %></div></div>
+        </div>
+        <div class="row">
+            <div style="flex:2"><div class="label">Endereço</div><div class="value"><%= te.logradouro ? [te.logradouro, te.numero, te.complemento, te.bairro].filter(Boolean).join(', ') + (te.cep ? ' — CEP ' + te.cep : '') : '—' %></div></div>
+            <div><div class="label">E-mail</div><div class="value"><%= t.email || '—' %></div></div>
+        </div>
+    </div>
+
+    <div class="box">
+        <div class="title">Serviço prestado</div>
+        <div class="row">
+            <div style="flex:2"><div class="label">Código de tributação nacional</div><div class="value"><%= nfse.dps.cTribNac %> — <%= nfse.tributacaoNacional || '' %></div></div>
+            <div><div class="label">Local da prestação</div><div class="value"><%= nfse.localPrestacao || '—' %></div></div>
+            <div><div class="label">Local de incidência do ISSQN</div><div class="value"><%= nfse.localIncidencia || '—' %></div></div>
+        </div>
+        <% if (nfse.dps.cTribMun || nfse.dps.cNBS) { %>
+        <div class="row">
+            <div><div class="label">Tributação municipal</div><div class="value"><%= nfse.dps.cTribMun ? nfse.dps.cTribMun + ' — ' + (nfse.tributacaoMunicipal || '') : '—' %></div></div>
+            <div><div class="label">NBS</div><div class="value"><%= nfse.dps.cNBS ? nfse.dps.cNBS + ' — ' + (nfse.nbsDescricao || '') : '—' %></div></div>
+        </div>
+        <% } %>
+        <div class="label">Descrição</div>
+        <div class="desc"><%= nfse.dps.descricao %></div>
+    </div>
+
+    <div class="box">
+        <div class="title">Valores</div>
+        <div class="row">
+            <div><div class="label">Valor do serviço</div><div class="value"><%= brl(nfse.dps.vServ) %></div></div>
+            <div><div class="label">Base de cálculo ISSQN</div><div class="value"><%= brl(nfse.valores.vBC) %></div></div>
+            <div><div class="label">Alíquota</div><div class="value"><%= nfse.valores.pAliqAplic ? nfse.valores.pAliqAplic + '%' : '—' %></div></div>
+            <div><div class="label">ISSQN</div><div class="value"><%= brl(nfse.valores.vISSQN) %></div></div>
+            <div><div class="label">ISSQN retido</div><div class="value"><%= nfse.dps.tpRetISSQN === '1' ? 'Não' : 'Sim' %></div></div>
+            <div><div class="label">Total retido</div><div class="value"><%= brl(nfse.valores.vTotalRet) %></div></div>
+        </div>
+        <div class="row" style="align-items:flex-end">
+            <div style="flex:3" class="muted">
+                <% if (nfse.dps.pTotTribSN) { %>Valor aproximado dos tributos: <%= nfse.dps.pTotTribSN %>% (Simples Nacional).<% } %>
+                <% if (nfse.dps.opSimpNac === '3') { %> Documento emitido por ME ou EPP optante pelo Simples Nacional.<% } %>
+            </div>
+            <div style="text-align:right"><div class="label">Valor líquido</div><div class="total"><%= brl(nfse.valores.vLiq) %></div></div>
+        </div>
+    </div>
+
+    <% if (nfse.dps.infoComplementar) { %>
+    <div class="box">
+        <div class="title">Informações complementares</div>
+        <div class="desc"><%= nfse.dps.infoComplementar %></div>
+    </div>
+    <% } %>
+</body>
+</html>

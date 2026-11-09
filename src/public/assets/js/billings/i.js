@@ -14,8 +14,18 @@ const app = new Vue({
         supplierTotal: 0,
 
         bankAccounts: [],
+
+        nfses: [],
+        nfseDraft: null,
+        nfseForm: {},
+        nfseEmitting: false,
+        nfseSyncing: false,
     },
     computed: {
+        // Nota autorizada ou aguardando confirmação: impede emitir outra para a mesma cobrança.
+        activeNfse() {
+            return this.nfses.find((n) => n.status === 'autorizada' || n.status === 'processando') || null
+        },
         supplierAllocated() {
             return Math.round(this.supplierLines.reduce((s, l) => s + (Number(l.value) || 0), 0) * 100) / 100
         },
@@ -63,6 +73,7 @@ const app = new Vue({
                 if (this.billing.payment_date)
                     this.billing.payment_date = moment.utc(this.billing.payment_date).format('YYYY-MM-DD')
             })
+            this.loadNfses()
         }
 
         __api__
@@ -77,6 +88,57 @@ const app = new Vue({
             })
     },
     methods: {
+        loadNfses() {
+            return __api__.get('/api/nfse', { params: { BillingId: this.id } }).then((res) => (this.nfses = res.data))
+        },
+        nfseStatusClass: (s) => NfseFmt.statusClass(s),
+        nfseDoc: (v) => NfseFmt.doc(v),
+        openNfseFile: (id, kind) => NfseFiles.open(id, kind),
+        async openNfseModal() {
+            try {
+                const { data } = await __api__.get(`/api/billings/${this.id}/nfse/draft`)
+                this.nfseDraft = data
+                this.nfseForm = { ...data.defaults }
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('nfseModal')).show()
+            } catch (err) {
+                alert(err.response?.data?.message || 'Erro ao preparar a NFS-e.')
+            }
+        },
+        async emitNfse() {
+            if (!confirm(`Emitir a NFS-e de ${this.formatCurrency(this.nfseForm.valor)} para ${this.nfseDraft.tomador.nome}?`)) return
+            this.nfseEmitting = true
+            try {
+                const { data } = await __api__.post(`/api/billings/${this.id}/nfse`, this.nfseForm)
+                bootstrap.Modal.getInstance(document.getElementById('nfseModal')).hide()
+                if (data.status === 'autorizada') alert(`NFS-e nº ${data.numero_nfse} autorizada.`)
+                else if (data.status === 'rejeitada')
+                    alert('A Sefin rejeitou a nota:\n' + (data.erros || []).map((e) => `${e.codigo} — ${e.descricao}`).join('\n'))
+                else alert('A Sefin não respondeu a tempo. Use "Verificar" para confirmar se a nota foi gerada.')
+                window.location.reload()
+            } catch (err) {
+                const d = err.response?.data
+                alert([d?.message || 'Erro ao emitir a NFS-e.', ...(Array.isArray(d?.details) ? d.details : [])].join('\n'))
+            } finally {
+                this.nfseEmitting = false
+            }
+        },
+        async syncNfse(n) {
+            this.nfseSyncing = true
+            try {
+                const { data } = await __api__.post(`/api/nfse/${n.id}/sync`)
+                if (data.status === 'autorizada') {
+                    alert(`NFS-e nº ${data.numero_nfse} autorizada.`)
+                    window.location.reload()
+                } else {
+                    Object.assign(n, data)
+                    alert(`Situação: ${data.status}.`)
+                }
+            } catch (err) {
+                alert(err.response?.data?.message || 'Erro ao verificar a NFS-e.')
+            } finally {
+                this.nfseSyncing = false
+            }
+        },
         openPdf(params) {
             PdfLink.open(params)
         },

@@ -30,6 +30,7 @@ Sistema de gestão operacional e financeira voltado para agências, prestadores 
 | **Cobranças** | Consolidação de protocolos em faturas por cliente; ciclo `pendente → faturada → pago` |
 | **Contas a Pagar** | Controle de despesas e pagamentos com categorias por centro de custo |
 | **Contas Bancárias** | Saldo em tempo real, transferências entre contas, suporte a IBAN/SWIFT para pagamentos internacionais. **Conferência de saldo**: compara o saldo gravado com saldo inicial + movimentações, mostra o extrato da conta, avisa por e-mail quando diverge e permite correção auditada |
+| **NFS-e (Emissor Nacional)** | Emissão da NFS-e Padrão Nacional direto da cobrança: monta a DPS no leiaute oficial v1.01, assina com o certificado A1 e envia à Sefin Nacional (mTLS). Guarda o XML, gera o DANFSe em PDF, anexa à cobrança e a marca como faturada. Começa no ambiente de testes (produção restrita) |
 | **Invoice Internacional** | Geração de invoice em PDF no padrão exterior (USD/EUR/GBP/BRL) a partir de uma OS |
 | **Relatórios** | Fluxo de Caixa, DRE e Relatório de Despesas. Relatórios comerciais: Inadimplência por cliente (faixas de atraso), Vendas e Comissões (com vendedor × Codlinx) e Recorrência (MRR/ARR), com exportação CSV |
 
@@ -120,6 +121,9 @@ RESEND_FROM=fatura@suaempresa.com
 RESEND_ALERT_FROM=alerta@suaempresa.com   # opcional; padrão = RESEND_FROM
 BILLING_REMINDER_HOUR=9                   # opcional; hora (America/Sao_Paulo) a partir da qual saem os lembretes de cobrança
 PAYABLES_ALERT_HOUR=8                     # opcional; hora (America/Sao_Paulo) do aviso diário de contas a pagar
+
+# NFS-e: chave que criptografa o certificado A1 no banco (opcional; padrão = SECRET)
+NFSE_CERT_KEY=uma_chave_longa_e_aleatoria
 
 # MCP (controle por IA) — vazio desliga o endpoint /api/mcp
 MCP_API_KEY=uma_chave_longa_e_aleatoria
@@ -226,6 +230,35 @@ Para desativar ferramentas, liste-as em `MCP_DISABLE` (ex.: `MCP_DISABLE=billing
 Credenciais e servidores (senhas, chaves RSA) não são expostos via MCP, nem mesmo dentro de outras respostas (ex.: detalhes do cliente).
 
 > ⚠️ A chave dá acesso ao restante do sistema, incluindo exclusões e envio de e-mails. Use uma chave longa e sirva o endpoint apenas via HTTPS.
+
+---
+
+## NFS-e (Emissor Nacional)
+
+Emissão direta pela API da Sefin Nacional, sem intermediário. Atende prestadores **optantes do Simples Nacional** (ME/EPP e MEI).
+
+1. **Configuração** em **Financeiro → NFS-e → Configuração**: envie o certificado A1 (`.pfx` e senha) e informe CNPJ,
+   código IBGE do município emissor, código de tributação nacional do serviço (`cTribNac`, 6 dígitos), percentual
+   aproximado de tributos do Simples e, se a prefeitura exigir, a inscrição municipal. A tela lista o que falta.
+2. **Emissão** na tela da cobrança (**Nota Fiscal → Emitir NFS-e**): valor, descrição e competência vêm sugeridos e
+   podem ser ajustados. Tomador = cliente da cobrança (ou o fornecedor, nas cobranças de comissão).
+3. **Resultado**: autorizada (XML guardado, DANFSe anexado, cobrança faturada), rejeitada (erros da Sefin na tela)
+   ou **processando** quando a Sefin não responde. Nesse caso use **Verificar**: o sistema consulta a DPS e, se a nota
+   não foi gerada, reenvia a mesma DPS, sem risco de nota duplicada.
+
+O sistema começa no **ambiente de testes (produção restrita)**, em que as notas não têm valor fiscal. Mude para
+produção na mesma tela depois de validar. O certificado e a senha ficam no banco criptografados (AES-256-GCM) com a
+chave `NFSE_CERT_KEY` (ou `SECRET`, se ela não for definida). **Trocar essa chave exige reenviar o certificado.**
+
+| Endpoint | Função |
+|---|---|
+| `GET/PUT /api/nfse/settings` · `POST /api/nfse/certificate` | Configuração e certificado |
+| `GET /api/billings/:id/nfse/draft` · `POST /api/billings/:id/nfse` | Pré-visualização (sugestões e pendências) e emissão |
+| `GET /api/nfse` · `POST /api/nfse/:id/sync` | Lista e verificação de nota em processamento |
+| `GET /api/nfse/:id/pdf` · `GET /api/nfse/:id/xml` | DANFSe e XML (`?tipo=dps` para a DPS enviada) |
+
+Ainda não implementado: cancelamento/substituição, grupo IBS/CBS (obrigatório para o Simples a partir de 2027) e
+tomador no exterior.
 
 ---
 

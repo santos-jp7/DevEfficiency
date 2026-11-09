@@ -46,6 +46,7 @@ import Lead from './models/Lead'
 import Opportunity from './models/Opportunity'
 import OpportunityStageHistory from './models/OpportunityStageHistory'
 import CrmActivity from './models/CrmActivity'
+import Nfse from './models/Nfse'
 
 // O `sync({ alter })` do Sequelize não amplia ENUMs já existentes no MySQL. Quando um valor novo é
 // acrescentado ao model, esta função (idempotente) atualiza a coluna sem mexer em nulidade/default.
@@ -112,6 +113,7 @@ async function syncModels(): Promise<true> {
     await Billing.sync({ alter: { drop: false } })
     await BillingProtocol.sync({ alter: { drop: false } })
     await BillingFile.sync({ alter: { drop: false } })
+    await Nfse.sync({ alter: { drop: false } })
 
 
     await Receipts.sync({ alter: { drop: false } })
