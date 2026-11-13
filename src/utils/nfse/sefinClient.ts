@@ -109,5 +109,10 @@ export function createSefinClient(ambiente: Ambiente, pfx: Buffer, passphrase: s
         consultarNfse: (chave: string) => send('GET', `/nfse/${encodeURIComponent(chave)}`),
         // GET /dps/{id} — chave de acesso da NFS-e gerada a partir de uma DPS (404 = não gerada).
         consultarDps: (idDps: string) => send('GET', `/dps/${encodeURIComponent(idDps)}`),
+        // POST /nfse/{chave}/eventos — pedido de registro de evento (ex.: cancelamento) assinado.
+        registrarEvento: (chave: string, signedXml: string) =>
+            send('POST', `/nfse/${encodeURIComponent(chave)}/eventos`, { pedidoRegistroEventoXmlGZipB64: gzipB64(signedXml) }),
+        // GET /nfse/{chave}/eventos/{tipo} — eventos de um tipo vinculados à nota (404 = nenhum).
+        consultarEvento: (chave: string, tipo: string) => send('GET', `/nfse/${encodeURIComponent(chave)}/eventos/${tipo}`),
     }
 }

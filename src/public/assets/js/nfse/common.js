@@ -38,5 +38,5 @@ window.NfseFmt = {
         if (d.length === 11) return d.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4')
         return v || ''
     },
-    statusClass: (s) => ({ autorizada: 'bg-success', processando: 'bg-warning text-dark', rejeitada: 'bg-danger', cancelada: 'bg-secondary' }[s] || 'bg-secondary'),
+    statusClass: (s) => ({ autorizada: 'bg-success', processando: 'bg-warning text-dark', rejeitada: 'bg-danger', cancelada: 'bg-secondary', substituida: 'bg-secondary' }[s] || 'bg-secondary'),
 }

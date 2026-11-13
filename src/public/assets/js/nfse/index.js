@@ -31,7 +31,7 @@ new Vue({
             this.settings = data.settings
             this.certificate = data.certificate
             this.problems = data.problems || []
-            this.form = { ...data.settings }
+            this.form = { ...data.settings, textos_padrao: (data.settings.textos_padrao || []).map((t) => ({ ...t })) }
         },
         loadSettings() {
             return __api__.get('/api/nfse/settings').then(({ data }) => {

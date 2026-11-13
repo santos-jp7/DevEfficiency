@@ -19,10 +19,34 @@ export interface NfseSettings {
     descricao_padrao: string
     ptottribsn: string // ME/EPP: % aproximado dos tributos no Simples (alíquota efetiva)
     aliquota_iss: string // usada só quando o ISS é retido pelo tomador
+    // Reforma tributária (IBS/CBS): o grupo só vai na DPS quando os três códigos estão preenchidos.
+    ibscbs_cindop: string // código indicador da operação (Anexo C), 6 dígitos
+    ibscbs_cst: string // CST do IBS/CBS, 3 dígitos
+    ibscbs_cclasstrib: string // classificação tributária, 6 dígitos
+    ibscbs_indfinal: '0' | '1' // uso ou consumo pessoal
+    // Exportação de serviço (tomador no exterior): padrões do grupo de comércio exterior.
+    exp_md_prestacao: string // 1 transfronteiriço · 2 consumo no Brasil · 3 presença comercial no exterior · 4 movimento temporário de pessoas
+    exp_vinc_prest: string // 0 sem vínculo com o tomador
+    exp_mec_prest: string // 01 nenhum mecanismo de apoio/fomento
+    exp_mec_toma: string // 01 nenhum
+    exp_mov_temp: string // 1 não vinculada a movimentação temporária de bens
+    exp_mdic: '0' | '1' // compartilhar com a Secex/MDIC
+    // Textos padrão escolhidos na emissão (ex.: instruções de pagamento), acrescentados à descrição do serviço.
+    textos_padrao: TextoPadrao[]
 }
 
+export interface TextoPadrao {
+    id: string
+    titulo: string
+    texto: string // aceita {vencimento}, {valor} e {cobranca}
+    metodo: string // forma de pagamento da cobrança que pré-seleciona este texto ('' = nenhuma)
+}
+
+export const TEXTOS_PADRAO_KEY = 'nfse_textos_padrao'
+const METODOS = ['', 'Pix', 'Boleto', 'Cartão', 'Transferência', 'Espécie']
+
 // Chaves guardadas em "configs". Os segredos do certificado nunca saem pela API de configurações.
-const KEYS: Record<keyof NfseSettings, string> = {
+const KEYS: Record<Exclude<keyof NfseSettings, 'textos_padrao'>, string> = {
     ambiente: 'nfse_ambiente',
     cnpj: 'nfse_cnpj',
     municipio_ibge: 'nfse_municipio_ibge',
@@ -38,6 +62,16 @@ const KEYS: Record<keyof NfseSettings, string> = {
     descricao_padrao: 'nfse_descricao_padrao',
     ptottribsn: 'nfse_ptottribsn',
     aliquota_iss: 'nfse_aliquota_iss',
+    ibscbs_cindop: 'nfse_ibscbs_cindop',
+    ibscbs_cst: 'nfse_ibscbs_cst',
+    ibscbs_cclasstrib: 'nfse_ibscbs_cclasstrib',
+    ibscbs_indfinal: 'nfse_ibscbs_indfinal',
+    exp_md_prestacao: 'nfse_exp_md_prestacao',
+    exp_vinc_prest: 'nfse_exp_vinc_prest',
+    exp_mec_prest: 'nfse_exp_mec_prest',
+    exp_mec_toma: 'nfse_exp_mec_toma',
+    exp_mov_temp: 'nfse_exp_mov_temp',
+    exp_mdic: 'nfse_exp_mdic',
 }
 
 export const CERT_PFX_KEY = 'nfse_cert_pfx'
@@ -46,7 +80,8 @@ export const CERT_INFO_KEY = 'nfse_cert_info'
 export const NUMBER_LOCK_KEY = 'nfse_numero_lock'
 
 // Configurações que a tela/API genérica de configurações não pode ler nem gravar.
-export const PROTECTED_CONFIG_TYPES = [CERT_PFX_KEY, CERT_PASS_KEY, CERT_INFO_KEY, NUMBER_LOCK_KEY]
+// 'cert_pass' é a senha do certificado do cadastro antigo (não usada pela NFS-e), também não deve vazar.
+export const PROTECTED_CONFIG_TYPES = [CERT_PFX_KEY, CERT_PASS_KEY, CERT_INFO_KEY, NUMBER_LOCK_KEY, 'cert_pass']
 
 const DEFAULTS: NfseSettings = {
     ambiente: 'producao_restrita',
@@ -64,6 +99,17 @@ const DEFAULTS: NfseSettings = {
     descricao_padrao: '',
     ptottribsn: '',
     aliquota_iss: '',
+    ibscbs_cindop: '',
+    ibscbs_cst: '',
+    ibscbs_cclasstrib: '',
+    ibscbs_indfinal: '0',
+    exp_md_prestacao: '1',
+    exp_vinc_prest: '0',
+    exp_mec_prest: '01',
+    exp_mec_toma: '01',
+    exp_mov_temp: '1',
+    exp_mdic: '0',
+    textos_padrao: [],
 }
 
 async function configMap(types: string[]): Promise<Map<string, string>> {
@@ -77,8 +123,14 @@ async function setConfig(type: string, value: string, transaction?: any) {
 }
 
 export async function getNfseSettings(): Promise<NfseSettings> {
-    const map = await configMap([...Object.values(KEYS), 'cnpj'])
+    const map = await configMap([...Object.values(KEYS), 'cnpj', TEXTOS_PADRAO_KEY])
     const out: any = { ...DEFAULTS }
+    try {
+        const textos = JSON.parse(map.get(TEXTOS_PADRAO_KEY) || '[]')
+        out.textos_padrao = Array.isArray(textos) ? textos : []
+    } catch {
+        out.textos_padrao = []
+    }
     for (const [field, key] of Object.entries(KEYS)) {
         const v = map.get(key)
         if (v !== undefined && v !== null && v !== '') out[field] = v
@@ -168,10 +220,57 @@ export function normalizeSettings(input: Partial<Record<keyof NfseSettings, any>
         if (v && !isPercent(v, 5)) errors.push('Alíquota do ISS deve estar entre 0 e 5%.')
         values.aliquota_iss = v
     }
+    const code = (field: keyof NfseSettings, len: number, label: string) => {
+        if (input[field] === undefined) return
+        const v = onlyDigits(input[field])
+        if (v && !isDigits(v, len)) errors.push(`${label} deve ter ${len} dígitos.`)
+        values[field] = v
+    }
+    code('ibscbs_cindop', 6, 'Código indicador da operação (IBS/CBS)')
+    code('ibscbs_cst', 3, 'CST do IBS/CBS')
+    code('ibscbs_cclasstrib', 6, 'Classificação tributária do IBS/CBS')
+    const ibs = { ...values }
+    if (['ibscbs_cindop', 'ibscbs_cst', 'ibscbs_cclasstrib'].some((k) => input[k as keyof NfseSettings] !== undefined)) {
+        const filled = ['ibscbs_cindop', 'ibscbs_cst', 'ibscbs_cclasstrib'].filter((k) => ibs[k])
+        if (filled.length && filled.length < 3) errors.push('Para declarar IBS/CBS, preencha o indicador da operação, o CST e a classificação tributária (ou deixe os três vazios).')
+    }
+    const choice = (field: keyof NfseSettings, allowed: string[], label: string) => {
+        if (input[field] === undefined) return
+        const v = String(input[field])
+        if (!allowed.includes(v)) errors.push(`${label} inválido.`)
+        else values[field] = v
+    }
+    choice('ibscbs_indfinal', ['0', '1'], 'Indicador de consumo pessoal')
+    choice('exp_md_prestacao', ['1', '2', '3', '4'], 'Modo de prestação')
+    choice('exp_vinc_prest', ['0', '1', '2', '3', '4', '5', '6'], 'Vínculo entre as partes')
+    choice('exp_mec_prest', ['01', '02', '03', '04', '05', '06', '07', '08'], 'Mecanismo de apoio do prestador')
+    choice('exp_mec_toma', Array.from({ length: 26 }, (_, i) => String(i + 1).padStart(2, '0')), 'Mecanismo de apoio do tomador')
+    choice('exp_mov_temp', ['1', '2', '3'], 'Vínculo com movimentação temporária de bens')
+    choice('exp_mdic', ['0', '1'], 'Compartilhamento com o MDIC')
+
+    if (input.textos_padrao !== undefined) {
+        const list = Array.isArray(input.textos_padrao) ? input.textos_padrao : []
+        const textos: TextoPadrao[] = []
+        list.forEach((t: any, i: number) => {
+            const titulo = str(t?.titulo).slice(0, 80)
+            const texto = str(t?.texto).slice(0, 1000)
+            if (!titulo && !texto) return
+            if (!titulo || !texto) return void errors.push(`Texto padrão ${i + 1}: informe o título e o texto.`)
+            const metodo = METODOS.includes(String(t?.metodo || '')) ? String(t?.metodo || '') : ''
+            textos.push({ id: str(t?.id) || `t${Date.now().toString(36)}${i}`, titulo, texto, metodo })
+        })
+        values.textos_padrao = textos
+    }
     return { values, errors }
 }
 
+export function ibscbsFromSettings(s: NfseSettings) {
+    if (!s.ibscbs_cindop || !s.ibscbs_cst || !s.ibscbs_cclasstrib) return null
+    return { cIndOp: s.ibscbs_cindop, cst: s.ibscbs_cst, cClassTrib: s.ibscbs_cclasstrib, indFinal: s.ibscbs_indfinal || '0' }
+}
+
 export async function saveNfseSettings(values: Partial<NfseSettings>) {
+    if (values.textos_padrao) await setConfig(TEXTOS_PADRAO_KEY, JSON.stringify(values.textos_padrao))
     for (const [field, value] of Object.entries(values)) {
         const key = (KEYS as any)[field]
         if (key) await setConfig(key, String(value ?? ''))

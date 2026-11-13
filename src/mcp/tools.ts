@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import { z } from 'zod'
+import crypto from 'crypto'
 
 import callApi, { ApiResult, HttpMethod } from './callApi'
 import { Action, resources, describeFields } from './resources'
@@ -41,6 +42,71 @@ function toResult(result: ApiResult, filename = 'documento.pdf'): CallToolResult
     return {
         isError: !result.ok,
         content: [{ type: 'text', text: result.ok ? body : `HTTP ${result.status}: ${body}` }],
+    }
+}
+
+
+// ---------- Confirmação em duas etapas para ações com NFS-e ----------
+// Emitir, cancelar e substituir nunca executam na primeira chamada: a ferramenta devolve um resumo e um código de
+// confirmação (válido por 15 min, amarrado à ferramenta, à nota/cobrança e aos MESMOS dados). A ação só acontece
+// quando a ferramenta é chamada de novo com esse código — o assistente deve mostrar o resumo e esperar o "sim" do usuário.
+const CONFIRM_TTL_MS = 15 * 60 * 1000
+
+function canonical(value: any): any {
+    if (Array.isArray(value)) return value.map(canonical)
+    if (value && typeof value === 'object')
+        return Object.keys(value)
+            .sort()
+            .reduce((acc: any, k) => ((acc[k] = canonical(value[k])), acc), {})
+    return value
+}
+
+function confirmationSignature(tool: string, target: number, payload: unknown, exp: number): string {
+    return crypto
+        .createHmac('sha256', `mcp-confirm:${process.env.SECRET}`)
+        .update(JSON.stringify([tool, target, canonical(payload ?? null), exp]))
+        .digest('hex')
+        .slice(0, 10)
+        .toUpperCase()
+}
+
+export function issueConfirmation(tool: string, target: number, payload: unknown, now = Date.now()): string {
+    const exp = Math.floor((now + CONFIRM_TTL_MS) / 1000)
+    return `${exp.toString(36).toUpperCase()}-${confirmationSignature(tool, target, payload, exp)}`
+}
+
+export function checkConfirmation(code: string, tool: string, target: number, payload: unknown, now = Date.now()): string | null {
+    const [expPart, sig] = String(code || '').trim().toUpperCase().split('-')
+    const exp = parseInt(expPart, 36)
+    if (!exp || !sig) return 'Código de confirmação inválido.'
+    if (exp * 1000 < now) return 'Código de confirmação expirado: peça a confirmação de novo.'
+    const expected = confirmationSignature(tool, target, payload, exp)
+    if (sig.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected)))
+        return 'Código de confirmação não corresponde a esta ação com estes dados (algo mudou desde o resumo): peça a confirmação de novo.'
+    return null
+}
+
+const CONFIRM_HELP =
+    'CONFIRMAÇÃO OBRIGATÓRIA: a primeira chamada (sem "confirmacao") não executa nada — devolve um resumo e um código. ' +
+    'Mostre o resumo ao usuário e só chame de novo, com os MESMOS dados e confirmacao=<código>, depois que ele confirmar explicitamente nesta conversa. Nunca confirme por conta própria.'
+
+const brl = (v: unknown) => (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+
+function confirmationResult(summary: string[], code: string): CallToolResult {
+    return {
+        content: [
+            {
+                type: 'text',
+                text: [
+                    'AÇÃO NÃO EXECUTADA — aguardando confirmação do usuário.',
+                    '',
+                    ...summary,
+                    '',
+                    `Código de confirmação (válido por 15 minutos): ${code}`,
+                    'Mostre este resumo ao usuário. Só repita a chamada com confirmacao igual ao código acima se ele confirmar explicitamente.',
+                ].join('\n'),
+            },
+        ],
     }
 }
 
@@ -341,6 +407,188 @@ export default function registerTools(server: McpServer, app: FastifyInstance): 
             annotations: { readOnlyHint: true, openWorldHint: false },
         },
         async ({ id }: any) => toResult(await callApi(app, 'GET', `/billings/${id}/pdf`), `billing_${id}.pdf`),
+    )
+
+    // NFS-e (Emissor Nacional). Emitir/cancelar/substituir geram documento fiscal real em produção:
+    // podem ser desligadas com MCP_DISABLE (ex.: MCP_DISABLE=nfse_emit,nfse_cancel,nfse_substitute).
+    register(
+        'nfse',
+        {
+            title: 'NFS-e emitidas',
+            description:
+                'Notas fiscais de serviço (Emissor Nacional). list: filtros opcionais status (processando|autorizada|rejeitada|cancelada|substituida) e billing_id. get: id. settings: configuração e pendências para emitir. draft: billing_id — valores sugeridos, textos padrão e pendências antes de emitir.',
+            inputSchema: {
+                action: z.enum(['list', 'get', 'settings', 'draft']),
+                id: z.number().int().optional(),
+                billing_id: z.number().int().optional(),
+                status: z.string().optional(),
+            },
+            annotations: { readOnlyHint: true, openWorldHint: false },
+        },
+        async ({ action, id, billing_id, status }: any) => {
+            if (action === 'list') return toResult(await callApi(app, 'GET', '/nfse', { query: { status, BillingId: billing_id } }))
+            if (action === 'settings') return toResult(await callApi(app, 'GET', '/nfse/settings'))
+            if (action === 'draft') {
+                if (!billing_id) return errorResult('A ação "draft" exige billing_id.')
+                return toResult(await callApi(app, 'GET', `/billings/${billing_id}/nfse/draft`))
+            }
+            if (!id) return errorResult('A ação "get" exige id.')
+            return toResult(await callApi(app, 'GET', `/nfse/${id}`))
+        },
+    )
+
+    register(
+        'nfse_emit',
+        {
+            title: 'Emitir NFS-e de uma cobrança',
+            description:
+                CONFIRM_HELP +
+                ' Emite a NFS-e de uma cobrança pela Sefin Nacional. Campos omitidos usam os valores sugeridos (nfse action draft). data: valor, descricao, competencia (AAAA-MM-DD), iss_retido, ctribnac, ctribmun, cnbs, info_complementar, texto_padrao_id, exterior { ativo, nome, nif | cNaoNIF, cPais, cEndPost, xCidade, xEstProvReg, logradouro, numero, moeda, valor_moeda } para tomador do exterior.',
+            inputSchema: { billing_id: z.number().int(), data: dataShape, confirmacao: z.string().optional().describe('Código devolvido pela primeira chamada, após o usuário confirmar') },
+            annotations: { destructiveHint: true, openWorldHint: true },
+        },
+        async ({ billing_id, data, confirmacao }: any) => {
+            const body = data || {}
+            if (confirmacao) {
+                const err = checkConfirmation(confirmacao, 'nfse_emit', billing_id, body)
+                if (err) return errorResult(err)
+                return toResult(await callApi(app, 'POST', `/billings/${billing_id}/nfse`, { body }))
+            }
+            const draft = await callApi(app, 'GET', `/billings/${billing_id}/nfse/draft`)
+            if (!draft.ok) return toResult(draft)
+            const d = draft.json
+            if (d.problems?.length) return errorResult(`Não é possível emitir:\n- ${d.problems.join('\n- ')}`)
+            const f = { ...d.defaults, ...body }
+            const texto = (d.textos_padrao || []).find((t: any) => t.id === f.texto_padrao_id)
+            const ext = f.exterior?.ativo ? f.exterior : null
+            return confirmationResult(
+                [
+                    `Emitir NFS-e da cobrança #${billing_id} — ambiente: ${d.ambiente === 'producao' ? 'PRODUÇÃO (com valor fiscal)' : 'testes (sem valor fiscal)'}`,
+                    ext
+                        ? `Tomador no exterior: ${ext.nome || d.tomador?.nome} (${ext.cPais}) · NIF ${ext.nif || 'não informado'} · ${ext.moeda} ${ext.valor_moeda}`
+                        : `Tomador: ${d.tomador?.nome} · ${d.tomador?.documento}`,
+                    `Valor: ${brl(f.valor)} · Competência: ${f.competencia} · ISS retido: ${f.iss_retido ? 'sim' : 'não'}`,
+                    `Serviço: ${f.ctribnac}${f.cnbs ? ` · NBS ${f.cnbs}` : ''}`,
+                    `Descrição:\n${f.descricao}${texto ? `\n\n${texto.texto}` : ''}`,
+                    ...(d.warnings || []).map((w: string) => `Aviso: ${w}`),
+                ],
+                issueConfirmation('nfse_emit', billing_id, body),
+            )
+        },
+    )
+
+    register(
+        'nfse_sync',
+        {
+            title: 'Verificar NFS-e em processamento',
+            description:
+                CONFIRM_HELP +
+                ' Consulta a Sefin para uma NFS-e "processando" (ou com cancelamento pendente) e atualiza a situação; se a nota não foi gerada, reenvia a mesma DPS.',
+            inputSchema: { id: z.number().int(), confirmacao: z.string().optional().describe('Código devolvido pela primeira chamada, após o usuário confirmar') },
+            annotations: { destructiveHint: false, openWorldHint: true },
+        },
+        async ({ id, confirmacao }: any) => {
+            if (confirmacao) {
+                const err = checkConfirmation(confirmacao, 'nfse_sync', id, null)
+                if (err) return errorResult(err)
+                return toResult(await callApi(app, 'POST', `/nfse/${id}/sync`))
+            }
+            const got = await callApi(app, 'GET', `/nfse/${id}`)
+            if (!got.ok) return toResult(got)
+            const n = got.json
+            const pendingCancel = n.status === 'autorizada' && n.cancelamento_solicitado_em
+            if (n.status !== 'processando' && !pendingCancel) return errorResult(`A NFS-e #${id} está "${n.status}": nada a verificar.`)
+            return confirmationResult(
+                [
+                    pendingCancel
+                        ? `Verificar o cancelamento da NFS-e nº ${n.numero_nfse} na Sefin.`
+                        : `Verificar a NFS-e #${id} (DPS ${n.serie}/${n.numero_dps}, ${brl(n.valor_servico)}, ${n.tomador_nome}): consulta a Sefin e, se a nota não tiver sido gerada, REENVIA a mesma DPS.`,
+                ],
+                issueConfirmation('nfse_sync', id, null),
+            )
+        },
+    )
+
+    register(
+        'nfse_cancel',
+        {
+            title: 'Cancelar NFS-e',
+            description:
+                CONFIRM_HELP + ' Cancela uma NFS-e autorizada. cMotivo: 1 erro na emissão, 2 serviço não prestado, 9 outros. xMotivo: 15 a 255 caracteres. Irreversível.',
+            inputSchema: {
+                id: z.number().int(),
+                cMotivo: z.enum(['1', '2', '9']),
+                xMotivo: z.string(),
+                confirmacao: z.string().optional().describe('Código devolvido pela primeira chamada, após o usuário confirmar'),
+            },
+            annotations: { destructiveHint: true, openWorldHint: true },
+        },
+        async ({ id, cMotivo, xMotivo, confirmacao }: any) => {
+            const body = { cMotivo, xMotivo }
+            if (confirmacao) {
+                const err = checkConfirmation(confirmacao, 'nfse_cancel', id, body)
+                if (err) return errorResult(err)
+                return toResult(await callApi(app, 'POST', `/nfse/${id}/cancel`, { body }))
+            }
+            const got = await callApi(app, 'GET', `/nfse/${id}`)
+            if (!got.ok) return toResult(got)
+            const n = got.json
+            if (n.status !== 'autorizada') return errorResult(`A NFS-e #${id} está "${n.status}": só nota autorizada pode ser cancelada.`)
+            return confirmationResult(
+                [
+                    `CANCELAR DEFINITIVAMENTE a NFS-e nº ${n.numero_nfse} (${n.ambiente === 'producao' ? 'produção' : 'testes'})`,
+                    `Tomador: ${n.tomador_nome} · Valor: ${brl(n.valor_servico)} · Cobrança #${n.BillingId}`,
+                    `Motivo: ${{ '1': 'Erro na emissão', '2': 'Serviço não prestado', '9': 'Outros' }[cMotivo as '1']} — ${xMotivo}`,
+                ],
+                issueConfirmation('nfse_cancel', id, body),
+            )
+        },
+    )
+
+    register(
+        'nfse_substitute',
+        {
+            title: 'Substituir NFS-e',
+            description:
+                CONFIRM_HELP +
+                ' Emite uma NFS-e substituta (a original é cancelada pela Sefin). Campos omitidos usam os da nota original. data: os mesmos campos de nfse_emit + cMotivo (01..05, 99) e xMotivo. Optante do Simples não altera valor, competência nem tomador.',
+            inputSchema: { id: z.number().int(), data: dataShape, confirmacao: z.string().optional().describe('Código devolvido pela primeira chamada, após o usuário confirmar') },
+            annotations: { destructiveHint: true, openWorldHint: true },
+        },
+        async ({ id, data, confirmacao }: any) => {
+            const body = data || {}
+            if (confirmacao) {
+                const err = checkConfirmation(confirmacao, 'nfse_substitute', id, body)
+                if (err) return errorResult(err)
+                return toResult(await callApi(app, 'POST', `/nfse/${id}/substitute`, { body }))
+            }
+            const draft = await callApi(app, 'GET', `/nfse/${id}/substitute/draft`)
+            if (!draft.ok) return toResult(draft)
+            const d = draft.json
+            const f = { ...d.defaults, ...body }
+            if (d.bloqueados?.length) Object.assign(f, { valor: d.defaults.valor, competencia: d.defaults.competencia })
+            const texto = (d.textos_padrao || []).find((t: any) => t.id === f.texto_padrao_id)
+            return confirmationResult(
+                [
+                    `SUBSTITUIR a NFS-e nº ${d.original.numero_nfse}: uma nova nota é emitida e a original é cancelada (${d.ambiente === 'producao' ? 'produção' : 'testes'})`,
+                    `Motivo: ${f.cMotivo} — ${d.motivos?.[f.cMotivo] || ''}${f.xMotivo ? ` (${f.xMotivo})` : ''}`,
+                    `Tomador: ${d.tomador?.nome} · Valor: ${brl(f.valor)} · Competência: ${f.competencia}`,
+                    `Nova descrição:\n${f.descricao}${texto ? `\n\n${texto.texto}` : ''}`,
+                ],
+                issueConfirmation('nfse_substitute', id, body),
+            )
+        },
+    )
+
+    register(
+        'nfse_pdf',
+        {
+            title: 'PDF da NFS-e (DANFSe)',
+            description: 'Gera o PDF (DANFSe) de uma NFS-e autorizada.',
+            inputSchema: { id: z.number().int() },
+            annotations: { readOnlyHint: true, openWorldHint: false },
+        },
+        async ({ id }: any) => toResult(await callApi(app, 'GET', `/nfse/${id}/pdf`), `nfse_${id}.pdf`),
     )
 
     register(

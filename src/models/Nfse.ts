@@ -15,7 +15,9 @@ import BillingFile from './BillingFile'
 // NFS-e emitida pelo Emissor Nacional (Sefin Nacional) para uma cobrança.
 // processando: enviada sem resposta conclusiva (timeout/queda) — "Verificar" consulta a Sefin pelo Id da DPS.
 // autorizada: NFS-e gerada (chave de acesso + XML). rejeitada: a Sefin devolveu erros (o número da DPS não é reaproveitado).
-export type NfseStatus = 'processando' | 'autorizada' | 'rejeitada' | 'cancelada'
+// cancelada: evento de cancelamento registrado. substituida: cancelada por uma NFS-e substituta (substituta_id).
+export type NfseStatus = 'processando' | 'autorizada' | 'rejeitada' | 'cancelada' | 'substituida'
+export const NFSE_STATUSES: NfseStatus[] = ['processando', 'autorizada', 'rejeitada', 'cancelada', 'substituida']
 
 class Nfse extends Model<InferAttributes<Nfse>, InferCreationAttributes<Nfse>> {
     declare id: CreationOptional<number>
@@ -38,6 +40,15 @@ class Nfse extends Model<InferAttributes<Nfse>, InferCreationAttributes<Nfse>> {
 
     declare xml_dps: string
     declare xml_nfse: CreationOptional<string | null>
+    // Tomador do exterior (exportação): NIF, país, endereço e dados de comércio exterior usados na DPS.
+    declare tomador_exterior: CreationOptional<Record<string, any> | null>
+    // Substituição: a nota nova aponta para a substituída e vice-versa.
+    declare substitui_id: CreationOptional<number | null>
+    declare substituta_id: CreationOptional<number | null>
+    declare cancelamento_motivo: CreationOptional<string | null>
+    declare cancelamento_solicitado_em: CreationOptional<Date | null>
+    declare data_cancelamento: CreationOptional<Date | null>
+    declare xml_evento: CreationOptional<string | null>
     declare erros: CreationOptional<{ codigo: string; descricao: string; complemento?: string }[] | null>
     declare alertas: CreationOptional<{ codigo: string; descricao: string; complemento?: string }[] | null>
 
@@ -52,7 +63,7 @@ class Nfse extends Model<InferAttributes<Nfse>, InferCreationAttributes<Nfse>> {
 }
 
 // JSON guardado como texto (funciona igual em MySQL e MariaDB).
-function jsonColumn(name: 'erros' | 'alertas') {
+function jsonColumn(name: 'erros' | 'alertas' | 'tomador_exterior') {
     return {
         type: DataTypes.TEXT,
         allowNull: true,
@@ -75,7 +86,7 @@ Nfse.init(
     {
         id: { type: DataTypes.INTEGER.UNSIGNED, autoIncrement: true, primaryKey: true },
         status: {
-            type: DataTypes.ENUM('processando', 'autorizada', 'rejeitada', 'cancelada'),
+            type: DataTypes.ENUM(...NFSE_STATUSES),
             allowNull: false,
             defaultValue: 'processando',
         },
@@ -89,10 +100,17 @@ Nfse.init(
         data_processamento: { type: DataTypes.DATE, allowNull: true },
         valor_servico: { type: DataTypes.DECIMAL(15, 2), allowNull: false },
         descricao: { type: DataTypes.TEXT, allowNull: false },
-        tomador_documento: { type: DataTypes.STRING(14), allowNull: false },
+        tomador_documento: { type: DataTypes.STRING(40), allowNull: false }, // CPF/CNPJ ou NIF do exterior
         tomador_nome: { type: DataTypes.STRING(300), allowNull: false },
         xml_dps: { type: DataTypes.TEXT('medium'), allowNull: false },
         xml_nfse: { type: DataTypes.TEXT('medium'), allowNull: true },
+        tomador_exterior: jsonColumn('tomador_exterior'),
+        substitui_id: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true },
+        substituta_id: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true },
+        cancelamento_motivo: { type: DataTypes.STRING(300), allowNull: true },
+        cancelamento_solicitado_em: { type: DataTypes.DATE, allowNull: true },
+        data_cancelamento: { type: DataTypes.DATE, allowNull: true },
+        xml_evento: { type: DataTypes.TEXT('medium'), allowNull: true },
         erros: jsonColumn('erros'),
         alertas: jsonColumn('alertas'),
         BillingFileId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true },

@@ -1,6 +1,16 @@
 import { FastifyReply, FastifyRequest } from 'fastify'
 import Nfse from '../models/Nfse'
-import { NfseError, emitNfseForBilling, nfseDraft, nfsePdf, syncNfse } from '../utils/nfse/emit'
+import {
+    NfseError,
+    cancelNfse,
+    emitNfseForBilling,
+    nfseDraft,
+    nfsePdf,
+    substituteNfse,
+    substitutionDraft,
+    syncNfse,
+} from '../utils/nfse/emit'
+import { MOTIVOS_CANCELAMENTO } from '../utils/nfse/events'
 import {
     getCertificateInfo,
     getNfseSettings,
@@ -21,7 +31,7 @@ function fail(res: FastifyReply, err: any) {
 const userId = (req: any) => req.__user?.user?.id ?? null
 
 // Lista sem os XMLs (podem ter dezenas de KB cada).
-const LIST_ATTRS = { exclude: ['xml_dps', 'xml_nfse'] }
+const LIST_ATTRS = { exclude: ['xml_dps', 'xml_nfse', 'xml_evento'] }
 
 class nfseController {
     static async settings(req: Req, res: FastifyReply) {
@@ -82,7 +92,7 @@ class nfseController {
     static async emit(req: Req, res: FastifyReply) {
         try {
             const nfse = await emitNfseForBilling(parseInt(req.params.id, 10), (req.body || {}) as any, userId(req))
-            const { xml_dps, xml_nfse, ...data } = nfse.toJSON() as any
+            const { xml_dps, xml_nfse, xml_evento, ...data } = nfse.toJSON() as any
             return res.status(nfse.status === 'autorizada' ? 201 : 200).send(data)
         } catch (err) {
             return fail(res, err)
@@ -92,21 +102,53 @@ class nfseController {
     static async sync(req: Req, res: FastifyReply) {
         try {
             const nfse = await syncNfse(parseInt(req.params.id, 10))
-            const { xml_dps, xml_nfse, ...data } = nfse.toJSON() as any
+            const { xml_dps, xml_nfse, xml_evento, ...data } = nfse.toJSON() as any
             return res.send(data)
         } catch (err) {
             return fail(res, err)
         }
     }
 
-    // ?tipo=dps baixa a DPS enviada; padrão é o XML da NFS-e autorizada.
+    static async cancel(req: Req, res: FastifyReply) {
+        try {
+            const nfse = await cancelNfse(parseInt(req.params.id, 10), (req.body || {}) as any, userId(req))
+            const { xml_dps, xml_nfse, xml_evento, ...data } = nfse.toJSON() as any
+            return res.send(data)
+        } catch (err) {
+            return fail(res, err)
+        }
+    }
+
+    static async cancelReasons(req: Req, res: FastifyReply) {
+        return res.send(MOTIVOS_CANCELAMENTO)
+    }
+
+    static async substituteDraft(req: Req, res: FastifyReply) {
+        try {
+            return res.send(await substitutionDraft(parseInt(req.params.id, 10)))
+        } catch (err) {
+            return fail(res, err)
+        }
+    }
+
+    static async substitute(req: Req, res: FastifyReply) {
+        try {
+            const nfse = await substituteNfse(parseInt(req.params.id, 10), (req.body || {}) as any, userId(req))
+            const { xml_dps, xml_nfse, xml_evento, ...data } = nfse.toJSON() as any
+            return res.status(nfse.status === 'autorizada' ? 201 : 200).send(data)
+        } catch (err) {
+            return fail(res, err)
+        }
+    }
+
+    // ?tipo=dps baixa a DPS enviada; ?tipo=evento o evento de cancelamento; padrão é o XML da NFS-e autorizada.
     static async xml(req: Req, res: FastifyReply) {
         const nfse = await Nfse.findByPk(req.params.id)
         if (!nfse) return res.status(404).send({ message: 'NFS-e não encontrada' })
-        const dps = (req.query as any)?.tipo === 'dps'
-        const xml = dps ? nfse.xml_dps : nfse.xml_nfse
-        if (!xml) return res.status(404).send({ message: 'XML da NFS-e ainda não disponível.' })
-        const name = dps ? `DPS_${nfse.id_dps}.xml` : `NFS-e_${nfse.chave_acesso}.xml`
+        const tipo = (req.query as any)?.tipo
+        const xml = tipo === 'dps' ? nfse.xml_dps : tipo === 'evento' ? nfse.xml_evento : nfse.xml_nfse
+        if (!xml) return res.status(404).send({ message: 'XML ainda não disponível.' })
+        const name = tipo === 'dps' ? `DPS_${nfse.id_dps}.xml` : tipo === 'evento' ? `Cancelamento_${nfse.chave_acesso}.xml` : `NFS-e_${nfse.chave_acesso}.xml`
         res.header('Content-Type', 'application/xml; charset=utf-8')
         res.header('Content-Disposition', `attachment; filename=${name}`)
         return res.send(xml)

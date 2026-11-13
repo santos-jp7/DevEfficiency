@@ -8,11 +8,26 @@ export const APP_VERSION = 'DevEfficiency-1.0'
 
 export type Ambiente = 'producao' | 'producao_restrita'
 
+// Tomador no exterior: identificado pelo NIF (ou motivo de não ter NIF) e com endereço no exterior.
+export interface DpsExterior {
+    nif?: string | null
+    cNaoNIF?: '0' | '1' | '2' | null // 1 = dispensado do NIF · 2 = não exigência do NIF
+    cPais: string // ISO 3166-1 alfa-2, ex.: US
+    cEndPost: string
+    xCidade: string
+    xEstProvReg: string
+    logradouro: string
+    numero: string
+    complemento?: string | null
+    bairro?: string | null
+}
+
 export interface DpsPessoa {
-    documento: string // CPF (11) ou CNPJ (14), só dígitos
+    documento: string // CPF (11) ou CNPJ (14), só dígitos — vazio quando o tomador é do exterior
     nome: string
     im?: string | null
     email?: string | null
+    exterior?: DpsExterior | null
     endereco?: {
         cMun: string // IBGE, 7 dígitos
         cep: string // 8 dígitos
@@ -30,6 +45,8 @@ export interface DpsInput {
     numero: number
     competencia: string // AAAA-MM-DD
     cLocEmi: string // município emissor (IBGE)
+    // Substituição: a nova NFS-e cancela a original (evento gerado pela própria Sefin).
+    subst?: { chave: string; cMotivo: string; xMotivo?: string | null } | null
     prestador: {
         cnpj: string
         im?: string | null
@@ -45,13 +62,28 @@ export interface DpsInput {
         descricao: string
         cNBS?: string | null
         infoComplementar?: string | null
+        // Exportação de serviço (obrigatório quando o tomador é do exterior — regra E0330).
+        comExt?: {
+            mdPrestacao: string
+            vincPrest: string
+            tpMoeda: string // código BACEN (220 USD, 978 EUR, 540 GBP)
+            vServMoeda: number
+            mecAFComexP: string
+            mecAFComexT: string
+            movTempBens: string
+            mdic: string
+        } | null
     }
     valores: {
         vServ: number
         tpRetISSQN: '1' | '2' | '3'
         pAliq?: number | null // só quando há retenção do ISSQN (regras E0621/E0625 para ME/EPP)
         pTotTribSN?: number | null // ME/EPP: percentual aproximado dos tributos do Simples
+        tribISSQN?: '1' | '3' // 1 = operação tributável · 3 = exportação de serviço
+        cPaisResult?: string | null // país onde se verificou o resultado (exportação)
     }
+    // Reforma tributária: grupo IBS/CBS declarado pelo emitente (opcional até a obrigatoriedade).
+    ibscbs?: { cIndOp: string; indFinal?: '0' | '1' | null; cst: string; cClassTrib: string } | null
 }
 
 const onlyDigits = (v: unknown) => String(v ?? '').replace(/\D/g, '')
@@ -106,6 +138,19 @@ function docTag(documento: string): string {
 }
 
 function pessoa(tag: string, p: DpsPessoa): string {
+    const x = p.exterior
+    if (x) {
+        const id = x.nif ? el('NIF', x.nif) : el('cNaoNIF', x.cNaoNIF || '2')
+        const end =
+            '<end>' +
+            `<endExt>${el('cPais', x.cPais)}${el('cEndPost', x.cEndPost)}${el('xCidade', x.xCidade)}${el('xEstProvReg', x.xEstProvReg)}</endExt>` +
+            el('xLgr', x.logradouro) +
+            el('nro', x.numero || 'S/N') +
+            opt('xCpl', x.complemento) +
+            el('xBairro', x.bairro || 'N/A') +
+            '</end>'
+        return `<${tag}>${id}${el('xNome', p.nome)}${end}${opt('email', p.email)}</${tag}>`
+    }
     const e = p.endereco
     const end = e
         ? '<end>' +
@@ -148,6 +193,19 @@ export function buildDpsXml(input: DpsInput): string {
         '</prest>'
 
     const infoCompl = s.infoComplementar ? `<infoCompl>${el('xInfComp', s.infoComplementar)}</infoCompl>` : ''
+    const c = s.comExt
+    const comExt = c
+        ? '<comExt>' +
+          el('mdPrestacao', c.mdPrestacao) +
+          el('vincPrest', c.vincPrest) +
+          el('tpMoeda', c.tpMoeda) +
+          el('vServMoeda', dec(c.vServMoeda)) +
+          el('mecAFComexP', c.mecAFComexP) +
+          el('mecAFComexT', c.mecAFComexT) +
+          el('movTempBens', c.movTempBens) +
+          el('mdic', c.mdic) +
+          '</comExt>'
+        : ''
 
     const serv =
         '<serv>' +
@@ -158,6 +216,7 @@ export function buildDpsXml(input: DpsInput): string {
         el('xDescServ', s.descricao) +
         opt('cNBS', s.cNBS ? onlyDigits(s.cNBS) : null) +
         '</cServ>' +
+        comExt +
         infoCompl +
         '</serv>'
 
@@ -170,7 +229,8 @@ export function buildDpsXml(input: DpsInput): string {
 
     const tribMun =
         '<tribMun>' +
-        el('tribISSQN', '1') +
+        el('tribISSQN', v.tribISSQN || '1') +
+        opt('cPaisResult', v.cPaisResult) +
         el('tpRetISSQN', v.tpRetISSQN) +
         (v.pAliq !== undefined && v.pAliq !== null ? el('pAliq', dec(v.pAliq)) : '') +
         '</tribMun>'
@@ -180,6 +240,22 @@ export function buildDpsXml(input: DpsInput): string {
         `<vServPrest>${el('vServ', dec(v.vServ))}</vServPrest>` +
         `<trib>${tribMun}${totTrib}</trib>` +
         '</valores>'
+
+    const subst = input.subst
+        ? '<subst>' + el('chSubstda', input.subst.chave) + el('cMotivo', input.subst.cMotivo) + opt('xMotivo', input.subst.xMotivo) + '</subst>'
+        : ''
+
+    // IBS/CBS: finalidade 0 (NFS-e regular), destinatário = tomador (indDest 0), tributação pela classificação informada.
+    const g = input.ibscbs
+    const ibscbs = g
+        ? '<IBSCBS>' +
+          el('finNFSe', '0') +
+          opt('indFinal', g.indFinal) +
+          el('cIndOp', g.cIndOp) +
+          el('indDest', '0') +
+          `<valores><trib><gIBSCBS>${el('CST', g.cst)}${el('cClassTrib', g.cClassTrib)}</gIBSCBS></trib></valores>` +
+          '</IBSCBS>'
+        : ''
 
     return (
         '<?xml version="1.0" encoding="UTF-8"?>' +
@@ -193,10 +269,12 @@ export function buildDpsXml(input: DpsInput): string {
         el('dCompet', input.competencia) +
         el('tpEmit', '1') +
         el('cLocEmi', onlyDigits(input.cLocEmi)) +
+        subst +
         prest +
         pessoa('toma', input.tomador) +
         serv +
         valores +
+        ibscbs +
         '</infDPS>' +
         '</DPS>'
     )

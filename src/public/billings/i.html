@@ -233,11 +233,17 @@
                                 <div class="d-flex gap-1 text-nowrap">
                                     <button v-if="n.status === 'autorizada'" class="btn btn-sm btn-outline-primary" title="PDF (DANFSe)" @click="openNfseFile(n.id, 'pdf')"><i class="fa-solid fa-file-pdf"></i></button>
                                     <button v-if="n.status === 'autorizada'" class="btn btn-sm btn-outline-secondary" title="XML" @click="openNfseFile(n.id, 'xml')"><i class="fa-solid fa-code"></i></button>
-                                    <button v-if="n.status === 'processando'" class="btn btn-sm btn-outline-warning" :disabled="nfseSyncing" @click="syncNfse(n)">
+                                    <button v-if="n.status === 'autorizada' && !n.cancelamento_solicitado_em" class="btn btn-sm btn-outline-dark" title="Emitir nota substituta (corrige a nota; a original é cancelada)" @click="openSubstituteModal(n)"><i class="fa-solid fa-right-left"></i></button>
+                                    <button v-if="n.status === 'autorizada' && !n.cancelamento_solicitado_em" class="btn btn-sm btn-outline-danger" title="Cancelar NFS-e" @click="openCancelModal(n)"><i class="fa-solid fa-ban"></i></button>
+                                    <button v-if="n.status === 'processando' || n.cancelamento_solicitado_em" class="btn btn-sm btn-outline-warning" :disabled="nfseSyncing" @click="syncNfse(n)">
                                         <i class="fa-solid fa-rotate"></i> {{ nfseSyncing ? 'Verificando…' : 'Verificar' }}</button>
                                 </div>
                             </div>
                             <div v-if="n.chave_acesso" class="text-muted" style="font-family: monospace; font-size: 11px">{{ n.chave_acesso }}</div>
+                            <div v-if="n.tomador_exterior" class="text-muted">Exportação · {{ n.tomador_nome }} ({{ n.tomador_exterior.cPais }})</div>
+                            <div v-if="n.cancelamento_solicitado_em && n.status === 'autorizada'" class="text-warning-emphasis">Cancelamento solicitado sem confirmação da Sefin: use "Verificar".</div>
+                            <div v-if="n.cancelamento_motivo && n.status === 'cancelada'" class="text-muted">Cancelada: {{ n.cancelamento_motivo }}</div>
+                            <div v-if="n.substitui_id" class="text-muted">Substitui a nota #{{ n.substitui_id }}.</div>
                             <div v-for="e in (n.erros || [])" class="text-danger">{{ e.codigo }} — {{ e.descricao }}<span v-if="e.complemento"> ({{ e.complemento }})</span></div>
                             <div v-for="a in (n.alertas || [])" class="text-warning-emphasis">{{ a.codigo }} — {{ a.descricao }}</div>
                         </li>
@@ -459,55 +465,144 @@
             </div>
         </div>
 
-        <!-- Emissão de NFS-e -->
+        <!-- Emissão / substituição de NFS-e -->
         <div class="modal fade" id="nfseModal" tabindex="-1">
             <div class="modal-dialog modal-lg">
                 <div class="modal-content" v-if="nfseDraft">
                     <div class="modal-header">
-                        <h6 class="modal-title">Emitir NFS-e — Emissor Nacional</h6>
+                        <h6 class="modal-title" v-if="nfseMode === 'emitir'">Emitir NFS-e — Emissor Nacional</h6>
+                        <h6 class="modal-title" v-else>Substituir NFS-e nº {{ nfseDraft.original.numero_nfse }}</h6>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
                         <div v-if="nfseDraft.ambiente !== 'producao'" class="alert alert-warning py-2 small mb-2">
                             Ambiente de <strong>testes</strong> (produção restrita): a nota não tem valor fiscal.
                         </div>
-                        <div v-if="nfseDraft.problems.length" class="alert alert-danger py-2 small">
+                        <div v-if="(nfseDraft.problems || []).length" class="alert alert-danger py-2 small">
                             <strong>Não é possível emitir:</strong>
                             <ul class="mb-0"><li v-for="p in nfseDraft.problems">{{ p }}</li></ul>
                             <a href="/nfse/?tab=config">Abrir configuração da NFS-e</a>
                         </div>
-                        <div v-for="w in nfseDraft.warnings" class="alert alert-light border py-1 small mb-2">{{ w }}</div>
+                        <div v-for="w in (nfseDraft.warnings || [])" class="alert alert-light border py-1 small mb-2">{{ w }}</div>
 
-                        <div v-if="nfseDraft.tomador" class="small mb-2">
+                        <div v-if="nfseMode === 'substituir'" class="row g-2 mb-2">
+                            <div class="col-md-5"><label class="form-label small mb-0">Motivo da substituição</label>
+                                <select class="form-select form-select-sm" v-model="nfseForm.cMotivo">
+                                    <option v-for="(label, code) in nfseDraft.motivos" :value="code">{{ code }} — {{ label }}</option>
+                                </select></div>
+                            <div class="col-md-7"><label class="form-label small mb-0">Descrição do motivo <span v-if="nfseForm.cMotivo !== '99'">(opcional)</span></label>
+                                <input class="form-control form-control-sm" v-model="nfseForm.xMotivo" maxlength="255" placeholder="15 a 255 caracteres"></div>
+                            <div class="col-12 form-text">A Sefin gera a nova nota e cancela a original automaticamente.
+                                <span v-if="locked('valor')">Optante do Simples: valor, competência e tomador não podem mudar.</span></div>
+                        </div>
+
+                        <div v-if="nfseDraft.tomador && !nfseForm.exterior.ativo" class="small mb-2">
                             <span class="text-muted">Tomador:</span> <strong>{{ nfseDraft.tomador.nome }}</strong> · {{ nfseDoc(nfseDraft.tomador.documento) }}
                             <span v-if="nfseDraft.tomador.endereco" class="text-muted">· {{ nfseDraft.tomador.endereco.logradouro }}, {{ nfseDraft.tomador.endereco.numero }}</span>
                         </div>
 
                         <div class="row g-2">
                             <div class="col-md-4"><label class="form-label small mb-0">Valor do serviço (R$)</label>
-                                <input class="form-control" type="number" step="0.01" min="0.01" v-model="nfseForm.valor"></div>
+                                <input class="form-control" type="number" step="0.01" min="0.01" v-model="nfseForm.valor" :disabled="locked('valor')"></div>
                             <div class="col-md-4"><label class="form-label small mb-0">Competência</label>
-                                <input class="form-control" type="date" v-model="nfseForm.competencia"></div>
+                                <input class="form-control" type="date" v-model="nfseForm.competencia" :disabled="locked('competencia')"></div>
                             <div class="col-md-4 d-flex align-items-end"><div class="form-check mb-2">
-                                <input class="form-check-input" type="checkbox" id="nfseIss" v-model="nfseForm.iss_retido">
+                                <input class="form-check-input" type="checkbox" id="nfseIss" v-model="nfseForm.iss_retido" :disabled="nfseForm.exterior.ativo">
                                 <label class="form-check-label small" for="nfseIss">ISS retido pelo tomador</label></div></div>
                             <div class="col-md-4"><label class="form-label small mb-0">Cód. tributação nacional</label>
                                 <input class="form-control form-control-sm" v-model="nfseForm.ctribnac"></div>
                             <div class="col-md-4"><label class="form-label small mb-0">Cód. municipal</label>
                                 <input class="form-control form-control-sm" v-model="nfseForm.ctribmun"></div>
-                            <div class="col-md-4"><label class="form-label small mb-0">NBS</label>
+                            <div class="col-md-4"><label class="form-label small mb-0">NBS <span v-if="nfseForm.exterior.ativo">(obrigatório na exportação)</span></label>
                                 <input class="form-control form-control-sm" v-model="nfseForm.cnbs"></div>
-                            <div class="col-12"><label class="form-label small mb-0">Descrição do serviço</label>
+                            <div class="col-12"><label class="form-label small mb-0">Descrição do serviço (itens da cobrança — pode editar)</label>
                                 <textarea class="form-control" rows="4" maxlength="2000" v-model="nfseForm.descricao"></textarea></div>
+                            <div class="col-md-6"><label class="form-label small mb-0">Texto padrão (acrescentado ao fim da descrição)</label>
+                                <select class="form-select form-select-sm" v-model="nfseForm.texto_padrao_id">
+                                    <option value="">— nenhum —</option>
+                                    <option v-for="t in (nfseDraft.textos_padrao || [])" :value="t.id">{{ t.titulo }}</option>
+                                </select>
+                                <div v-if="!(nfseDraft.textos_padrao || []).length" class="form-text">Cadastre os textos em <a href="/nfse/?tab=config">Configuração da NFS-e</a>.</div></div>
+                            <div class="col-md-6 small text-muted" style="white-space: pre-wrap" v-if="textoSelecionado">{{ textoSelecionado.texto }}</div>
+                            <div class="col-12 form-text" :class="{ 'text-danger': descricaoFinal.length > 2000 }">Descrição final: {{ descricaoFinal.length }} / 2000 caracteres.</div>
                             <div class="col-12"><label class="form-label small mb-0">Informações complementares (opcional)</label>
                                 <textarea class="form-control form-control-sm" rows="2" maxlength="2000" v-model="nfseForm.info_complementar"></textarea></div>
                         </div>
-                        <div class="form-text">Para ME/EPP, depois de emitida, tomador, competência e valor não podem ser alterados: confira antes de enviar.</div>
+
+                        <div class="form-check mt-3">
+                            <input class="form-check-input" type="checkbox" id="nfseExt" v-model="nfseForm.exterior.ativo" :disabled="locked('tomador')">
+                            <label class="form-check-label small" for="nfseExt"><strong>Tomador no exterior</strong> (exportação de serviço)</label>
+                        </div>
+                        <div v-if="nfseForm.exterior.ativo" class="row g-2 border rounded p-2 mt-1">
+                            <div class="col-md-6"><label class="form-label small mb-0">Nome / razão social</label>
+                                <input class="form-control form-control-sm" v-model="nfseForm.exterior.nome" :placeholder="nfseDraft.tomador && nfseDraft.tomador.nome" :disabled="locked('tomador')"></div>
+                            <div class="col-md-3"><label class="form-label small mb-0">País (ISO, ex.: US)</label>
+                                <input class="form-control form-control-sm text-uppercase" v-model="nfseForm.exterior.cPais" maxlength="2" :disabled="locked('tomador')"></div>
+                            <div class="col-md-3"><label class="form-label small mb-0">NIF (identificação fiscal)</label>
+                                <input class="form-control form-control-sm" v-model="nfseForm.exterior.nif" maxlength="40" :disabled="locked('tomador')"></div>
+                            <div class="col-md-6" v-if="!nfseForm.exterior.nif"><label class="form-label small mb-0">Sem NIF — motivo</label>
+                                <select class="form-select form-select-sm" v-model="nfseForm.exterior.cNaoNIF">
+                                    <option value="">Selecione…</option><option value="1">Dispensado do NIF</option><option value="2">Não exigência do NIF</option>
+                                </select></div>
+                            <div class="col-md-6"><label class="form-label small mb-0">Endereço</label>
+                                <input class="form-control form-control-sm" v-model="nfseForm.exterior.logradouro"></div>
+                            <div class="col-md-2"><label class="form-label small mb-0">Número</label>
+                                <input class="form-control form-control-sm" v-model="nfseForm.exterior.numero"></div>
+                            <div class="col-md-4"><label class="form-label small mb-0">Complemento / bairro</label>
+                                <input class="form-control form-control-sm" v-model="nfseForm.exterior.complemento"></div>
+                            <div class="col-md-4"><label class="form-label small mb-0">Cidade</label>
+                                <input class="form-control form-control-sm" v-model="nfseForm.exterior.xCidade"></div>
+                            <div class="col-md-4"><label class="form-label small mb-0">Estado / província</label>
+                                <input class="form-control form-control-sm" v-model="nfseForm.exterior.xEstProvReg"></div>
+                            <div class="col-md-4"><label class="form-label small mb-0">Código postal</label>
+                                <input class="form-control form-control-sm" v-model="nfseForm.exterior.cEndPost" maxlength="11"></div>
+                            <div class="col-md-4"><label class="form-label small mb-0">E-mail</label>
+                                <input class="form-control form-control-sm" v-model="nfseForm.exterior.email"></div>
+                            <div class="col-md-4"><label class="form-label small mb-0">Moeda</label>
+                                <select class="form-select form-select-sm" v-model="nfseForm.exterior.moeda">
+                                    <option>USD</option><option>EUR</option><option>GBP</option><option>CAD</option><option>AUD</option><option>CHF</option><option>JPY</option><option>ARS</option>
+                                </select></div>
+                            <div class="col-md-4"><label class="form-label small mb-0">Valor na moeda estrangeira</label>
+                                <input class="form-control form-control-sm" type="number" step="0.01" v-model="nfseForm.exterior.valor_moeda"></div>
+                            <div class="col-12"><div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="nfsePaisRes" v-model="nfseForm.exterior.pais_resultado">
+                                <label class="form-check-label small" for="nfsePaisRes">O resultado do serviço se verifica no país do tomador</label></div></div>
+                            <div class="col-12 form-text">A nota sai como exportação de serviço (ISS não incide). Os demais dados de comércio exterior vêm da configuração.</div>
+                        </div>
+                        <div class="form-text mt-2">Para ME/EPP, depois de emitida, tomador, competência e valor não podem ser alterados: confira antes de enviar.</div>
                     </div>
                     <div class="modal-footer">
-                        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button class="btn btn-dark" :disabled="nfseEmitting || nfseDraft.problems.length > 0" @click="emitNfse">
-                            {{ nfseEmitting ? 'Enviando à Sefin…' : 'Emitir NFS-e' }}</button>
+                        <button class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                        <button class="btn btn-dark" :disabled="nfseEmitting || (nfseDraft.problems || []).length > 0 || descricaoFinal.length > 2000" @click="emitNfse">
+                            {{ nfseEmitting ? 'Enviando à Sefin…' : (nfseMode === 'emitir' ? 'Emitir NFS-e' : 'Emitir substituta') }}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cancelamento de NFS-e -->
+        <div class="modal fade" id="nfseCancelModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content" v-if="nfseCancel">
+                    <div class="modal-header">
+                        <h6 class="modal-title">Cancelar NFS-e nº {{ nfseCancel.numero_nfse }}</h6>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-warning py-2 small">O cancelamento é definitivo. Para corrigir dados da nota, prefira <strong>substituir</strong>.
+                            A prefeitura pode limitar o prazo de cancelamento.</div>
+                        <label class="form-label small mb-0">Motivo</label>
+                        <select class="form-select mb-2" v-model="nfseCancel.cMotivo">
+                            <option value="1">Erro na emissão</option><option value="2">Serviço não prestado</option><option value="9">Outros</option>
+                        </select>
+                        <label class="form-label small mb-0">Descrição do motivo (15 a 255 caracteres)</label>
+                        <textarea class="form-control" rows="2" maxlength="255" v-model="nfseCancel.xMotivo"></textarea>
+                        <div class="form-text">{{ (nfseCancel.xMotivo || '').trim().length }} / 255</div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                        <button class="btn btn-danger" :disabled="nfseEmitting || (nfseCancel.xMotivo || '').trim().length < 15" @click="cancelNfse">
+                            {{ nfseEmitting ? 'Enviando…' : 'Cancelar NFS-e' }}</button>
                     </div>
                 </div>
             </div>
