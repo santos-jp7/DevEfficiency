@@ -11,8 +11,10 @@ before(async () => {
     M = Object.fromEntries(['Client', 'Supplier', 'Product', 'Protocol', 'Protocol_product', 'Subscription', 'BillingProtocol', 'Billing', 'BankAccount', 'Config'].map((n) => [n, model(n)]))
     PC = controller('protocolsController')
     billingReceipt = load('utils/billingReceipt').default
-    // Janela grande: a renovação já nasce dentro dela (libera na hora quando pode).
-    await M.Config.update({ value: '400' }, { where: { type: 'subscription_release_days' } })
+    // Janela grande: a renovação já nasce dentro dela (libera na hora quando pode). A renovação anual vence em
+    // hoje + 20 dias + 1 ano, ajustado para o due_day do cliente (20): entre ~371 e ~405 dias, conforme o dia em que
+    // o teste roda. Por isso a janela fica bem acima de 1 ano + 1 mês (400 falhava em datas como 13/11).
+    await M.Config.update({ value: '1000' }, { where: { type: 'subscription_release_days' } })
     s.client = await M.Client.create({ name: 'Cliente Licenças' })
     s.supplier = await M.Supplier.create({ name: 'Bitdefender' })
     s.bank = await M.BankAccount.create({ name: 'Banco', balance: 0 })
