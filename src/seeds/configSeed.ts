@@ -43,6 +43,8 @@ async function seedConfigs(): Promise<void> {
         { type: 'tickets_notify_email', value: 'jean.pierre@codlinx.com.br', upload: false },
         // Dias antes do vencimento para liberar a cobrança da assinatura (padrão 45: mensais liberam na renovação).
         { type: 'subscription_release_days', value: '45', upload: false },
+        // Cobrança mensal mesmo com inadimplência: vale para ciclos a partir desta data (padrão: dia do primeiro deploy).
+        { type: 'subscription_cycle_start_date', value: nowInBusinessTimezone().date, upload: false },
         // CRM: aviso diário de follow-ups atrasados e do dia (vazio = mesmo e-mail do aviso de contas a pagar).
         { type: 'crm_followups_enabled', value: 'true', upload: false },
         { type: 'crm_followups_email', value: '', upload: false },

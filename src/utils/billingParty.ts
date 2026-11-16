@@ -30,10 +30,13 @@ async function nextDueDateFor(party: BillingParty, transaction?: Transaction | n
 }
 
 // Cobrança pendente da parte (cliente ou fornecedor); cria uma nova com o vencimento padrão da parte se não houver.
+// Cobrança já vencida não recebe protocolos novos: o mês seguinte de um cliente inadimplente ganha cobrança própria,
+// com o seu vencimento, em vez de engordar a cobrança atrasada.
 export async function findOrCreatePendingBilling(party: BillingParty, transaction?: Transaction | null): Promise<Billing> {
+    const notOverdue = { [Op.or]: [{ due_date: null }, { due_date: { [Op.gte]: moment().startOf('day').toDate() } }] }
     const where = party.SupplierId
-        ? { SupplierId: party.SupplierId, status: 'pendente', fixed_due_date: false }
-        : { ClientId: party.ClientId, SupplierId: null, status: 'pendente', fixed_due_date: false }
+        ? { SupplierId: party.SupplierId, status: 'pendente', fixed_due_date: false, ...notOverdue }
+        : { ClientId: party.ClientId, SupplierId: null, status: 'pendente', fixed_due_date: false, ...notOverdue }
 
     const existing = await Billing.findOne({ where: where as any, transaction })
     if (existing) return existing
