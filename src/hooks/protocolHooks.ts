@@ -1,4 +1,5 @@
 import moment from 'moment'
+import { Op } from 'sequelize'
 import Protocol from '../models/Protocol'
 import Protocol_product from '../models/Protocol_product'
 import Service_order from '../models/Service_order'
@@ -10,7 +11,7 @@ import Client from '../models/Client'
 import Seller from '../models/Seller'
 import Payable from '../models/Payable'
 import { computeCommission } from '../utils/sellerCommission'
-import { getReleaseDays, isWithinReleaseWindow, nextDueDate } from '../utils/subscriptionRelease'
+import { getCycleStartDate, getReleaseDays, isWithinReleaseWindow, nextBillableDueDate, nextDueDate } from '../utils/subscriptionRelease'
 import { amountDue, expectedCommission, isCommission } from '../utils/protocolCommission'
 import { findOrCreateFixedBilling, findOrCreatePendingBilling, refreshBillingTotal } from '../utils/billingParty'
 import ProtocolInstallment from '../models/ProtocolInstallment'
@@ -20,7 +21,7 @@ import { round2 } from '../utils/pricing'
 // Cria o protocolo do próximo ciclo da assinatura. Se o vencimento já está dentro da janela de liberação, o
 // protocolo nasce "Liberado para pagamento" e a cobrança é gerada na hora (sem precisar marcar manualmente).
 // Tudo roda na mesma transação do fechamento: a cobrança nova precisa enxergar o pagamento ainda não commitado.
-async function createRenewalProtocol(
+export async function createRenewalProtocol(
     previous: Protocol,
     subscription: Subscription,
     protocol_products: Protocol_product[],
@@ -159,7 +160,17 @@ class protocolHooks {
             if (round2(total_receipt) < round2(total_due))
                 throw new Error('Não é possivel finalizar, protocolo com recebimentos pendentes.')
 
-            if (subscription && !protocol.closedAt) {
+            // Pagamento de um ciclo antigo (cliente inadimplente): os ciclos seguintes já foram gerados pelo worker de
+            // assinaturas, então não cria outra renovação nem mexe no vencimento.
+            const newerCycle =
+                subscription && protocol.id
+                    ? await Protocol.count({
+                          where: { SubscriptionId: subscription.id, id: { [Op.gt]: protocol.id }, status: { [Op.ne]: 'Cancelado' } },
+                          transaction: options.transaction,
+                      })
+                    : 0
+
+            if (subscription && !protocol.closedAt && !newerCycle) {
                 const client = await Client.findByPk(subscription.ClientId)
 
                 let charge_type: Protocol_product['charge_type'] | false = false
@@ -168,7 +179,8 @@ class protocolHooks {
                 if (protocol_products.find((v) => v.charge_type == 'Anual')) charge_type = 'Anual'
 
                 if (charge_type == 'Mensal' || charge_type == 'Anual') {
-                    const dueAt = nextDueDate(subscription.dueAt, charge_type, client?.due_day)
+                    // Ciclo seguinte exato (sem pular meses): se já passou, a renovação nasce liberada e é cobrada.
+                    const dueAt = nextBillableDueDate(subscription.dueAt, charge_type, client?.due_day, await getCycleStartDate())
 
                     subscription.dueAt = dueAt
 

@@ -19,7 +19,7 @@ Sistema de gestão operacional e financeira voltado para agências, prestadores 
 |---|---|
 | **Ordens de Serviço** | Criação, acompanhamento e controle de status; apontamentos de horas; geração de orçamento/fatura/recibo em PDF |
 | **Chamados** | Requisições dos clientes (dúvida, validação, problema, solicitação) com conversa por e-mail, notas internas e conversão em OS quando exige trabalho/cobrança. Preparado para abertura pelo painel do cliente e por e-mail |
-| **Assinaturas** | Cobranças recorrentes (mensal/anual) com renovação automática de protocolos |
+| **Assinaturas** | Cobranças recorrentes (mensal/anual) com renovação automática de protocolos. Cada ciclo é cobrado mesmo que o anterior esteja em aberto (inadimplência vira uma cobrança por mês) |
 
 ### Financeiro
 | Módulo | Descrição |
@@ -149,6 +149,7 @@ Configurações operacionais (também em **Configurações**):
 | `tickets_email_enabled` / `tickets_notify_email` | `true` / `jean.pierre@codlinx.com.br` | E-mails do chamado ao solicitante / aviso interno de novo chamado e resposta do cliente |
 | `late_fee_percent` / `late_interest_percent_month` | `2` / `1` | Multa (% sobre o débito) e juros moratórios (% ao mês, pro rata por dia) das cobranças em atraso — **informativos**, não alteram o valor da cobrança. Ao receber uma cobrança em atraso o valor recebido é confirmado e pode ser alterado |
 | `subscription_release_days` | `45` | A cobrança do próximo ciclo da assinatura é liberada quando faltam até N dias para o vencimento |
+| `subscription_cycle_start_date` | dia do primeiro deploy | A partir desta data, **todo ciclo da assinatura é cobrado mesmo com o cliente inadimplente**: no dia seguinte ao vencimento não pago, o worker gera o ciclo seguinte, com cobrança própria. Ciclos anteriores a esta data não são cobrados retroativamente |
 
 ---
 
