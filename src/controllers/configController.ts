@@ -1,5 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
 import Config from '../models/Config'
+import { Op } from 'sequelize'
+import { PROTECTED_CONFIG_TYPES } from '../utils/nfse/settings'
 import * as fs from 'fs/promises' // For async file operations
 import * as path from 'path' // For path manipulation
 
@@ -16,7 +18,8 @@ type ConfigRequest = FastifyRequest<{
 
 class configController {
     static async index(req: FastifyRequest, res: FastifyReply): Promise<FastifyReply> {
-        return res.send(await Config.findAll())
+        // Certificado da NFS-e (criptografado) e controles internos não saem pela API genérica.
+        return res.send(await Config.findAll({ where: { type: { [Op.notIn]: PROTECTED_CONFIG_TYPES } } }))
     }
 
     static async show(req: ConfigRequest, res: FastifyReply): Promise<FastifyReply> {
@@ -25,6 +28,7 @@ class configController {
         if (!type) {
             return res.status(400).send({ message: 'Type is required.' });
         }
+        if (PROTECTED_CONFIG_TYPES.includes(type)) return res.status(404).send({ message: 'Config not found.' })
 
         const config = await Config.findOne({
             where: { type }
@@ -44,6 +48,8 @@ class configController {
         if (!value) {
             return res.status(400).send({ message: 'Value is required.' })
         }
+        if (PROTECTED_CONFIG_TYPES.includes(type))
+            return res.status(400).send({ message: 'Esta configuração é alterada pela tela de NFS-e.' })
 
         if (type === 'hourly_rate') {
             const rate = Number(String(value).replace(',', '.'))

@@ -20,6 +20,7 @@ import Receipts from '../models/Receipts'
 import Config from '../models/Config'
 import Supplier from '../models/Supplier'
 import ProtocolInstallment from '../models/ProtocolInstallment'
+import Nfse from '../models/Nfse'
 
 import puppeteer from 'puppeteer'
 import CloudFlareR2 from '../providers/CloudFlareR2'
@@ -222,6 +223,9 @@ class billingController {
         if (billing.status !== 'pendente') {
             return res.status(400).send({ message: 'Apenas cobranças pendentes podem ser excluídas' })
         }
+
+        if (await Nfse.count({ where: { BillingId: billing.id, status: ['processando', 'autorizada'] } }))
+            return res.status(400).send({ message: 'Esta cobrança tem NFS-e emitida ou em processamento e não pode ser excluída.' })
 
         await billing.destroy()
 

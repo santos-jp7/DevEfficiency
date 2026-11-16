@@ -14,8 +14,29 @@ const app = new Vue({
         supplierTotal: 0,
 
         bankAccounts: [],
+
+        nfses: [],
+        nfseDraft: null,
+        nfseForm: { exterior: {} },
+        nfseMode: 'emitir', // emitir | substituir
+        nfseTarget: null, // nota substituída
+        nfseCancel: null,
+        nfseEmitting: false,
+        nfseSyncing: false,
     },
     computed: {
+        textoSelecionado() {
+            return ((this.nfseDraft && this.nfseDraft.textos_padrao) || []).find((t) => t.id === this.nfseForm.texto_padrao_id) || null
+        },
+        // Descrição como sai na nota: itens + texto padrão escolhido.
+        descricaoFinal() {
+            const d = String(this.nfseForm.descricao || '').trim()
+            return this.textoSelecionado ? `${d}\n\n${this.textoSelecionado.texto}` : d
+        },
+        // Nota autorizada ou aguardando confirmação: impede emitir outra para a mesma cobrança.
+        activeNfse() {
+            return this.nfses.find((n) => n.status === 'autorizada' || n.status === 'processando') || null
+        },
         supplierAllocated() {
             return Math.round(this.supplierLines.reduce((s, l) => s + (Number(l.value) || 0), 0) * 100) / 100
         },
@@ -63,6 +84,7 @@ const app = new Vue({
                 if (this.billing.payment_date)
                     this.billing.payment_date = moment.utc(this.billing.payment_date).format('YYYY-MM-DD')
             })
+            this.loadNfses()
         }
 
         __api__
@@ -77,6 +99,103 @@ const app = new Vue({
             })
     },
     methods: {
+        loadNfses() {
+            return __api__.get('/api/nfse', { params: { BillingId: this.id } }).then((res) => (this.nfses = res.data))
+        },
+        nfseStatusClass: (s) => NfseFmt.statusClass(s),
+        nfseDoc: (v) => NfseFmt.doc(v),
+        openNfseFile: (id, kind) => NfseFiles.open(id, kind),
+        locked(field) {
+            return this.nfseMode === 'substituir' && ((this.nfseDraft && this.nfseDraft.bloqueados) || []).includes(field)
+        },
+        showNfseModal(data, mode) {
+            this.nfseMode = mode
+            this.nfseDraft = data
+            const ext = data.defaults.exterior || {}
+            this.nfseForm = {
+                ...data.defaults,
+                texto_padrao_id: data.defaults.texto_padrao_id || '',
+                exterior: { ativo: false, nome: '', nif: '', cNaoNIF: '', cPais: '', cEndPost: '', xCidade: '', xEstProvReg: '', logradouro: '', numero: '', complemento: '', email: '', moeda: 'USD', valor_moeda: '', pais_resultado: true, ...ext },
+            }
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('nfseModal')).show()
+        },
+        async openNfseModal() {
+            try {
+                const { data } = await __api__.get(`/api/billings/${this.id}/nfse/draft`)
+                this.nfseTarget = null
+                this.showNfseModal(data, 'emitir')
+            } catch (err) {
+                alert(err.response?.data?.message || 'Erro ao preparar a NFS-e.')
+            }
+        },
+        async openSubstituteModal(n) {
+            try {
+                const { data } = await __api__.get(`/api/nfse/${n.id}/substitute/draft`)
+                this.nfseTarget = n
+                this.showNfseModal({ ...data, problems: [], warnings: [] }, 'substituir')
+            } catch (err) {
+                alert(err.response?.data?.message || 'Erro ao preparar a substituição.')
+            }
+        },
+        openCancelModal(n) {
+            this.nfseCancel = { id: n.id, numero_nfse: n.numero_nfse, cMotivo: '1', xMotivo: '' }
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('nfseCancelModal')).show()
+        },
+        async cancelNfse() {
+            if (!confirm(`Cancelar definitivamente a NFS-e nº ${this.nfseCancel.numero_nfse}?`)) return
+            this.nfseEmitting = true
+            try {
+                const { data } = await __api__.post(`/api/nfse/${this.nfseCancel.id}/cancel`, { cMotivo: this.nfseCancel.cMotivo, xMotivo: this.nfseCancel.xMotivo })
+                bootstrap.Modal.getInstance(document.getElementById('nfseCancelModal')).hide()
+                alert(data.status === 'cancelada' ? 'NFS-e cancelada.' : 'A Sefin não confirmou o cancelamento a tempo. Use "Verificar".')
+                window.location.reload()
+            } catch (err) {
+                const d = err.response?.data
+                alert([d?.message || 'Erro ao cancelar a NFS-e.', ...(Array.isArray(d?.details) ? d.details : [])].join('\n'))
+            } finally {
+                this.nfseEmitting = false
+            }
+        },
+        async emitNfse() {
+            const ext = this.nfseForm.exterior
+            const nome = ext.ativo ? ext.nome || (this.nfseDraft.tomador && this.nfseDraft.tomador.nome) : this.nfseDraft.tomador && this.nfseDraft.tomador.nome
+            const verb = this.nfseMode === 'emitir' ? 'Emitir a NFS-e' : `Substituir a NFS-e nº ${this.nfseDraft.original.numero_nfse} por uma nova`
+            if (!confirm(`${verb} de ${this.formatCurrency(this.nfseForm.valor)} para ${nome}?`)) return
+            this.nfseEmitting = true
+            try {
+                const body = { ...this.nfseForm, exterior: ext.ativo ? { ...ext, cPais: String(ext.cPais || '').toUpperCase() } : null }
+                const url = this.nfseMode === 'emitir' ? `/api/billings/${this.id}/nfse` : `/api/nfse/${this.nfseTarget.id}/substitute`
+                const { data } = await __api__.post(url, body)
+                bootstrap.Modal.getInstance(document.getElementById('nfseModal')).hide()
+                if (data.status === 'autorizada') alert(`NFS-e nº ${data.numero_nfse} autorizada.`)
+                else if (data.status === 'rejeitada')
+                    alert('A Sefin rejeitou a nota:\n' + (data.erros || []).map((e) => `${e.codigo} — ${e.descricao}`).join('\n'))
+                else alert('A Sefin não respondeu a tempo. Use "Verificar" para confirmar se a nota foi gerada.')
+                window.location.reload()
+            } catch (err) {
+                const d = err.response?.data
+                alert([d?.message || 'Erro ao emitir a NFS-e.', ...(Array.isArray(d?.details) ? d.details : [])].join('\n'))
+            } finally {
+                this.nfseEmitting = false
+            }
+        },
+        async syncNfse(n) {
+            this.nfseSyncing = true
+            try {
+                const { data } = await __api__.post(`/api/nfse/${n.id}/sync`)
+                if (data.status === 'autorizada') {
+                    alert(`NFS-e nº ${data.numero_nfse} autorizada.`)
+                    window.location.reload()
+                } else {
+                    Object.assign(n, data)
+                    alert(`Situação: ${data.status}.`)
+                }
+            } catch (err) {
+                alert(err.response?.data?.message || 'Erro ao verificar a NFS-e.')
+            } finally {
+                this.nfseSyncing = false
+            }
+        },
         openPdf(params) {
             PdfLink.open(params)
         },

@@ -30,6 +30,7 @@ Sistema de gestão operacional e financeira voltado para agências, prestadores 
 | **Cobranças** | Consolidação de protocolos em faturas por cliente; ciclo `pendente → faturada → pago` |
 | **Contas a Pagar** | Controle de despesas e pagamentos com categorias por centro de custo |
 | **Contas Bancárias** | Saldo em tempo real, transferências entre contas, suporte a IBAN/SWIFT para pagamentos internacionais. **Conferência de saldo**: compara o saldo gravado com saldo inicial + movimentações, mostra o extrato da conta, avisa por e-mail quando diverge e permite correção auditada |
+| **NFS-e (Emissor Nacional)** | Emissão da NFS-e Padrão Nacional direto da cobrança: monta a DPS no leiaute oficial v1.01, assina com o certificado A1 e envia à Sefin Nacional (mTLS). Guarda o XML, gera o DANFSe em PDF, anexa à cobrança e a marca como faturada. Começa no ambiente de testes (produção restrita) |
 | **Invoice Internacional** | Geração de invoice em PDF no padrão exterior (USD/EUR/GBP/BRL) a partir de uma OS |
 | **Relatórios** | Fluxo de Caixa, DRE e Relatório de Despesas. Relatórios comerciais: Inadimplência por cliente (faixas de atraso), Vendas e Comissões (com vendedor × Codlinx) e Recorrência (MRR/ARR), com exportação CSV |
 
@@ -120,6 +121,9 @@ RESEND_FROM=fatura@suaempresa.com
 RESEND_ALERT_FROM=alerta@suaempresa.com   # opcional; padrão = RESEND_FROM
 BILLING_REMINDER_HOUR=9                   # opcional; hora (America/Sao_Paulo) a partir da qual saem os lembretes de cobrança
 PAYABLES_ALERT_HOUR=8                     # opcional; hora (America/Sao_Paulo) do aviso diário de contas a pagar
+
+# NFS-e: chave que criptografa o certificado A1 no banco (opcional; padrão = SECRET)
+NFSE_CERT_KEY=uma_chave_longa_e_aleatoria
 
 # MCP (controle por IA) — vazio desliga o endpoint /api/mcp
 MCP_API_KEY=uma_chave_longa_e_aleatoria
@@ -220,12 +224,65 @@ claude mcp add --transport http devefficiency https://seu-dominio/api/mcp \
 | Relatórios | `financial_history`, `dre_report`, `expense_report`, `financial_comparison`, `current_os` |
 | Ações | `billing_send_email`, `billing_receipt` |
 | PDFs (retornados em base64) | `service_order_pdf`, `service_order_invoice_pdf`, `billing_pdf`, `protocols_pdf` |
+| NFS-e | `nfse` (list/get/settings/draft, só leitura), `nfse_pdf`, e com **confirmação obrigatória**: `nfse_emit`, `nfse_cancel`, `nfse_substitute`, `nfse_sync` |
+
+**Confirmação das ações com NFS-e:** emitir, cancelar, substituir e verificar nunca executam na primeira chamada. A
+ferramenta devolve um resumo da ação e um código de confirmação, válido por 15 minutos e amarrado à mesma
+nota/cobrança e aos mesmos dados. A ação só acontece quando a ferramenta é chamada de novo com esse código; se qualquer
+dado mudar, o código deixa de valer. As instruções da ferramenta mandam o assistente mostrar o resumo e esperar o "sim"
+do usuário. O servidor garante as duas etapas, mas não tem como provar que houve uma pessoa no meio. Para isso, deixe
+o cliente MCP pedindo aprovação a cada uso dessas ferramentas (no Claude, não marque "sempre permitir") ou desligue-as
+com `MCP_DISABLE=nfse_emit,nfse_cancel,nfse_substitute,nfse_sync`.
 
 Para desativar ferramentas, liste-as em `MCP_DISABLE` (ex.: `MCP_DISABLE=billing_send_email`). Uploads de arquivos (NF/boleto, comprovantes de reembolso) não estão disponíveis via MCP.
 
 Credenciais e servidores (senhas, chaves RSA) não são expostos via MCP, nem mesmo dentro de outras respostas (ex.: detalhes do cliente).
 
 > ⚠️ A chave dá acesso ao restante do sistema, incluindo exclusões e envio de e-mails. Use uma chave longa e sirva o endpoint apenas via HTTPS.
+
+---
+
+## NFS-e (Emissor Nacional)
+
+Emissão direta pela API da Sefin Nacional, sem intermediário. Atende prestadores **optantes do Simples Nacional** (ME/EPP e MEI).
+
+1. **Configuração** em **Financeiro → NFS-e → Configuração**: envie o certificado A1 (`.pfx` e senha) e informe CNPJ,
+   código IBGE do município emissor, código de tributação nacional do serviço (`cTribNac`, 6 dígitos), percentual
+   aproximado de tributos do Simples e, se a prefeitura exigir, a inscrição municipal. A tela lista o que falta. Ali
+   também ficam os **textos padrão**, os códigos de **IBS/CBS** e os padrões de **exportação**.
+2. **Emissão** na tela da cobrança (**Nota Fiscal → Emitir NFS-e**). Os itens da descrição vêm dos registros e
+   produtos dos protocolos da cobrança, com o valor de cada item quando a soma bate com o valor da cobrança. Escolha um
+   **texto padrão** (ex.: instruções de pagamento por PIX, boleto, transferência ou em espécie), que é acrescentado ao
+   fim da descrição. O texto ligado à forma de pagamento da cobrança vem pré-selecionado. Variáveis disponíveis nos
+   textos: `{vencimento}`, `{valor}` e `{cobranca}`. Tomador = cliente da cobrança (ou o fornecedor, nas cobranças de
+   comissão).
+3. **Resultado**:
+   - **Autorizada**: o XML fica guardado, o DANFSe é anexado e a cobrança é marcada como faturada.
+   - **Rejeitada**: os erros da Sefin aparecem na tela.
+   - **Processando**: a Sefin não respondeu. Use **Verificar**: o sistema consulta a DPS e, se a nota não foi gerada,
+     reenvia a mesma DPS, sem risco de nota duplicada.
+4. **Cancelamento** (evento 101101, motivo obrigatório): a nota é marcada como cancelada, o PDF sai da cobrança e a
+   cobrança pode receber uma nova nota.
+5. **Substituição**: emite uma nota nova que cancela a original automaticamente. Para optantes do Simples, valor,
+   competência e tomador não podem mudar (regra da Sefin), então esses campos ficam travados.
+6. **Exportação (tomador no exterior)**: na emissão, marque "Tomador no exterior" e informe país, NIF (ou o motivo de
+   não ter), endereço, moeda e valor na moeda estrangeira. A nota sai como exportação de serviço, com o grupo de
+   comércio exterior, e exige o código NBS. Na próxima cobrança do mesmo cliente, esses dados já vêm preenchidos.
+7. **IBS/CBS**: preenchidos os três códigos (indicador da operação, CST e classificação tributária), o grupo vai em
+   todas as notas. Vazios, ele não é enviado. Para o Simples, passa a ser obrigatório a partir de 2027.
+
+O sistema começa no **ambiente de testes (produção restrita)**, em que as notas não têm valor fiscal. Mude para
+produção na mesma tela depois de validar. O certificado e a senha ficam no banco criptografados (AES-256-GCM) com a
+chave `NFSE_CERT_KEY` (ou `SECRET`, se ela não for definida). **Trocar essa chave exige reenviar o certificado.**
+
+| Endpoint | Função |
+|---|---|
+| `GET/PUT /api/nfse/settings` · `POST /api/nfse/certificate` | Configuração e certificado |
+| `GET /api/billings/:id/nfse/draft` · `POST /api/billings/:id/nfse` | Pré-visualização (sugestões, textos padrão e pendências) e emissão |
+| `GET /api/nfse` · `POST /api/nfse/:id/sync` | Lista e verificação (nota em processamento ou cancelamento pendente) |
+| `POST /api/nfse/:id/cancel` | Cancelamento (`cMotivo` 1, 2 ou 9 e `xMotivo` de 15 a 255 caracteres) |
+| `GET /api/nfse/:id/substitute/draft` · `POST /api/nfse/:id/substitute` | Substituição |
+| `GET /api/nfse/:id/pdf` · `GET /api/nfse/:id/xml` | DANFSe e XML (`?tipo=dps` para a DPS enviada, `?tipo=evento` para o cancelamento) |
 
 ---
 
